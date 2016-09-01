@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-template<class T>
+template<typename T>
 struct MatView {
     T *data;
     size_t stride;
@@ -21,10 +21,6 @@ struct MatView {
 
 typedef int8_t Spin;
 
-typedef double *Block;
-
-typedef Block *Operator;
-
 /// A many-body operator contains three operators:
 ///
 ///   - Zero-body operator (constant term).  Always has a single block
@@ -34,9 +30,9 @@ typedef Block *Operator;
 ///
 ///   - Two-body operator.
 ///
-typedef Operator ManyBodyOperator[3];
+typedef double *ManyBodyOperator;
 
-template<class C>
+template<typename C>
 class ManyBodyBasis {
 public:
     ManyBodyBasis()
@@ -57,59 +53,50 @@ public:
         return this->_operator_size;
     }
 
-    /// Convenience function for getting an element from a Block.
-    double &get(Block a, size_t i, size_t j) const
+    /// Convenience function for getting an element from a many-body operator.
+    template<typename T>
+    T &get(T *base, size_t rank, size_t block_index, size_t i, size_t j) const
     {
-        return a[i * this->get_block_stride(i) + j];
+        return op[this->block_offset(rank, block_index) +
+                  i * this->block_stride(rank, block_index) + j];
     }
 
-    size_t get_block_stride(size_t i) const
+    size_t block_offset(size_t rank, size_t block_index) const
+    {
+        return 424242424242;
+    }
+
+    size_t block_stride(size_t rank,size_t block_index) const
     {
         return 424242424242;
     }
 
     //////////////////////////////////////////////////////////////////////////
 
-    size_t num_blocks_1() const
+    size_t num_blocks(size_t rank) const
     {
-        return this->_num_blocks_1;
+        return this->_num_blocks(rank);
     }
 
-    size_t num_blocks_2() const
+    bool pack_channel(size_t rank, C channel, size_t &block_index_out) const
     {
-        return this->_num_blocks_2;
-    }
-
-    bool pack_channel_1(C c, size_t &l_out) const
-    {
-        size_t l;
-        if (!this->pack_channel_2(c, l) || l >= this->num_blocks_1()) {
+        auto it = _channel_map.find(channel);
+        if (it == _channel_map.end()) {
             return false;
         }
-        l_out = l;
+        size_t l = *it;
+        if (l >= this->num_blocks[rank]) {
+            return false;
+        }
+        block_index_out = l;
         return true;
     }
 
-    bool pack_channel_2(C c, size_t &l_out) const
+    C unpack_channel(size_t rank, size_t block_index) const
     {
-        auto i = _channel_map.find(c);
-        if (i == _channel_map.end()) {
-            return false;
-        }
-        l_out = *i;
-        return true;
-    }
-
-    C unpack_channel_o1(size_t l) const
-    {
-        assert(l < this->num_blocks_1());
-        return _channels[l];
-    }
-
-    C unpack_channel_o2(size_t l) const
-    {
-        assert(l < this->num_blocks_2());
-        return _channels[l];
+        (void)rank; // rank is not actually being used
+        assert(block_index < this->num_blocks(rank));
+        return _channels[block_index];
     }
 
 private:
@@ -117,9 +104,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////
 
-    size_t _num_blocks_1;
-
-    size_t _num_blocks_2;
+    size_t _num_blocks[3];
 
     /// The channels are stored here in one single array, with the the lower
     /// portions of it containing the one-body channels
@@ -140,26 +125,26 @@ private:
     ++var
 
 /// This function is for decorative purposes.  Taking the complex conjugate of
-/// a real number has no effect!
-double conj(double x)
+/// a real number has no effect.
+inline double conj(double x)
 {
     return x;
-
-    /*\(\b\w\.o\w\)\[\(\w*\)\](*/
-    /*b.get(\1, \2, */
 }
 
+/*\(\b\w\.o\w\)\[\(\w*\)\](*/
+/*b.get(\1, \2, */
+
 /// Allocate a many-body operator for the given many-body basis.
-template<class C>
+template<typename C>
 std::unique_ptr<double[]>
 alloc_many_body_operator(const ManyBodyBasis<C> &mbasis)
 {
     return std::unique_ptr<double[]>(new double[mbasis.operator_size()]());
 }
 
-template<class C>
-void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
-                          ManyBodyOperator &eta_out)
+template<typename C>
+void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
+                          ManyBodyOperator eta_out)
 {
     for (ITER_BLOCKS(li, b, 1)) {
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
@@ -168,11 +153,11 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
                 // no need to account for sign when fusing since hole states
                 // always occur before excited states
                 size_t uia = b.combine_11(li, ui, li, ua);
-                double z = b.get(h[1][li], ui, ua) /
-                           (b.get(h[2][lii], uia, uia) +
-                            b.get(h[1][li], ui, ui) - b.get(h[1][li], ua, ua));
-                b.get(eta_out[1][li], ui, ua) = z;
-                b.get(eta_out[1][li], ua, ui) = -conj(z);
+                double z = b.get(h, 1, li, ui, ua) /
+                           (b.get(h, 2, lii, uia, uia) +
+                            b.get(h, 1, li, ui, ui) - b.get(h, 1, li, ua, ua));
+                b.get(eta_out, 1, li, ui, ua) = z;
+                b.get(eta_out, 1, li, ua, ui) = -conj(z);
             }
         }
     }
@@ -208,14 +193,14 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
                 auto &&uib = to_unsigned(u_fuse_11(_basis_m, li, ui, lb, ub));
                 auto &&uja = to_unsigned(u_fuse_11(_basis_m, lj, uj, la, ua));
                 auto &&ujb = to_unsigned(u_fuse_11(_basis_m, lj, uj, lb, ub));
-                auto &&z = b.get(h[2], lij, uij, uab) /
-                           (b.get(h[1], li, ui, ui) + b.get(h[1], lj, uj, uj) - b.get(h[1], la, ua, ua) -
-                            b.get(h[1], lb, ub, ub) + b.get(h[2], lia, uia, uia) + b.get(h[2], lib, uib,
+                auto &&z = b.get(h, 2, lij, uij, uab) /
+                           (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) - b.get(h, 1, la, ua, ua) -
+                            b.get(h, 1, lb, ub, ub) + b.get(h, 2, lia, uia, uia) + b.get(h, 2, lib, uib,
 uib) +
-                            b.get(h[2], lja, uja, uja) + b.get(h[2], ljb, ujb, ujb) -
-                            b.get(h[2], lij, uij, uij) - b.get(h[2], lij, uab, uab));
-                eta[2][lij](uij, uab) = z;
-                eta[2][lij](uab, uij) = -conj(z);
+                            b.get(h, 2, lja, uja, uja) + b.get(h, 2, ljb, ujb, ujb) -
+                            b.get(h, 2, lij, uij, uij) - b.get(h, 2, lij, uab, uab));
+                b.get(eta, 2, lij, uij, uab) = z;
+                b.get(eta, 2, lij, uab, uij) = -conj(z);
             }
         }
     }
@@ -264,9 +249,8 @@ struct WhiteGenerator {
                     // always occur before excited states
                     auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, li,
 ua));
-                    auto &&z = b.get(h[1], li, ui, ua) /
-                               (b.get(h[2], lii, uia, uia) + b.get(h[1], li, ui, ui) - b.get(h[1], li, ua,
-ua));
+                    auto &&z = b.get(h, 1, li, ui, ua) /
+                               (b.get(h, 2, lii, uia, uia) + b.get(h, 1, li, ui, ui) - b.get(h, 1, li, ua, ua));
                     eta[1][li](ui, ua) = z;
                     eta[1][li](ua, ui) = -conj(z);
                 }
@@ -297,15 +281,15 @@ ub));
 ua));
                     auto &&ujb = to_unsigned(u_fuse_11(_basis_m, lj, uj, lb,
 ub));
-                    auto &&z = b.get(h[2], lij, uij, uab) /
-                               (b.get(h[1], li, ui, ui) + b.get(h[1], lj, uj, uj) - b.get(h[1], la, ua, ua)
+                    auto &&z = b.get(h, 2, lij, uij, uab) /
+                               (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) - b.get(h, 1, la, ua, ua)
 -
-                                b.get(h[1], lb, ub, ub) + b.get(h[2], lia, uia, uia) +
-b.get(h[2], lib, uib, uib) +
-                                b.get(h[2], lja, uja, uja) + b.get(h[2], ljb, ujb, ujb) -
-                                b.get(h[2], lij, uij, uij) - b.get(h[2], lij, uab, uab));
-                    eta[2][lij](uij, uab) = z;
-                    eta[2][lij](uab, uij) = -conj(z);
+                                b.get(h, 1, lb, ub, ub) + b.get(h, 2, lia, uia, uia) +
+b.get(h, 2, lib, uib, uib) +
+                                b.get(h, 2, lja, uja, uja) + b.get(h, 2, ljb, ujb, ujb) -
+                                b.get(h, 2, lij, uij, uij) - b.get(h, 2, lij, uab, uab));
+                    b.get(eta, 2, lij, uij, uab) = z;
+                    b.get(eta, 2, lij, uab, uij) = -conj(z);
                 }
     }
 
