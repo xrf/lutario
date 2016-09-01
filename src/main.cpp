@@ -4,6 +4,16 @@
 #include <unordered_map>
 #include <vector>
 
+/// This function is for decorative purposes.  Taking the complex conjugate of
+/// a real number has no effect.
+inline double conj(double x)
+{
+    return x;
+}
+
+/*\(\b\w\.o\w\)\[\(\w*\)\](*/
+/*b.get(\1, \2, */
+
 template<typename T>
 struct MatView {
     T *data;
@@ -21,28 +31,72 @@ struct MatView {
 
 namespace pairing_model {
 
-typedef int Spin;
+/// Spin is stored as twice its normal value.  This way we can represent spins
+/// as exact integers (no need to resort to floating-point arithmetic).
+typedef int TwiceSpin;
 
+/// A single-particle state in the pairing model basis.
 struct Orbital {
+
+    /// Principal quantum number.
     unsigned n;
-    Spin ms;
-};
 
-class PairingModelBasis {
-public:
-    const size_t num_shells;
+    /// Spin quantum number.
+    TwiceSpin tms;
 
-    const size_t num_filled_shells;
-
-    const std::vector<Orbital> orbitals;
-
-    PairingModelBasis(size_t num_shells, size_t num_filled_shells)
-        : num_shells(num_shells), num_filled_shells(num_filled_shells), orbitals(generate_orbitals())
+    /// Construct an Orbital with the given quantum numbers.
+    Orbital(unsigned n, TwiceSpin tms)
+        : n(n)
+        , tms(tms)
     {
+    }
 
+    /// Return the spin quantum number.  This function exists to conform to
+    /// the generic interface expected by ManyBodyBasis.
+    TwiceSpin channel() const
+    {
+        return tms;
     }
 };
 
+class Basis {
+    std::vector<Orbital> _occupied_orbitals;
+    std::vector<Orbital> _unoccupied_orbitals;
+
+public:
+    Basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
+    {
+        unsigned num_total_shells = num_occupied_shells + num_unoccupied_shells;
+        for (unsigned n = 0; n < num_occupied_shells; ++n) {
+            this->_occupied_orbitals.push_back(Orbital(n, -1));
+            this->_occupied_orbitals.push_back(Orbital(n, 1));
+        }
+        for (unsigned n = num_occupied_shells; n < num_total_shells; ++n) {
+            this->_unoccupied_orbitals.push_back(Orbital(n, -1));
+            this->_unoccupied_orbitals.push_back(Orbital(n, 1));
+        }
+    }
+
+    size_t num_occupied_orbitals() const
+    {
+        return this->_occupied_orbitals.size();
+    }
+
+    size_t num_unoccupied_orbitals() const
+    {
+        return this->_unoccupied_orbitals.size();
+    }
+
+    const Orbital *occupied_orbitals() const
+    {
+        return this->_occupied_orbitals.data();
+    }
+
+    const Orbital *unoccupied_orbitals() const
+    {
+        return this->_unoccupied_orbitals.data();
+    }
+};
 }
 
 /// A many-body operator contains three operators:
@@ -56,16 +110,117 @@ public:
 ///
 typedef double *ManyBodyOperator;
 
+/// The `C` type must be an abelian group and support the following binary
+/// operators:
+///
+///   - `+` ("addition")
+///   - `-` ("subtraction", inverse of "addition")
+///
+/// The default constructor of `C` must construct the additive identity
+/// ("zero").
+///
 template<typename C>
 class ManyBodyBasis {
-public:
-    ManyBodyBasis()
+
+    size_t _operator_size;
+
+    std::vector<size_t> _block_offsets[3];
+
+    std::vector<size_t> _block_strides[3];
+
+    //////////////////////////////////////////////////////////////////////////
+
+    /// Number of channels by operator rank
+    size_t _num_channels[3];
+
+    /// The channels are stored here in one single array, with the the lower
+    /// portions of it containing the one-body channels
+    std::vector<C> _channels;
+
+    /// Inverse of _channels
+    std::unordered_map<C, size_t> _channel_map;
+
+    /// Stores the orbital indices grouped by block index
+    std::vector<std::vector<size_t>> _orbitals_by_channel;
+
+    // This function must be called in the correct order, starting with
+    // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
+    // hopelessly corrupt the data structures.
+    //
+    // Pre-condition: the channel must not already exist.
+    size_t _add_channel(size_t rank, const C &channel)
     {
+        size_t l = this->_channels.size();
+        this->_channel_map.emplace(channel, l);
+        this->_channels.push_back(channel);
+        for (size_t r = rank;
+             r < sizeof(_num_channels) / sizeof(*_num_channels); ++r) {
+            ++this->_num_channels[r];
+        }
+        return l;
+    }
+
+    // Note: for use during initialization phase only.
+    void _add_orbital(size_t orbital_index, const C &channel)
+    {
+        size_t l;
+        if (!this->pack_channel(1, channel, l)) {
+            l = this->_add_channel(1, channel);
+            this->_orbitals_by_channel.push_back(std::vector<size_t>());
+        }
+        this->_orbitals_by_channel[l].push_back(orbital_index);
+    }
+
+public:
+    /// The `B` type must be a "single-particle basis" and support the follow
+    /// member functions:
+    ///
+    ///   - `.num_unoccupied_orbitals()`
+    ///   - `.unoccupied_orbitals()` (returns an array of unoccupied orbitals)
+    ///   - `.num_occupied_orbitals()`
+    ///   - `.occupied_orbitals()` (returns an array of occupied orbitals)
+    ///
+    /// The orbitals themselves must support a member function `.channel()`,
+    /// which returns a `C`.
+    ///
+    template<typename B>
+    ManyBodyBasis(const B &basis)
+    {
+        // add the zero-body channel
+        this->_add_channel(0, C());
+
+        // add the one-body channels
+        size_t num_occupied_orbitals = basis.num_occupied_orbitals();
+        size_t num_unoccupied_orbitals = basis.num_unoccupied_orbitals();
+        auto *occupied_orbitals = basis.occupied_orbitals();
+        auto *unoccupied_orbitals = basis.unoccupied_orbitals();
+        for (size_t i = 0; i < num_occupied_orbitals; ++i) {
+            this->_add_orbital(i, occupied_orbitals[i].channel());
+        }
+        for (size_t i = 0; i < num_unoccupied_orbitals; ++i) {
+            this->_add_orbital(num_occupied_orbitals + i,
+                               unoccupied_orbitals[i].channel());
+        }
+
+        // add the two-body channels
+        size_t num_channels_1 = this->num_channels(1);
+        for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
+            for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
+                C c12 = this->unpack_channel(l1) + this->unpack_channel(l2);
+                if (!this->channel_exists(2, c12)) {
+                    this->_add_channel(2, c12);
+                }
+            }
+        }
+
         this->_operator_size = 42424242424242;
 
-        for (size_t l = 0; l < this->_num_blocks_2; ++l) {
-            this->_channel_map.emplace(this->_channels[l], l);
-        }
+        this->_block_offsets[0].push_back(0);
+        this->_block_offsets[1].push_back(1);
+        //this->_block_offsets[3];
+
+        this->_block_strides[0].push_back(1);
+        //this->_block_strides[3];
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -78,7 +233,8 @@ public:
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    double &get(ManyBodyOperator op, size_t rank, size_t block_index, size_t i, size_t j) const
+    double &get(double *op, size_t rank, size_t block_index, size_t i,
+                size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
@@ -86,19 +242,25 @@ public:
 
     size_t block_offset(size_t rank, size_t block_index) const
     {
-        return 424242424242;
+        return this->_block_offsets[rank][block_index];
     }
 
     size_t block_stride(size_t rank, size_t block_index) const
     {
-        return 424242424242;
+        return this->_block_strides[rank][block_index];
     }
 
     //////////////////////////////////////////////////////////////////////////
 
-    size_t num_blocks(size_t rank) const
+    size_t num_channels(size_t rank) const
     {
-        return this->_num_blocks(rank);
+        return this->_num_channels(rank);
+    }
+
+    bool channel_exists(size_t rank, C channel) const
+    {
+        size_t l;
+        return pack_channel(rank, channel, l);
     }
 
     bool pack_channel(size_t rank, C channel, size_t &block_index_out) const
@@ -108,7 +270,7 @@ public:
             return false;
         }
         size_t l = *it;
-        if (l >= this->num_blocks[rank]) {
+        if (l >= this->num_channels[rank]) {
             return false;
         }
         block_index_out = l;
@@ -118,44 +280,20 @@ public:
     C unpack_channel(size_t rank, size_t block_index) const
     {
         (void)rank; // rank is not actually being used
-        assert(block_index < this->num_blocks(rank));
+        assert(block_index < this->num_channels(rank));
         return _channels[block_index];
     }
-
-private:
-    size_t _operator_size;
-
-    //////////////////////////////////////////////////////////////////////////
-
-    size_t _num_blocks[3];
-
-    /// The channels are stored here in one single array, with the the lower
-    /// portions of it containing the one-body channels
-    std::vector<C> _channels;
-
-    /// Inverse of _channels
-    std::unordered_map<C, size_t> _channel_map;
 };
 
 #define ITER_BLOCKS(var, basis, rank)                                          \
     size_t var = 0;                                                            \
-    var < basis.num_blocks_##rank();                                           \
+    var < basis.num_channels_##rank();                                         \
     ++var
 
 #define ITER_SUBINDICES(var, block_index, group_begin, group_end, basis, rank) \
     size_t var = basis.block_dim_##rank(block_index, group_begin);             \
     var < basis.block_dim_##rank(block_index, group_end);                      \
     ++var
-
-/// This function is for decorative purposes.  Taking the complex conjugate of
-/// a real number has no effect.
-inline double conj(double x)
-{
-    return x;
-}
-
-/*\(\b\w\.o\w\)\[\(\w*\)\](*/
-/*b.get(\1, \2, */
 
 /// Allocate a many-body operator for the given many-body basis.
 template<typename C>
@@ -166,8 +304,8 @@ alloc_many_body_operator(const ManyBodyBasis<C> &mbasis)
 }
 
 template<typename C>
-void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
-                          ManyBodyOperator eta_out)
+void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
+                          ManyBodyOperator &eta_out)
 {
     for (ITER_BLOCKS(li, b, 1)) {
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
