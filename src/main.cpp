@@ -184,13 +184,21 @@ public:
                                unoccupied_orbitals[i].channel());
         }
 
-        // add the two-body channels
+        // add the two-body channels (sometimes we need subtraction too...)
         // TODO: perhaps we can rewrite this in a different way, by reusing
         // the (TODO) thing that generates all the 2-particle states.
         size_t num_channels_1 = this->num_channels(1);
         for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
             for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
                 C c12 = this->unpack_channel(l1) + this->unpack_channel(l2);
+                if (!this->channel_exists(2, c12)) {
+                    this->_add_channel(2, c12);
+                }
+            }
+        }
+        for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
+            for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
+                C c12 = this->unpack_channel(l1) - this->unpack_channel(l2);
                 if (!this->channel_exists(2, c12)) {
                     this->_add_channel(2, c12);
                 }
@@ -232,6 +240,26 @@ public:
     size_t block_stride(size_t rank, size_t block_index) const
     {
         return this->_block_strides[rank][block_index];
+    }
+
+    size_t add(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    {
+        C c1 = this->unpack_channel(r1, l1);
+        C c2 = this->unpack_channel(r2, l2);
+        C c12 = c1 + c2;
+        size_t l12;
+        this->pack_channel(r12, c12, l12);
+        return l12;
+    }
+
+    size_t sub(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    {
+        C c1 = this->unpack_channel(r1, l1);
+        C c2 = this->unpack_channel(r2, l2);
+        C c12 = c1 - c2;
+        size_t l12;
+        this->pack_channel(r12, c12, l12);
+        return l12;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -294,7 +322,7 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
     for (ITER_BLOCKS(li, b, 1)) {
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
             for (ITER_SUBINDICES(ui, li, 0, 1, b, 1)) {
-                size_t lii = b.add_11(li, li);
+                size_t lii = b.add(1, 1, 2, li, li);
                 size_t uia = b.combine_11(li, ui, li, ua);
                 double z = b.get(h, 1, li, ui, ua) /
                            (b.get(h, 2, lii, uia, uia) +
@@ -312,10 +340,10 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
                 size_t la, ua, lb, ub;
                 b.split_2(lij, uab, la, ua, lb, ub);
 
-                size_t lia = b.add_11(li, la);
-                size_t lib = b.add_11(li, lb);
-                size_t lja = b.add_11(lj, la);
-                size_t ljb = b.add_11(lj, lb);
+                size_t lia = b.add(1, 1, 2, li, la);
+                size_t lib = b.add(1, 1, 2, li, lb);
+                size_t lja = b.add(1, 1, 2, lj, la);
+                size_t ljb = b.add(1, 1, 2, lj, lb);
 
                 size_t uia = b.combine_11(li, ui, la, ua);
                 size_t uib = b.combine_11(li, ui, lb, ub);
@@ -375,7 +403,7 @@ struct WhiteGenerator {
         for (auto &&li : basis_1.channels())
             for (auto &&ua : basis_1.subindices(li, 1))
                 for (auto &&ui : basis_1.subindices(li, 0)) {
-                    auto &&lii = l_add_11(_basis_m, li, li);
+                    auto &&lii = b.add(1, 1, 2, _basis_m, li, li);
                     // no need to account for sign when fusing since hole states
                     // always occur before excited states
                     auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, li,
@@ -398,10 +426,10 @@ ua));
                     auto &&ua = get<1>(la_ua_lb_ub);
                     auto &&lb = get<2>(la_ua_lb_ub);
                     auto &&ub = get<3>(la_ua_lb_ub);
-                    auto &&lia = l_add_11(_basis_m, li, la);
-                    auto &&lib = l_add_11(_basis_m, li, lb);
-                    auto &&lja = l_add_11(_basis_m, lj, la);
-                    auto &&ljb = l_add_11(_basis_m, lj, lb);
+                    auto &&lia = b.add(1, 1, 2, li, la);
+                    auto &&lib = b.add(1, 1, 2, li, lb);
+                    auto &&lja = b.add(1, 1, 2, lj, la);
+                    auto &&ljb = b.add(1, 1, 2, lj, lb);
                     // no need to account for sign when fusing since hole states
                     // always occur before excited states
                     auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, la,
