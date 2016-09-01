@@ -11,24 +11,6 @@ inline double conj(double x)
     return x;
 }
 
-/*\(\b\w\.o\w\)\[\(\w*\)\](*/
-/*b.get(\1, \2, */
-
-template<typename T>
-struct MatView {
-    T *data;
-    size_t stride;
-    MatView(T *data, size_t stride)
-        : data(data)
-        , stride(stride)
-    {
-    }
-    T &operator()(size_t i, size_t j) const
-    {
-        return data[i * stride + j];
-    }
-};
-
 namespace pairing_model {
 
 /// Spin is stored as twice its normal value.  This way we can represent spins
@@ -203,6 +185,8 @@ public:
         }
 
         // add the two-body channels
+        // TODO: perhaps we can rewrite this in a different way, by reusing
+        // the (TODO) thing that generates all the 2-particle states.
         size_t num_channels_1 = this->num_channels(1);
         for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
             for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
