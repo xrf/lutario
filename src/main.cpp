@@ -55,7 +55,7 @@ public:
 
     /// Convenience function for getting an element from a many-body operator.
     template<typename T>
-    T &get(T *base, size_t rank, size_t block_index, size_t i, size_t j) const
+    T &get(T *op, size_t rank, size_t block_index, size_t i, size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
@@ -66,7 +66,7 @@ public:
         return 424242424242;
     }
 
-    size_t block_stride(size_t rank,size_t block_index) const
+    size_t block_stride(size_t rank, size_t block_index) const
     {
         return 424242424242;
     }
@@ -150,8 +150,6 @@ void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
             for (ITER_SUBINDICES(ui, li, 0, 1, b, 1)) {
                 size_t lii = b.add_11(li, li);
-                // no need to account for sign when fusing since hole states
-                // always occur before excited states
                 size_t uia = b.combine_11(li, ui, li, ua);
                 double z = b.get(h, 1, li, ui, ua) /
                            (b.get(h, 2, lii, uia, uia) +
@@ -161,50 +159,38 @@ void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
             }
         }
     }
-}
-/*
+    for (ITER_BLOCKS(lij, b, 2)) {
+        for (ITER_SUBINDICES(uab, lij, 3, 4, b, 2)) {
+            for (ITER_SUBINDICES(uij, lij, 0, 1, b, 2)) {
+                size_t li, ui, lj, uj;
+                b.split_2(lij, uij, li, ui, lj, uj);
+                size_t la, ua, lb, ub;
+                b.split_2(lij, uab, la, ua, lb, ub);
 
-    auto &&basis_1 = get<1>(_basis_m);
-    auto &&basis_2 = get<2>(_basis_m);
-    auto &&h1 = get<1>(h);
-    auto &&h2 = get<2>(h);
-    auto &&eta[1] = get<1>(eta);
-    auto &&eta[2] = get<2>(eta);
-    for (auto &&lij : basis_2.channels()) {
-        for (auto &&uab : basis_2.subindices(lij, 2)) {
-            for (auto &&uij : basis_2.subindices(lij, 0)) {
-                auto &&li_ui_lj_uj = lu_split_2(_basis_m, lij, uij);
-                auto &&li = get<0>(li_ui_lj_uj);
-                auto &&ui = get<1>(li_ui_lj_uj);
-                auto &&lj = get<2>(li_ui_lj_uj);
-                auto &&uj = get<3>(li_ui_lj_uj);
-                auto &&la_ua_lb_ub = lu_split_2(_basis_m, lij, uab);
-                auto &&la = get<0>(la_ua_lb_ub);
-                auto &&ua = get<1>(la_ua_lb_ub);
-                auto &&lb = get<2>(la_ua_lb_ub);
-                auto &&ub = get<3>(la_ua_lb_ub);
-                auto &&lia = l_add_11(_basis_m, li, la);
-                auto &&lib = l_add_11(_basis_m, li, lb);
-                auto &&lja = l_add_11(_basis_m, lj, la);
-                auto &&ljb = l_add_11(_basis_m, lj, lb);
-                // no need to account for sign when fusing since hole states
-                // always occur before excited states
-                auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, la, ua));
-                auto &&uib = to_unsigned(u_fuse_11(_basis_m, li, ui, lb, ub));
-                auto &&uja = to_unsigned(u_fuse_11(_basis_m, lj, uj, la, ua));
-                auto &&ujb = to_unsigned(u_fuse_11(_basis_m, lj, uj, lb, ub));
-                auto &&z = b.get(h, 2, lij, uij, uab) /
-                           (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) - b.get(h, 1, la, ua, ua) -
-                            b.get(h, 1, lb, ub, ub) + b.get(h, 2, lia, uia, uia) + b.get(h, 2, lib, uib,
-uib) +
-                            b.get(h, 2, lja, uja, uja) + b.get(h, 2, ljb, ujb, ujb) -
-                            b.get(h, 2, lij, uij, uij) - b.get(h, 2, lij, uab, uab));
-                b.get(eta, 2, lij, uij, uab) = z;
-                b.get(eta, 2, lij, uab, uij) = -conj(z);
+                size_t lia = b.add_11(li, la);
+                size_t lib = b.add_11(li, lb);
+                size_t lja = b.add_11(lj, la);
+                size_t ljb = b.add_11(lj, lb);
+
+                size_t uia = b.combine_11(li, ui, la, ua);
+                size_t uib = b.combine_11(li, ui, lb, ub);
+                size_t uja = b.combine_11(lj, uj, la, ua);
+                size_t ujb = b.combine_11(lj, uj, lb, ub);
+                double z =
+                    b.get(h, 2, lij, uij, uab) /
+                    (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) -
+                     b.get(h, 1, la, ua, ua) - b.get(h, 1, lb, ub, ub) +
+                     b.get(h, 2, lia, uia, uia) + b.get(h, 2, lib, uib, uib) +
+                     b.get(h, 2, lja, uja, uja) + b.get(h, 2, ljb, ujb, ujb) -
+                     b.get(h, 2, lij, uij, uij) - b.get(h, 2, lij, uab, uab));
+                b.get(eta_out, 2, lij, uij, uab) = z;
+                b.get(eta_out, 2, lij, uab, uij) = -conj(z);
             }
         }
     }
 }
+
+/*
 
 /// The White generator.
 template<class T>
