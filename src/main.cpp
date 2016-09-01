@@ -19,7 +19,31 @@ struct MatView {
     }
 };
 
-typedef int8_t Spin;
+namespace pairing_model {
+
+typedef int Spin;
+
+struct Orbital {
+    unsigned n;
+    Spin ms;
+};
+
+class PairingModelBasis {
+public:
+    const size_t num_shells;
+
+    const size_t num_filled_shells;
+
+    const std::vector<Orbital> orbitals;
+
+    PairingModelBasis(size_t num_shells, size_t num_filled_shells)
+        : num_shells(num_shells), num_filled_shells(num_filled_shells), orbitals(generate_orbitals())
+    {
+
+    }
+};
+
+}
 
 /// A many-body operator contains three operators:
 ///
@@ -54,8 +78,7 @@ public:
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    template<typename T>
-    T &get(T *op, size_t rank, size_t block_index, size_t i, size_t j) const
+    double &get(ManyBodyOperator op, size_t rank, size_t block_index, size_t i, size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
