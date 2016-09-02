@@ -17,6 +17,9 @@ namespace pairing_model {
 /// as exact integers (no need to resort to floating-point arithmetic).
 typedef int TwiceSpin;
 
+/// The type used to store the set of conserved quantum numbers.
+typedef TwiceSpin Channel;
+
 /// A single-particle state in the pairing model basis.
 struct Orbital {
 
@@ -33,50 +36,58 @@ struct Orbital {
     {
     }
 
-    /// Return the spin quantum number.  This function exists to conform to
-    /// the generic interface expected by ManyBodyBasis.
-    TwiceSpin channel() const
+    /// Return the set of conserved quantum numbers, namely the spin quantum
+    /// number.
+    Channel channel() const
     {
         return tms;
     }
 };
 
 class Basis {
-    std::vector<Orbital> _occupied_orbitals;
-    std::vector<Orbital> _unoccupied_orbitals;
+    std::vector<Orbital> _orbitals[2];
+    std::vector<Channel> _orbital_channels[2];
+    const Channel *_orbital_channel_ptrs[2];
+    size_t _num_orbital_channels[2];
 
 public:
     Basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
     {
+        // Construct the list of orbitals
         unsigned num_total_shells = num_occupied_shells + num_unoccupied_shells;
         for (unsigned n = 0; n < num_occupied_shells; ++n) {
-            this->_occupied_orbitals.push_back(Orbital(n, -1));
-            this->_occupied_orbitals.push_back(Orbital(n, 1));
+            this->_orbitals[0].push_back(Orbital(n, -1));
+            this->_orbitals[0].push_back(Orbital(n, 1));
         }
         for (unsigned n = num_occupied_shells; n < num_total_shells; ++n) {
-            this->_unoccupied_orbitals.push_back(Orbital(n, -1));
-            this->_unoccupied_orbitals.push_back(Orbital(n, 1));
+            this->_orbitals[1].push_back(Orbital(n, -1));
+            this->_orbitals[1].push_back(Orbital(n, 1));
+        }
+
+        // Construct a list containing channels for each orbital in the exact
+        // same order (including possibly duplicates).
+        for (size_t x = 0; x < 2; ++x) {
+            for (const Orbital &p : this->_orbitals[x]) {
+                this->_orbital_channels[x].push_back(p.channel());
+            }
+            this->_num_orbital_channels[x] = this->_orbital_channels[x].size();
+            this->_orbital_channel_ptrs[x] = this->_orbital_channels[x].data();
         }
     }
 
-    size_t num_occupied_orbitals() const
+    const std::vector<Orbital> &orbitals(size_t unoccupied) const
     {
-        return this->_occupied_orbitals.size();
+        return this->_orbitals[unoccupied];
     }
 
-    size_t num_unoccupied_orbitals() const
+    const size_t *num_orbital_channels() const
     {
-        return this->_unoccupied_orbitals.size();
+        return this->_num_orbital_channels;
     }
 
-    const Orbital *occupied_orbitals() const
+    const Channel *const *orbital_channels() const
     {
-        return this->_occupied_orbitals.data();
-    }
-
-    const Orbital *unoccupied_orbitals() const
-    {
-        return this->_unoccupied_orbitals.data();
+        return this->_orbital_channel_ptrs;
     }
 };
 }
@@ -154,34 +165,19 @@ class ManyBodyBasis {
     }
 
 public:
-    /// The `B` type must be a "single-particle basis" and support the follow
-    /// member functions:
-    ///
-    ///   - `.num_unoccupied_orbitals()`
-    ///   - `.unoccupied_orbitals()` (returns an array of unoccupied orbitals)
-    ///   - `.num_occupied_orbitals()`
-    ///   - `.occupied_orbitals()` (returns an array of occupied orbitals)
-    ///
-    /// The orbitals themselves must support a member function `.channel()`,
-    /// which returns a `C`.
-    ///
-    template<typename B>
-    ManyBodyBasis(const B &basis)
+    ManyBodyBasis(const C *const *orbital_channels,
+                  const size_t *num_orbital_channels)
     {
         // add the zero-body channel
         this->_add_channel(0, C());
 
         // add the one-body channels
-        size_t num_occupied_orbitals = basis.num_occupied_orbitals();
-        size_t num_unoccupied_orbitals = basis.num_unoccupied_orbitals();
-        auto *occupied_orbitals = basis.occupied_orbitals();
-        auto *unoccupied_orbitals = basis.unoccupied_orbitals();
-        for (size_t i = 0; i < num_occupied_orbitals; ++i) {
-            this->_add_orbital(i, occupied_orbitals[i].channel());
+        for (size_t i = 0; i < num_orbital_channels[0]; ++i) {
+            this->_add_orbital(i, orbital_channels[0][i]);
         }
-        for (size_t i = 0; i < num_unoccupied_orbitals; ++i) {
-            this->_add_orbital(num_occupied_orbitals + i,
-                               unoccupied_orbitals[i].channel());
+        for (size_t i = 0; i < num_orbital_channels[1]; ++i) {
+            this->_add_orbital(num_orbital_channels[0] + i,
+                               orbital_channels[1][i]);
         }
 
         // add the two-body channels (sometimes we need subtraction too...)
@@ -190,7 +186,9 @@ public:
         size_t num_channels_1 = this->num_channels(1);
         for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
             for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
-                C c12 = this->unpack_channel(l1) + this->unpack_channel(l2);
+                C c1 = this->unpack_channel(1, l1);
+                C c2 = this->unpack_channel(1, l2);
+                C c12 = c1 + c2;
                 if (!this->channel_exists(2, c12)) {
                     this->_add_channel(2, c12);
                 }
@@ -198,7 +196,9 @@ public:
         }
         for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
             for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
-                C c12 = this->unpack_channel(l1) - this->unpack_channel(l2);
+                C c1 = this->unpack_channel(1, l1);
+                C c2 = this->unpack_channel(1, l2);
+                C c12 = c1 - c2;
                 if (!this->channel_exists(2, c12)) {
                     this->_add_channel(2, c12);
                 }
@@ -234,11 +234,13 @@ public:
 
     size_t block_offset(size_t rank, size_t block_index) const
     {
+        assert(rank < 3);
         return this->_block_offsets[rank][block_index];
     }
 
     size_t block_stride(size_t rank, size_t block_index) const
     {
+        assert(rank < 3);
         return this->_block_strides[rank][block_index];
     }
 
@@ -266,7 +268,8 @@ public:
 
     size_t num_channels(size_t rank) const
     {
-        return this->_num_channels(rank);
+        assert(rank < 3);
+        return this->_num_channels[rank];
     }
 
     bool channel_exists(size_t rank, C channel) const
@@ -281,8 +284,8 @@ public:
         if (it == _channel_map.end()) {
             return false;
         }
-        size_t l = *it;
-        if (l >= this->num_channels[rank]) {
+        size_t l = it->second;
+        if (l >= this->num_channels(rank)) {
             return false;
         }
         block_index_out = l;
@@ -394,62 +397,6 @@ struct WhiteGenerator {
     template<class MatrixM_in>
     void calc_generator(const MatrixM_in &in)
     {
-        auto &&basis_1 = get<1>(_basis_m);
-        auto &&basis_2 = get<2>(_basis_m);
-        auto &&h1 = get<1>(in);
-        auto &&h2 = get<2>(in);
-        auto &&eta[1] = get<1>(gen);
-        auto &&eta[2] = get<2>(gen);
-        for (auto &&li : basis_1.channels())
-            for (auto &&ua : basis_1.subindices(li, 1))
-                for (auto &&ui : basis_1.subindices(li, 0)) {
-                    auto &&lii = b.add(1, 1, 2, _basis_m, li, li);
-                    // no need to account for sign when fusing since hole states
-                    // always occur before excited states
-                    auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, li,
-ua));
-                    auto &&z = b.get(h, 1, li, ui, ua) /
-                               (b.get(h, 2, lii, uia, uia) + b.get(h, 1, li, ui, ui) - b.get(h, 1, li, ua, ua));
-                    eta[1][li](ui, ua) = z;
-                    eta[1][li](ua, ui) = -conj(z);
-                }
-        for (auto &&lij : basis_2.channels())
-            for (auto &&uab : basis_2.subindices(lij, 2))
-                for (auto &&uij : basis_2.subindices(lij, 0)) {
-                    auto &&li_ui_lj_uj = lu_split_2(_basis_m, lij, uij);
-                    auto &&li = get<0>(li_ui_lj_uj);
-                    auto &&ui = get<1>(li_ui_lj_uj);
-                    auto &&lj = get<2>(li_ui_lj_uj);
-                    auto &&uj = get<3>(li_ui_lj_uj);
-                    auto &&la_ua_lb_ub = lu_split_2(_basis_m, lij, uab);
-                    auto &&la = get<0>(la_ua_lb_ub);
-                    auto &&ua = get<1>(la_ua_lb_ub);
-                    auto &&lb = get<2>(la_ua_lb_ub);
-                    auto &&ub = get<3>(la_ua_lb_ub);
-                    auto &&lia = b.add(1, 1, 2, li, la);
-                    auto &&lib = b.add(1, 1, 2, li, lb);
-                    auto &&lja = b.add(1, 1, 2, lj, la);
-                    auto &&ljb = b.add(1, 1, 2, lj, lb);
-                    // no need to account for sign when fusing since hole states
-                    // always occur before excited states
-                    auto &&uia = to_unsigned(u_fuse_11(_basis_m, li, ui, la,
-ua));
-                    auto &&uib = to_unsigned(u_fuse_11(_basis_m, li, ui, lb,
-ub));
-                    auto &&uja = to_unsigned(u_fuse_11(_basis_m, lj, uj, la,
-ua));
-                    auto &&ujb = to_unsigned(u_fuse_11(_basis_m, lj, uj, lb,
-ub));
-                    auto &&z = b.get(h, 2, lij, uij, uab) /
-                               (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) - b.get(h, 1, la, ua, ua)
--
-                                b.get(h, 1, lb, ub, ub) + b.get(h, 2, lia, uia, uia) +
-b.get(h, 2, lib, uib, uib) +
-                                b.get(h, 2, lja, uja, uja) + b.get(h, 2, ljb, ujb, ujb) -
-                                b.get(h, 2, lij, uij, uij) - b.get(h, 2, lij, uab, uab));
-                    b.get(eta, 2, lij, uij, uab) = z;
-                    b.get(eta, 2, lij, uab, uij) = -conj(z);
-                }
     }
 
     /// Calculates the generator and evolves the hermitian operator using the
@@ -470,5 +417,8 @@ b.get(h, 2, lib, uib, uib) +
 
 int main()
 {
+    pairing_model::Basis basis(3, 3);
+    ManyBodyBasis<pairing_model::Channel> mbasis(basis.orbital_channels(),
+                                                 basis.num_orbital_channels());
 }
 // TODO: look up pairing model
