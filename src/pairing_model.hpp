@@ -112,7 +112,13 @@ struct Hamiltonian {
         if (p1.n != p2.n || p3.n != p4.n) {
             return 0.0;
         }
-        return -2 * this->strength;
+        double sign;
+        if (p1.tms1 == p1.tms3) {
+            sign = 1.0;
+        } else {
+            sign = -1.0
+        }
+        return sign * this->strength / 2.0;
     }
 };
 
