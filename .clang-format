@@ -4,7 +4,7 @@ AlwaysBreakTemplateDeclarations: true
 BasedOnStyle: LLVM
 BreakBeforeBraces: WebKit
 BreakConstructorInitializersBeforeComma: true
-ColumnLimit: 80
+#ColumnLimit: 80
 IndentWidth: 4
 ReflowComments: false
 SortIncludes: false
