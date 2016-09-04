@@ -240,6 +240,7 @@ template<typename C>
 void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
                           ManyBodyOperator &eta_out)
 {
+    /* SELECT i, a WHERE x(i) = 0 AND x(a) = 1 AND g(i, a) AND g(i, i) AND g(a, a) AND G(i, a, i, a) */
     for (ITER_BLOCKS(li, b, 1)) {
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
             for (ITER_SUBINDICES(ui, li, 0, 1, b, 1)) {
