@@ -143,8 +143,8 @@ public:
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    double &get(double *op, size_t rank, size_t block_index, size_t i,
-                size_t j) const
+    double &get(double *op, size_t rank, size_t block_index,
+                size_t i, size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
