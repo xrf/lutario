@@ -7,7 +7,7 @@
 all: bin/main
 objs=$(main_objs)
 
-main_objs=src/main.o
+main_objs=src/main.o src/pairing_model.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs)

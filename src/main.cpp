@@ -3,93 +3,13 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "pairing_model.hpp"
 
 /// This function is for decorative purposes.  Taking the complex conjugate of
 /// a real number has no effect.
 inline double conj(double x)
 {
     return x;
-}
-
-namespace pairing_model {
-
-/// Spin is stored as twice its normal value.  This way we can represent spins
-/// as exact integers (no need to resort to floating-point arithmetic).
-typedef int TwiceSpin;
-
-/// The type used to store the set of conserved quantum numbers.
-typedef TwiceSpin Channel;
-
-/// A single-particle state in the pairing model basis.
-struct Orbital {
-
-    /// Principal quantum number.
-    unsigned n;
-
-    /// Spin quantum number.
-    TwiceSpin tms;
-
-    /// Construct an Orbital with the given quantum numbers.
-    Orbital(unsigned n, TwiceSpin tms)
-        : n(n)
-        , tms(tms)
-    {
-    }
-
-    /// Return the set of conserved quantum numbers, namely the spin quantum
-    /// number.
-    Channel channel() const
-    {
-        return tms;
-    }
-};
-
-class Basis {
-    std::vector<Orbital> _orbitals[2];
-    std::vector<Channel> _orbital_channels[2];
-    const Channel *_orbital_channel_ptrs[2];
-    size_t _num_orbital_channels[2];
-
-public:
-    Basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
-    {
-        // Construct the list of orbitals
-        unsigned num_total_shells = num_occupied_shells + num_unoccupied_shells;
-        for (unsigned n = 0; n < num_occupied_shells; ++n) {
-            this->_orbitals[0].push_back(Orbital(n, -1));
-            this->_orbitals[0].push_back(Orbital(n, 1));
-        }
-        for (unsigned n = num_occupied_shells; n < num_total_shells; ++n) {
-            this->_orbitals[1].push_back(Orbital(n, -1));
-            this->_orbitals[1].push_back(Orbital(n, 1));
-        }
-
-        // Construct a list containing channels for each orbital in the exact
-        // same order (including possibly duplicates).
-        for (size_t x = 0; x < 2; ++x) {
-            for (const Orbital &p : this->_orbitals[x]) {
-                this->_orbital_channels[x].push_back(p.channel());
-            }
-            this->_num_orbital_channels[x] = this->_orbital_channels[x].size();
-            this->_orbital_channel_ptrs[x] = this->_orbital_channels[x].data();
-        }
-    }
-
-    const std::vector<Orbital> &orbitals(size_t unoccupied) const
-    {
-        return this->_orbitals[unoccupied];
-    }
-
-    const size_t *num_orbital_channels() const
-    {
-        return this->_num_orbital_channels;
-    }
-
-    const Channel *const *orbital_channels() const
-    {
-        return this->_orbital_channel_ptrs;
-    }
-};
 }
 
 /// A many-body operator contains three operators:
@@ -146,9 +66,8 @@ class ManyBodyBasis {
         size_t l = this->_channels.size();
         this->_channel_map.emplace(channel, l);
         this->_channels.push_back(channel);
-        for (size_t r = rank;
-             r < sizeof(_num_channels) / sizeof(*_num_channels); ++r) {
-            ++this->_num_channels[r];
+        for (size_t &n : this->_num_channels) {
+            ++n;
         }
         return l;
     }
@@ -165,19 +84,18 @@ class ManyBodyBasis {
     }
 
 public:
-    ManyBodyBasis(const C *const *orbital_channels,
-                  const size_t *num_orbital_channels)
+    ManyBodyBasis(const std::array<std::vector<C>, 2> &orbital_channels)
     {
         // add the zero-body channel
         this->_add_channel(0, C());
 
         // add the one-body channels
-        for (size_t i = 0; i < num_orbital_channels[0]; ++i) {
-            this->_add_orbital(i, orbital_channels[0][i]);
-        }
-        for (size_t i = 0; i < num_orbital_channels[1]; ++i) {
-            this->_add_orbital(num_orbital_channels[0] + i,
-                               orbital_channels[1][i]);
+        size_t p = 0;
+        for (size_t x = 0; x < 2; ++x) {
+            for (const C &c : orbital_channels[x]) {
+                this->_add_orbital(p, c);
+                ++p;
+            }
         }
 
         // add the two-body channels (sometimes we need subtraction too...)
@@ -418,7 +336,6 @@ struct WhiteGenerator {
 int main()
 {
     pairing_model::Basis basis(3, 3);
-    ManyBodyBasis<pairing_model::Channel> mbasis(basis.orbital_channels(),
-                                                 basis.num_orbital_channels());
+    ManyBodyBasis<pairing_model::Channel> mbasis(basis.orbital_channels());
 }
 // TODO: look up pairing model
