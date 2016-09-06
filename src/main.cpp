@@ -144,7 +144,7 @@ public:
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    double &get(double *op, size_t rank, size_t block_index, size_t i,
+    double &get(ManyBodyOperator op, size_t rank, size_t block_index, size_t i,
                 size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
@@ -217,6 +217,7 @@ public:
         assert(block_index < this->num_channels(rank));
         return _channels[block_index];
     }
+
 };
 
 #define ITER_BLOCKS(var, basis, rank)                                          \

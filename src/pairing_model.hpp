@@ -1,42 +1,18 @@
 #ifndef PAIRING_MODEL_HPP
 #define PAIRING_MODEL_HPP
 #include <cassert>
-#include <cstddef>
 #include <array>
-#include <functional>
-#include <iosfwd>
-#include <unordered_map>
 #include <vector>
+#include "sparse_vector.hpp"
 
 namespace pairing_model {
 
 /// Spin is stored as twice its normal value.  This way we can represent spins
-/// as exact integers (no need to resort to floating-point arithmetic).
+/// as exact integers without having to resort to floating-point arithmetic.
 typedef int TwiceSpin;
 
 /// Type for the conserved quantum number(s).
-class Channel {
-
-    // Invariant: all entries must have nonzero value.
-    std::unordered_map<unsigned, TwiceSpin> _entries;
-
-public:
-
-    Channel(unsigned n = 0, TwiceSpin tms = 0);
-
-    const std::unordered_map<unsigned, TwiceSpin> &entries() const;
-
-    Channel operator+(const Channel &other) const;
-
-    Channel operator-(const Channel &other) const;
-
-    bool operator==(const Channel &other) const;
-
-    bool operator!=(const Channel &other) const;
-
-};
-
-std::ostream &operator<<(std::ostream &stream, const Channel &channel);
+typedef SparseVector<unsigned, TwiceSpin> Channel;
 
 /// A single-particle state in the pairing model basis.
 struct Orbital {
@@ -45,20 +21,19 @@ struct Orbital {
     unsigned n;
 
     /// Spin quantum number.
-    TwiceSpin tms;
+    TwiceSpin s;
 
     /// Construct an Orbital with the given quantum numbers.
-    Orbital(unsigned n, TwiceSpin tms)
+    Orbital(unsigned n, TwiceSpin s)
         : n(n)
-        , tms(tms)
+        , s(s)
     {
     }
 
-    /// Return the set of conserved quantum numbers, namely the spin quantum
-    /// number.
+    /// Return the set of conserved quantum numbers.
     Channel channel() const
     {
-        return Channel(this->n, this->tms);
+        return Channel({{this->n, this->s}});
     }
 
 };
@@ -141,30 +116,13 @@ struct Hamiltonian {
             return 0.0;
         }
         double sign;
-        if (p1.tms == p3.tms) {
+        if (p1.s == p3.s) {
             sign = 1.0;
         } else {
             sign = -1.0;
         }
         return sign * this->strength / 2.0;
     }
-
-};
-
-}
-
-namespace std {
-
-template<>
-struct hash<pairing_model::Channel> {
-
-    size_t operator()(const pairing_model::Channel &channel) const;
-
-private:
-
-    hash<unsigned> _hash_unsigned;
-
-    hash<pairing_model::TwiceSpin> _hash_TwiceSpin;
 
 };
 
