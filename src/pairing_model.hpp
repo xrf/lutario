@@ -1,6 +1,7 @@
 #ifndef PAIRING_MODEL_HPP
 #define PAIRING_MODEL_HPP
-#include <cassert>
+#include <assert.h>
+#include <stddef.h>
 #include <array>
 #include <vector>
 #include "sparse_vector.hpp"
@@ -53,7 +54,7 @@ public:
     /// @param unoccupied
     /// `0` for the list of occupied orbitals.
     /// `1` for the list of unoccupied orbitals.
-    const std::vector<Orbital> &orbitals(std::size_t unoccupied) const;
+    const std::vector<Orbital> &orbitals(size_t unoccupied) const;
 
     /// Construct two lists containing channels for each orbital in the exact
     /// same order (including possibly duplicates).  The first list contains

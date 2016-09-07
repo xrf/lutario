@@ -1,6 +1,6 @@
 #ifndef SPARSE_VECTOR_HPP
 #define SPARSE_VECTOR_HPP
-#include <cstddef>
+#include <stddef.h>
 #include <functional>
 #include <ostream>
 #include <unordered_map>
