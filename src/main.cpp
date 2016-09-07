@@ -1,5 +1,4 @@
-#include <assert.h>
-#include <stdint.h>
+#include <cassert>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -35,92 +34,125 @@ typedef double *ManyBodyOperator;
 template<typename C>
 class ManyBodyBasis {
 
-    size_t _operator_size;
+    std::size_t _operator_size;
 
-    std::vector<size_t> _block_offsets[3];
+    std::vector<std::size_t> _block_offsets[3];
 
-    std::vector<size_t> _block_strides[3];
+    std::vector<std::size_t> _block_strides[3];
 
     //////////////////////////////////////////////////////////////////////////
 
-    /// Number of channels by operator rank
-    size_t _num_channels[3];
+    // rank -> num_channels
+    std::size_t _num_channels[3];
 
-    /// The channels are stored here in one single array, with the the lower
-    /// portions of it containing the one-body channels
+    // ChannelIndex -> Channel
+    //
+    // The channels are stored here in one single array:
+    //
+    //   - Element `0` contains the zero channel.
+    //
+    //   - Elements `[1, num_channels(1))` contain the nonzero one-body
+    //     channels.
+    //
+    //   - Elements `[num_channels(1), num_channels(2))` contain the
+    //     two-body channels that aren't also a one-body channel.
+    //
     std::vector<C> _channels;
 
-    /// Inverse of _channels
-    std::unordered_map<C, size_t> _channel_map;
+    // channel -> channel_index
+    std::unordered_map<C, std::size_t> _channel_map;
 
-    /// Stores the orbital indices grouped by block index
-    std::vector<std::vector<size_t>> _orbitals_by_channel;
+    // channel_index -> auxiliary_index -> orbital_index
+    typedef std::vector<std::vector<std::size_t>> StatesByChannel1;
+
+    // channel_index -> auxiliary_index -> (orbital_index, orbital_index)
+    typedef std::vector<std::vector<std::array<std::size_t, 2>>>
+        StatesByChannel2;
+
+    // (orbital_index, ...) -> (channel_index, auxiliary_index)
+    typedef std::vector<std::array<std::size_t, 2>> ChannelsByState;
+
+    StatesByChannel1 _states_by_channel_1;
+
+    StatesByChannel2 _states_by_channel_2[2];
+
+    ChannelsByState _channels_by_state_1;
+
+    ChannelsByState _channels_by_state_2[2];
 
     // This function must be called in the correct order, starting with
     // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
     // hopelessly corrupt the data structures.
-    //
-    // Pre-condition: the channel must not already exist.
-    size_t _add_channel(size_t rank, const C &channel)
+    bool _get_or_add_channel_index(std::size_t rank, const C &channel,
+                                   std::size_t *channel_index_out)
     {
-        size_t l = this->_channels.size();
-        this->_channel_map.emplace(channel, l);
-        this->_channels.push_back(channel);
-        for (size_t &n : this->_num_channels) {
-            ++n;
+        bool exists = this->pack_channel(rank, channel, channel_index_out);
+        if (!exists) {
+            std::size_t l = this->_channels.size();
+            this->_channel_map.emplace(channel, l);
+            this->_channels.push_back(channel);
+            for (std::size_t &n : this->_num_channels) {
+                ++n;
+            }
+            if (channel_index_out) {
+                *channel_index_out = l;
+            }
         }
-        return l;
+        return exists;
     }
 
     // Note: for use during initialization phase only.
-    void _add_orbital(size_t orbital_index, const C &channel)
+    void _add_orbital(const C &channel, std::size_t p)
     {
-        size_t l;
-        if (!this->pack_channel(1, channel, l)) {
-            l = this->_add_channel(1, channel);
-            this->_orbitals_by_channel.push_back(std::vector<size_t>());
+        std::size_t l;
+        if (!this->_get_or_add_channel_index(1, channel, &l)) {
+            this->_states_by_channel_1.push_back({});
         }
-        this->_orbitals_by_channel[l].push_back(orbital_index);
+        std::size_t u = this->_states_by_channel_1[l].size();
+        this->_channels_by_state_1.push_back({{l, u}});
+        this->_states_by_channel_1[l].push_back(p);
+    }
+
+    // Note: for use during initialization phase only.
+    void _add_state_2(size_t m, const C &channel, std::size_t p1,
+                      std::size_t p2)
+    {
+        std::size_t l;
+        if (!this->_get_or_add_channel_index(2, channel, &l)) {
+            this->_states_by_channel_2[m].push_back({});
+        }
+        std::size_t u = this->_states_by_channel_2[m][l].size();
+        this->_channels_by_state_2[m]
+                                  [p1 * this->num_orbitals() + p2] = {{l, u}};
+        this->_states_by_channel_2[m][l].push_back({{p1, p2}});
     }
 
 public:
 
     ManyBodyBasis(const std::array<std::vector<C>, 2> &orbital_channels)
     {
-        // add the zero-body channel
-        this->_add_channel(0, C());
+        // add the zero-particle channel
+        this->_get_or_add_channel_index(0, C(), nullptr);
 
-        // add the one-body channels
-        size_t p = 0;
-        for (size_t x = 0; x < 2; ++x) {
+        // add the one-particle channels
+        for (std::size_t x = 0; x < 2; ++x) {
             for (const C &c : orbital_channels[x]) {
-                this->_add_orbital(p, c);
-                ++p;
+                this->_add_orbital(c, this->num_orbitals());
             }
         }
 
-        // add the two-body channels (sometimes we need subtraction too...)
-        // TODO: perhaps we can rewrite this in a different way, by reusing
-        // the (TODO) thing that generates all the 2-particle states.
-        size_t num_channels_1 = this->num_channels(1);
-        for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
-            for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
-                C c1 = this->unpack_channel(1, l1);
-                C c2 = this->unpack_channel(1, l2);
-                C c12 = c1 + c2;
-                if (!this->channel_exists(2, c12)) {
-                    this->_add_channel(2, c12);
-                }
-            }
-        }
-        for (size_t l1 = 0; l1 < num_channels_1; ++l1) {
-            for (size_t l2 = 0; l2 < num_channels_1; ++l2) {
-                C c1 = this->unpack_channel(1, l1);
-                C c2 = this->unpack_channel(1, l2);
-                C c12 = c1 - c2;
-                if (!this->channel_exists(2, c12)) {
-                    this->_add_channel(2, c12);
-                }
+        // add the two-particle channels
+        std::size_t np = this->num_orbitals();
+        this->_channels_by_state_2[0].resize(np * np);
+        this->_channels_by_state_2[1].resize(np * np);
+        for (std::size_t p1 = 0; p1 < np; ++p1) {
+            for (std::size_t p2 = 0; p2 < np; ++p2) {
+                std::size_t l1 = this->_channels_by_state_1[p1][0];
+                std::size_t l2 = this->_channels_by_state_1[p2][0];
+                const C &c1 = this->unpack_channel(1, l1);
+                const C &c2 = this->unpack_channel(1, l2);
+                this->_add_state_2(0, c1 + c2, p1, p2);
+                this->_add_state_2(1, c1 - c2, p1, p2);
             }
         }
 
@@ -134,99 +166,109 @@ public:
         //this->_block_strides[3];
     }
 
+    std::size_t num_orbitals() const
+    {
+        return this->_channels_by_state_1.size();
+    }
+
     //////////////////////////////////////////////////////////////////////////
 
     /// Return the number of elements required to store the underlying array
     /// of a many-body operator.
-    size_t operator_size() const
+    std::size_t operator_size() const
     {
         return this->_operator_size;
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    double &get(ManyBodyOperator op, size_t rank, size_t block_index, size_t i,
-                size_t j) const
+    double &get(ManyBodyOperator op, std::size_t rank, std::size_t block_index,
+                std::size_t i, std::size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
     }
 
-    size_t block_offset(size_t rank, size_t block_index) const
+    std::size_t block_offset(std::size_t rank, std::size_t block_index) const
     {
         assert(rank < 3);
         return this->_block_offsets[rank][block_index];
     }
 
-    size_t block_stride(size_t rank, size_t block_index) const
+    std::size_t block_stride(std::size_t rank, std::size_t block_index) const
     {
         assert(rank < 3);
         return this->_block_strides[rank][block_index];
     }
 
-    size_t add(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    std::size_t add(std::size_t r1, std::size_t r2, std::size_t r12,
+                    std::size_t l1, std::size_t l2) const
     {
         C c1 = this->unpack_channel(r1, l1);
         C c2 = this->unpack_channel(r2, l2);
         C c12 = c1 + c2;
-        size_t l12;
+        std::size_t l12;
         this->pack_channel(r12, c12, l12);
         return l12;
     }
 
-    size_t sub(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    std::size_t sub(std::size_t r1, std::size_t r2, std::size_t r12,
+                    std::size_t l1, std::size_t l2) const
     {
         C c1 = this->unpack_channel(r1, l1);
         C c2 = this->unpack_channel(r2, l2);
         C c12 = c1 - c2;
-        size_t l12;
+        std::size_t l12;
         this->pack_channel(r12, c12, l12);
         return l12;
     }
 
     //////////////////////////////////////////////////////////////////////////
 
-    size_t num_channels(size_t rank) const
+    std::size_t num_channels(std::size_t rank) const
     {
         assert(rank < 3);
         return this->_num_channels[rank];
     }
 
-    bool channel_exists(size_t rank, C channel) const
+    bool channel_exists(std::size_t rank, C channel) const
     {
-        size_t l;
-        return pack_channel(rank, channel, l);
+        std::size_t l;
+        return this->pack_channel(rank, channel, l);
     }
 
-    bool pack_channel(size_t rank, C channel, size_t &block_index_out) const
+    bool pack_channel(std::size_t rank, C channel,
+                      std::size_t *channel_index_out) const
     {
-        auto it = _channel_map.find(channel);
-        if (it == _channel_map.end()) {
+        auto it = this->_channel_map.find(channel);
+        if (it == this->_channel_map.end()) {
             return false;
         }
-        size_t l = it->second;
+        std::size_t l = it->second;
         if (l >= this->num_channels(rank)) {
             return false;
         }
-        block_index_out = l;
+        if (channel_index_out) {
+            *channel_index_out = l;
+        }
         return true;
     }
 
-    C unpack_channel(size_t rank, size_t block_index) const
+    C unpack_channel(std::size_t rank, std::size_t block_index) const
     {
-        (void)rank; // rank is not actually being used
+        (void)rank; // avoid warning about unused `rank` when asserts are off
         assert(block_index < this->num_channels(rank));
-        return _channels[block_index];
+        return this->_channels[block_index];
     }
 
 };
 
 #define ITER_BLOCKS(var, basis, rank)                                          \
-    size_t var = 0;                                                            \
+    std::size_t var = 0;                                                       \
     var < basis.num_channels_##rank();                                         \
     ++var
 
 #define ITER_SUBINDICES(var, block_index, group_begin, group_end, basis, rank) \
-    size_t var = basis.block_dim_##rank(block_index, group_begin);             \
+    std::size_t var = basis.block_dim_##rank(block_index, group_begin);        \
     var < basis.block_dim_##rank(block_index, group_end);                      \
     ++var
 
@@ -246,8 +288,8 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
     for (ITER_BLOCKS(li, b, 1)) {
         for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
             for (ITER_SUBINDICES(ui, li, 0, 1, b, 1)) {
-                size_t lii = b.add(1, 1, 2, li, li);
-                size_t uia = b.combine_11(li, ui, li, ua);
+                std::size_t lii = b.add(1, 1, 2, li, li);
+                std::size_t uia = b.combine_11(li, ui, li, ua);
                 double z = b.get(h, 1, li, ui, ua) /
                            (b.get(h, 2, lii, uia, uia) +
                             b.get(h, 1, li, ui, ui) - b.get(h, 1, li, ua, ua));
@@ -259,20 +301,20 @@ void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
     for (ITER_BLOCKS(lij, b, 2)) {
         for (ITER_SUBINDICES(uab, lij, 3, 4, b, 2)) {
             for (ITER_SUBINDICES(uij, lij, 0, 1, b, 2)) {
-                size_t li, ui, lj, uj;
+                std::size_t li, ui, lj, uj;
                 b.split_2(lij, uij, li, ui, lj, uj);
-                size_t la, ua, lb, ub;
+                std::size_t la, ua, lb, ub;
                 b.split_2(lij, uab, la, ua, lb, ub);
 
-                size_t lia = b.add(1, 1, 2, li, la);
-                size_t lib = b.add(1, 1, 2, li, lb);
-                size_t lja = b.add(1, 1, 2, lj, la);
-                size_t ljb = b.add(1, 1, 2, lj, lb);
+                std::size_t lia = b.add(1, 1, 2, li, la);
+                std::size_t lib = b.add(1, 1, 2, li, lb);
+                std::size_t lja = b.add(1, 1, 2, lj, la);
+                std::size_t ljb = b.add(1, 1, 2, lj, lb);
 
-                size_t uia = b.combine_11(li, ui, la, ua);
-                size_t uib = b.combine_11(li, ui, lb, ub);
-                size_t uja = b.combine_11(lj, uj, la, ua);
-                size_t ujb = b.combine_11(lj, uj, lb, ub);
+                std::size_t uia = b.combine_11(li, ui, la, ua);
+                std::size_t uib = b.combine_11(li, ui, lb, ub);
+                std::size_t uja = b.combine_11(lj, uj, la, ua);
+                std::size_t ujb = b.combine_11(lj, uj, lb, ub);
                 double z =
                     b.get(h, 2, lij, uij, uab) /
                     (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) -
