@@ -70,18 +70,17 @@ template<typename K, typename T>
 inline std::ostream &operator<<(std::ostream &stream,
                                 const SparseVector<K, T> &vec)
 {
-    if (vec.entries().empty()) {
-        return stream << "0";
-    }
+    stream << "SparseVector({";
     bool first = true;
     for (const auto &kv : vec.entries()) {
+        stream << "{" << kv.first << ", " << kv.second << "}";
         if (first) {
             first = false;
-        } else if (kv.second >= 0) {
-            stream << "+";
+        } else {
+            stream << ", ";
         }
-        stream << kv.second << "e[" << kv.first << "]";
     }
+    stream << "})";
     return stream;
 }
 
