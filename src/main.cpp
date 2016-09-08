@@ -142,6 +142,7 @@ class ManyBodyBasis {
     std::vector<std::vector<size_t>> _states_by_channel[STATE_KIND_COUNT];
 
     // _channels_by_state[k][combine(p, np)] = (l, u)
+    //
     // combine(p, np) = ((p[0] * np + p[1]) * np + p[2]) * np + p[3] ...
     std::vector<std::tuple<size_t, size_t>>
         _channels_by_state[STATE_KIND_COUNT];
@@ -262,8 +263,6 @@ public:
         return this->_channels_by_state[STATE_KIND_10].size();
     }
 
-    //////////////////////////////////////////////////////////////////////////
-
     /// Return the number of elements required to store the underlying array
     /// of a many-body operator.
     size_t standard_operator_size() const
@@ -312,8 +311,6 @@ public:
         return l12;
     }
 
-    //////////////////////////////////////////////////////////////////////////
-
     size_t num_channels(size_t rank) const
     {
         assert(rank < 3);
@@ -348,12 +345,12 @@ public:
 
 #define ITER_BLOCKS(var, basis, rank)                                          \
     size_t var = 0;                                                            \
-    var < basis.num_channels_##rank();                                         \
+    var < basis.num_channels(rank);                                         \
     ++var
 
 #define ITER_SUBINDICES(var, block_index, group_begin, group_end, basis, rank) \
-    size_t var = basis.block_dim_##rank(block_index, group_begin);             \
-    var < basis.block_dim_##rank(block_index, group_end);                      \
+    size_t var = basis.block_offset(rank, block_index, group_begin);             \
+    var < basis.block_offset_end(rank, block_index, group_end);                      \
     ++var
 
 /// Allocate a many-body operator for the given many-body basis.
