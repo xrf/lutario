@@ -6,19 +6,27 @@
 #include <unordered_map>
 #include <vector>
 
-/// A many-body operator contains three operators:
+/// A many-body operator contains three operators in standard form:
 ///
-///   - Zero-body operator (constant term).  Always has a single block
-///     containing one element.
+///   - Zero-body operator (constant term) in 000 form.  This is always has a
+///     single block containing one element.
 ///
-///   - One-body operator.
+///   - One-body operator in 100 form.
 ///
-///   - Two-body operator.
+///   - Two-body operator in 200 form.
 ///
 typedef double *ManyBodyOperator;
 
+/// Determines the number of particles that an operator couples.
+///
+///   - A zero-body operator has `RANK_0`.
+///   - A one-body operator has `RANK_1`.
+///   - A two-body operator has `RANK_2`.
+///
 enum Rank { RANK_0, RANK_1, RANK_2, RANK_COUNT };
 
+/// Determines the number of particles in a state and how their channels are
+/// to be combined.
 enum StateKind {
     STATE_KIND_00,
     STATE_KIND_10,
@@ -27,7 +35,8 @@ enum StateKind {
     STATE_KIND_COUNT
 };
 
-Rank state_kind_to_rank(StateKind state_kind)
+/// Get the number of particles in a state of the given kind.
+inline Rank state_kind_to_rank(StateKind state_kind)
 {
     assert(state_kind < STATE_KIND_COUNT);
     if (state_kind >= STATE_KIND_20) {
@@ -39,20 +48,8 @@ Rank state_kind_to_rank(StateKind state_kind)
     return RANK_0;
 }
 
-StateKind standard_state_kind(Rank rank)
-{
-    switch (rank) {
-    case RANK_0:
-        return STATE_KIND_00;
-    case RANK_1:
-        return STATE_KIND_10;
-    case RANK_2:
-        return STATE_KIND_20;
-    default:
-        abort(); // unreachable
-    }
-}
-
+/// Determines the rank of an operator as well as how the matrix element
+/// blocks of the operator are to be organized.
 enum OperatorKind {
     OPERATOR_KIND_000,
     OPERATOR_KIND_100,
@@ -61,7 +58,8 @@ enum OperatorKind {
     OPERATOR_KIND_COUNT
 };
 
-Rank operator_kind_to_rank(OperatorKind operator_kind)
+/// Get the rank of an operator with the given kind.
+inline Rank operator_kind_to_rank(OperatorKind operator_kind)
 {
     assert(operator_kind < OPERATOR_KIND_COUNT);
     if (operator_kind >= OPERATOR_KIND_200) {
@@ -73,7 +71,8 @@ Rank operator_kind_to_rank(OperatorKind operator_kind)
     return RANK_0;
 }
 
-OperatorKind standard_operator_kind(Rank rank)
+/// Get the canonical operator representation for a given operator rank.
+inline OperatorKind standard_operator_kind(Rank rank)
 {
     switch (rank) {
     case RANK_0:
@@ -87,9 +86,11 @@ OperatorKind standard_operator_kind(Rank rank)
     }
 }
 
-void split_operator_kind(OperatorKind operator_kind,
-                         StateKind *state_kind_1_out,
-                         StateKind *state_kind_2_out)
+/// Get the kind of the left states and the kind of right states that the
+/// operator couples.
+inline void split_operator_kind(OperatorKind operator_kind,
+                                StateKind *state_kind_1_out,
+                                StateKind *state_kind_2_out)
 {
     StateKind k1, k2;
     switch (operator_kind) {
@@ -120,6 +121,11 @@ void split_operator_kind(OperatorKind operator_kind,
     }
 }
 
+/// A channelized representation of orbitals.  Each orbital is determined by
+///
+///   - a channel index (associated with a channel in some `ManyBodyBasis`) and
+///   - an auxiliary index to identify the orbital within the said channel.
+///
 struct ChannelizedOrbital {
 
     size_t channel_index;
@@ -134,7 +140,10 @@ struct ChannelizedOrbital {
 
 };
 
-class ChannelStates {
+/// A sequential data structure used to store orbital indices of some rank.
+/// The `rank` is set dynamically, allowing `States` of different rank to be
+/// stored together in a single array.
+class States {
 
     Rank _rank;
 
@@ -144,7 +153,7 @@ class ChannelStates {
 
 public:
 
-    ChannelStates(Rank rank)
+    States(Rank rank)
         : _rank(rank)
         , _size()
     {
@@ -177,6 +186,10 @@ public:
 
 };
 
+/// Defines the layout of many-body operator matrices in memory.  The
+/// `ManyBodyBasis` contains information about the many-body states, the
+/// channel arithmetics, as well as the offsets of diagonal blocks in memory.
+///
 /// The `C` type must be an abelian group and support the following binary
 /// operators:
 ///
@@ -200,8 +213,8 @@ class ManyBodyBasis {
     //   - p = orbital_index
     //   - n_p = num_orbitals
 
-    // offsets in a matrix that contains a full many-body operator in standard
-    // form (000, 100, 200)
+    // offsets in a matrix that contains a many-body operator in standard form
+    // (000, 100, 200)
     size_t _operator_offsets[RANK_COUNT + 1];
 
     std::vector<size_t> _block_offsets[OPERATOR_KIND_COUNT];
@@ -226,11 +239,11 @@ class ManyBodyBasis {
     // _channel_map[c] = l
     std::unordered_map<C, size_t> _channel_map;
 
-    // std::get<0>(_num_states_by_channel[k][l]) = n_p
-    // std::get<1>(_states_by_channel[k][l])[u * r + i] = p[i]
-    std::vector<ChannelStates> _states_by_channel[STATE_KIND_COUNT];
+    // _states_by_channel[k][l].size() = n_p
+    // _states_by_channel[k][l][u][i] = p[i]
+    std::vector<States> _states_by_channel[STATE_KIND_COUNT];
 
-    // _channels_by_state[k][combine(p, n_p)] = (l, u)
+    // _channels_by_state[k][combine(p, n_p)] = {l, u}
     //
     // combine(p, n_p) = ((p[0] * n_p + p[1]) * n_p + p[2]) * n_p + p[3] ...
     std::vector<ChannelizedOrbital> _channels_by_state[STATE_KIND_COUNT];
@@ -270,7 +283,7 @@ class ManyBodyBasis {
         size_t l;
         this->_get_or_add_channel_index(r, channel, &l);
         if (l >= this->_states_by_channel[k].size()) {
-            this->_states_by_channel[k].resize(l + 1, ChannelStates(r));
+            this->_states_by_channel[k].resize(l + 1, States(r));
         }
         size_t u = this->_states_by_channel[k][l].size();
         this->_states_by_channel[k][l].emplace_back(std::move(ps));
@@ -326,21 +339,24 @@ public:
             }
         }
 
-        for (OperatorKind k = OperatorKind(); k < OPERATOR_KIND_COUNT;
-             k = (OperatorKind)(k + 1)) {
+        // get the offset of blocks within each operator
+        for (OperatorKind kk = OperatorKind(); kk < OPERATOR_KIND_COUNT;
+             kk = (OperatorKind)(kk + 1)) {
             StateKind k1, k2;
-            split_operator_kind(k, &k1, &k2); // assuming row-major
+            split_operator_kind(kk, &k1, &k2);
             size_t i = 0;
             size_t n_l = std::min(this->_states_by_channel[k1].size(),
                                   this->_states_by_channel[k2].size());
             for (size_t l = 0; l < n_l; ++l) {
-                this->_block_offsets[k].emplace_back(i);
+                this->_block_offsets[kk].emplace_back(i);
                 size_t n_u1, n_u2;
-                this->block_size(k, l, &n_u1, &n_u2);
+                this->block_size(kk, l, &n_u1, &n_u2);
                 i += n_u1 * n_u2;
             }
-            this->_block_offsets[k].emplace_back(i);
+            this->_block_offsets[kk].emplace_back(i);
         }
+
+        // get the offset of operators within a many-body operator
         size_t i = 0;
         for (Rank r = Rank(); r < RANK_COUNT; r = (Rank)(r + 1)) {
             this->_operator_offsets[r] = i;
@@ -356,12 +372,12 @@ public:
 
     /// Return the number of elements required to store the underlying array
     /// of a many-body operator.
-    size_t full_operator_size() const
+    size_t many_body_operator_size() const
     {
         return this->operator_offset(RANK_COUNT);
     }
 
-    /// Offset of an operator inside a full operator.
+    /// Offset of an operator inside a many-body operator.
     size_t operator_offset(Rank rank) const
     {
         assert(rank <= RANK_COUNT);
@@ -387,7 +403,7 @@ public:
                     size_t *block_size_1_out, size_t *block_size_2_out) const
     {
         StateKind k1, k2;
-        split_operator_kind(operator_kind, &k1, &k2); // assuming row-major
+        split_operator_kind(operator_kind, &k1, &k2);
         size_t n_u1 = this->_states_by_channel[k1][channel_index].size();
         size_t n_u2 = this->_states_by_channel[k2][channel_index].size();
         if (block_size_1_out) {
@@ -402,9 +418,9 @@ public:
     double &get(ManyBodyOperator op, Rank rank, size_t channel_index, size_t i,
                 size_t j) const
     {
-        OperatorKind k = standard_operator_kind(rank);
+        OperatorKind kk = standard_operator_kind(rank);
         return op[this->operator_offset(rank) +
-                  this->block_offset(k, channel_index) +
+                  this->block_offset(kk, channel_index) +
                   i * this->block_stride(k, channel_index) + j];
     }
 
@@ -475,7 +491,8 @@ template<typename C>
 std::unique_ptr<double[]>
 alloc_many_body_operator(const ManyBodyBasis<C> &mbasis)
 {
-    return std::unique_ptr<double[]>(new double[mbasis.full_operator_size()]());
+    return std::unique_ptr<double[]>(
+        new double[mbasis.many_body_operator_size()]());
 }
 
 #endif
