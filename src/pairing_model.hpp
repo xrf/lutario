@@ -68,62 +68,27 @@ struct Hamiltonian {
 
     double strength;
 
-    Hamiltonian(double strength)
-        : strength(strength)
-    {
-    }
+    Hamiltonian(double strength);
 
     /// Calculate the one-body matrix element.
     ///
-    double one_body(Orbital p1, Orbital p2) const
-    {
-        if (p1.channel() != p2.channel()) {
-            return 0.0;
-        }
-        return this->one_body_conserv(p1, p2);
-    }
+    double one_body(Orbital p1, Orbital p2) const;
 
     /// Calculate the two-body matrix element.
     ///
     /// Pre-condition: the conservation law must hold (i.e. `p1` and `p2` must
     /// reside in the same channel.
-    double one_body_conserv(Orbital p1, Orbital p2) const
-    {
-        assert(p1.channel() == p2.channel());
-        if (p1.n != p2.n) {
-            return 0.0;
-        }
-        return p1.n - 1;
-    }
+    double one_body_conserv(Orbital p1, Orbital p2) const;
 
     /// Calculate the two-body interaction matrix element.
-    double two_body(Orbital p1, Orbital p2, Orbital p3, Orbital p4) const
-    {
-        if (p1.channel() + p2.channel() != p3.channel() + p4.channel()) {
-            return 0.0;
-        }
-        return this->two_body_conserv(p1, p2, p3, p4);
-    }
+    double two_body(Orbital p1, Orbital p2, Orbital p3, Orbital p4) const;
 
     /// Calculate the two-body interaction matrix element.
     ///
     /// Pre-condition: the conservation law must hold (i.e. `(p1, p2)` and
     /// `(p3, p4)` must reside in the same channel.
     double two_body_conserv(Orbital p1, Orbital p2, Orbital p3,
-                            Orbital p4) const
-    {
-        assert(p1.channel() + p2.channel() == p3.channel() + p4.channel());
-        if (p1.n != p2.n || p3.n != p4.n) {
-            return 0.0;
-        }
-        double sign;
-        if (p1.s == p3.s) {
-            sign = 1.0;
-        } else {
-            sign = -1.0;
-        }
-        return sign * this->strength / 2.0;
-    }
+                            Orbital p4) const;
 
 };
 
