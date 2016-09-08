@@ -22,17 +22,72 @@ inline double conj(double x)
 ///
 typedef double *ManyBodyOperator;
 
-enum {
-    STATE_10,
-    STATE_20,
-    STATE_21
+enum StateKind {
+    //STATE_KIND_00, // not implemented
+    STATE_KIND_10,
+    STATE_KIND_20,
+    STATE_KIND_21,
+    STATE_KIND_COUNT
 };
 
-enum {
-    OPERATOR_100,
-    OPERATOR_200,
-    OPERATOR_211
+size_t state_kind_to_rank(StateKind state_kind)
+{
+    assert(state_kind < STATE_KIND_COUNT);
+    if (state_kind >= STATE_KIND_20) {
+        return 2;
+    }
+    if (state_kind >= STATE_KIND_10) {
+        return 1;
+    }
+    return 0;
+}
+
+StateKind standard_state_kind(size_t rank)
+{
+    switch (rank) {
+    //case 0: return STATE_KIND_00; // not implemented
+    case 1:
+        return STATE_KIND_10;
+    case 2:
+        return STATE_KIND_20;
+    }
+    assert(0);
+    return StateKind();
+}
+
+enum OperatorKind {
+    OPERATOR_KIND_000,
+    OPERATOR_KIND_100,
+    OPERATOR_KIND_200,
+    OPERATOR_KIND_211,
+    OPERATOR_KIND_COUNT
 };
+
+size_t operator_kind_to_rank(OperatorKind operator_kind)
+{
+    assert(operator_kind < OPERATOR_KIND_COUNT);
+    if (operator_kind >= OPERATOR_KIND_200) {
+        return 2;
+    }
+    if (operator_kind >= OPERATOR_KIND_100) {
+        return 1;
+    }
+    return 0;
+}
+
+OperatorKind standard_operator_kind(size_t rank)
+{
+    switch (rank) {
+    case 0:
+        return OPERATOR_KIND_000;
+    case 1:
+        return OPERATOR_KIND_100;
+    case 2:
+        return OPERATOR_KIND_200;
+    }
+    assert(0);
+    return OperatorKind();
+}
 
 /// The `C` type must be an abelian group and support the following binary
 /// operators:
@@ -46,16 +101,27 @@ enum {
 template<typename C>
 class ManyBodyBasis {
 
-    size_t _operator_size;
+    // notation:
+    //
+    //   - k = state_kind
+    //   - c = channel
+    //   - l = channel_index
+    //   - u = auxiliary_index
+    //   - r = rank
+    //   - i = particle_index
+    //   - p = orbital_index
+    //   - np = num_orbitals
 
-    std::vector<size_t> _block_offsets[3];
+    // total number of elements in a matrix needed to store a full many-body
+    // operator in standard form (000, 100, 200)
+    size_t _standard_operator_size;
 
-    //////////////////////////////////////////////////////////////////////////
+    std::vector<size_t> _standard_operator_offsets[3];
 
-    // rank -> num_channels
+    // _num_channels[r] gives the number of channels for rank r
     size_t _num_channels[3];
 
-    // ChannelIndex -> Channel
+    // _channels[l] = c
     //
     // The channels are stored here in one single array:
     //
@@ -69,26 +135,16 @@ class ManyBodyBasis {
     //
     std::vector<C> _channels;
 
-    // channel -> channel_index
+    // _channel_map[c] = l
     std::unordered_map<C, size_t> _channel_map;
 
-    // channel_index -> auxiliary_index -> orbital_index
-    typedef std::vector<std::vector<size_t>> StatesByChannel1;
+    // _states_by_channel[k][l][u * r + i] = p[i]
+    std::vector<std::vector<size_t>> _states_by_channel[STATE_KIND_COUNT];
 
-    // channel_index -> auxiliary_index -> (orbital_index, orbital_index)
-    typedef std::vector<std::vector<std::array<size_t, 2>>>
-        StatesByChannel2;
-
-    // (orbital_index, ...) -> (channel_index, auxiliary_index)
-    typedef std::vector<std::array<size_t, 2>> ChannelsByState;
-
-    StatesByChannel1 _states_by_channel_1;
-
-    StatesByChannel2 _states_by_channel_2[2];
-
-    ChannelsByState _channels_by_state_1;
-
-    ChannelsByState _channels_by_state_2[2];
+    // _channels_by_state[k][combine(p, np)] = (l, u)
+    // combine(p, np) = ((p[0] * np + p[1]) * np + p[2]) * np + p[3] ...
+    std::vector<std::tuple<size_t, size_t>>
+        _channels_by_state[STATE_KIND_COUNT];
 
     // This function must be called in the correct order, starting with
     // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
@@ -100,7 +156,7 @@ class ManyBodyBasis {
         if (!exists) {
             size_t l = this->_channels.size();
             this->_channel_map.emplace(channel, l);
-            this->_channels.push_back(channel);
+            this->_channels.emplace_back(channel);
             for (size_t &n : this->_num_channels) {
                 ++n;
             }
@@ -111,35 +167,51 @@ class ManyBodyBasis {
         return exists;
     }
 
+    // This function must be called in the correct order, starting with
+    // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
+    // hopelessly corrupt the data structures.
+    //
     // Note: for use during initialization phase only.
-    void _add_orbital(const C &channel, size_t p)
+    //
+    // p[i + 1] must increment faster than p[i]
+    void _add_state(StateKind k, const C &channel,
+                    std::initializer_list<size_t> ps)
     {
+        size_t r = state_kind_to_rank(k);
+        assert(r == ps.size());
         size_t l;
-        if (!this->_get_or_add_channel_index(1, channel, &l)) {
-            this->_states_by_channel_1.push_back({});
+        this->_get_or_add_channel_index(r, channel, &l);
+        if (l >= this->_states_by_channel[k].size()) {
+            this->_states_by_channel[k].resize(l + 1);
         }
-        size_t u = this->_states_by_channel_1[l].size();
-        this->_channels_by_state_1.push_back({{l, u}});
-        this->_states_by_channel_1[l].push_back(p);
-    }
-
-    // Note: for use during initialization phase only.
-    void _add_state_2(size_t m, const C &channel, size_t p1,
-                      size_t p2)
-    {
-        size_t l;
-        if (!this->_get_or_add_channel_index(2, channel, &l)) {
-            this->_states_by_channel_2[m].push_back({});
+        size_t u = this->_states_by_channel[k][l].size() / r;
+        for (size_t p : ps) {
+            this->_states_by_channel[k][l].emplace_back(p);
         }
-        size_t u = this->_states_by_channel_2[m][l].size();
-        this->_channels_by_state_2[m]
-                                  [p1 * this->num_orbitals() + p2] = {{l, u}};
-        this->_states_by_channel_2[m][l].push_back({{p1, p2}});
+        this->_channels_by_state[k].emplace_back(l, u);
     }
 
 public:
 
+    /// Create a generic `ManyBodyBasis` from a single-particle basis defined
+    /// by the provided `orbital_channels`, which contains two vectors: one
+    /// for occupied orbitals and one for unoccupied orbitals.  The vectors
+    /// contain a sequence of channels for each orbital in some arbitrary
+    /// order defined by the single-particle basis itself.
+    ///
+    /// For example, consider an ordered sequence of 5 orbitals `{v, w, x, y,
+    /// z}` that form a single-particle basis, with states `{v, w, x}`
+    /// occupied, and `{y, z}` unoccupied.  If we denote the channel of an
+    /// orbital `x` by `x_channel`, then one should pass the following as an
+    /// argument:
+    ///
+    ///     {
+    ///         {v_channel, w_channel, x_channel},
+    ///         {y_channel, z_channel}
+    ///     }
+    ///
     ManyBodyBasis(const std::array<std::vector<C>, 2> &orbital_channels)
+        : _standard_operator_size()
     {
         // add the zero-particle channel
         this->_get_or_add_channel_index(0, C(), nullptr);
@@ -147,87 +219,90 @@ public:
         // add the one-particle channels
         for (size_t x = 0; x < 2; ++x) {
             for (const C &c : orbital_channels[x]) {
-                this->_add_orbital(c, this->num_orbitals());
+                this->_add_state(STATE_KIND_10, c, {this->num_orbitals()});
             }
         }
 
         // add the two-particle channels
         size_t np = this->num_orbitals();
-        this->_channels_by_state_2[0].resize(np * np);
-        this->_channels_by_state_2[1].resize(np * np);
         for (size_t p1 = 0; p1 < np; ++p1) {
             for (size_t p2 = 0; p2 < np; ++p2) {
-                size_t l1 = this->_channels_by_state_1[p1][0];
-                size_t l2 = this->_channels_by_state_1[p2][0];
+                size_t l1 =
+                    std::get<0>(this->_channels_by_state[STATE_KIND_10][p1]);
+                size_t l2 =
+                    std::get<0>(this->_channels_by_state[STATE_KIND_10][p2]);
                 const C &c1 = this->unpack_channel(1, l1);
                 const C &c2 = this->unpack_channel(1, l2);
-                this->_add_state_2(0, c1 + c2, p1, p2);
-                this->_add_state_2(1, c1 - c2, p1, p2);
+                C c12_20 = c1 + c2;
+                C c12_21 = c1 - c2;
+                // warning: c1 and c2 are references and may expire after next
+                // line due to internal data structures being modified
+                this->_add_state(STATE_KIND_20, c12_20, {p1, p2});
+                this->_add_state(STATE_KIND_21, c12_21, {p1, p2});
             }
         }
 
-        this->_operator_size = 42424242424242;
-
-        this->_block_offsets[0].push_back(0);
-        this->_block_offsets[1].push_back(1);
-        //this->_block_offsets[3];
+        this->_standard_operator_offsets[0].emplace_back(
+            this->_standard_operator_size);
+        this->_standard_operator_size += 1;
+        for (const auto &us : this->_states_by_channel[STATE_KIND_10]) {
+            this->_standard_operator_offsets[1].emplace_back(
+                this->_standard_operator_size);
+            this->_standard_operator_size += us.size();
+        }
+        for (const auto &us : this->_states_by_channel[STATE_KIND_20]) {
+            this->_standard_operator_offsets[2].emplace_back(
+                this->_standard_operator_size);
+            this->_standard_operator_size += us.size();
+        }
     }
 
     size_t num_orbitals() const
     {
-        return this->_channels_by_state_1.size();
+        return this->_channels_by_state[STATE_KIND_10].size();
     }
 
     //////////////////////////////////////////////////////////////////////////
 
     /// Return the number of elements required to store the underlying array
     /// of a many-body operator.
-    size_t operator_size() const
+    size_t standard_operator_size() const
     {
-        return this->_operator_size;
+        return this->_standard_operator_size;
     }
 
     /// Convenience function for getting an element from a many-body operator.
-    double &get(ManyBodyOperator op, size_t rank, size_t block_index,
-                size_t i, size_t j) const
+    double &get(ManyBodyOperator op, size_t rank, size_t block_index, size_t i,
+                size_t j) const
     {
         return op[this->block_offset(rank, block_index) +
                   i * this->block_stride(rank, block_index) + j];
     }
 
-    size_t block_offset(size_t rank, size_t block_index) const
+    size_t block_offset(size_t rank, size_t channel_index) const
     {
         assert(rank < 3);
-        return this->_block_offsets[rank][block_index];
+        return this->_standard_operator_offsets[rank][channel_index];
     }
 
-    size_t block_stride(size_t rank, size_t m, size_t channel_index) const
+    size_t block_stride(size_t rank, size_t channel_index) const
     {
-        // TODO: make this cleaner
         assert(rank < 3);
-        if (rank < 2) {
-            assert(m == 0);
-            return this->_block_strides[rank][channel_index];
-        } else {
-            assert(rank == 2);
-            assert(m < 2);
-            return this->_states_by_channel_2[rank][m][channel_index].size();
-        }
+        StateKind k = standard_state_kind(rank);
+        return this->_states_by_channel[k][channel_index].size();
     }
 
-    size_t add(size_t r1, size_t r2, size_t r12,
-                    size_t l1, size_t l2) const
+    size_t add(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
     {
-        C c1 = this->unpack_channel(r1, l1);
-        C c2 = this->unpack_channel(r2, l2);
+        const C &c1 = this->unpack_channel(r1, l1);
+        const C &c2 = this->unpack_channel(r2, l2);
         C c12 = c1 + c2;
         size_t l12;
         this->pack_channel(r12, c12, l12);
         return l12;
     }
 
-    size_t sub(size_t r1, size_t r2, size_t r12,
-                    size_t l1, size_t l2) const
+    size_t sub(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
     {
         C c1 = this->unpack_channel(r1, l1);
         C c2 = this->unpack_channel(r2, l2);
@@ -245,13 +320,7 @@ public:
         return this->_num_channels[rank];
     }
 
-    bool channel_exists(size_t rank, C channel) const
-    {
-        size_t l;
-        return this->pack_channel(rank, channel, l);
-    }
-
-    bool pack_channel(size_t rank, C channel,
+    bool pack_channel(size_t rank, const C &channel,
                       size_t *channel_index_out) const
     {
         auto it = this->_channel_map.find(channel);
@@ -268,7 +337,7 @@ public:
         return true;
     }
 
-    C unpack_channel(size_t rank, size_t block_index) const
+    const C &unpack_channel(size_t rank, size_t block_index) const
     {
         (void)rank; // avoid warning about unused `rank` when asserts are off
         assert(block_index < this->num_channels(rank));
@@ -278,12 +347,12 @@ public:
 };
 
 #define ITER_BLOCKS(var, basis, rank)                                          \
-    size_t var = 0;                                                       \
+    size_t var = 0;                                                            \
     var < basis.num_channels_##rank();                                         \
     ++var
 
 #define ITER_SUBINDICES(var, block_index, group_begin, group_end, basis, rank) \
-    size_t var = basis.block_dim_##rank(block_index, group_begin);        \
+    size_t var = basis.block_dim_##rank(block_index, group_begin);             \
     var < basis.block_dim_##rank(block_index, group_end);                      \
     ++var
 

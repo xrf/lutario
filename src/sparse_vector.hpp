@@ -13,7 +13,7 @@ class SparseVector {
 
 public:
 
-    SparseVector(const std::unordered_map<K, T> &entries = {})
+    explicit SparseVector(const std::unordered_map<K, T> &entries = {})
         : _entries(entries)
     {
         // eliminate zero entries to ensure invariant holds
