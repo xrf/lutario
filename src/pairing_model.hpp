@@ -1,8 +1,8 @@
 #ifndef PAIRING_MODEL_HPP
 #define PAIRING_MODEL_HPP
-#include <assert.h>
 #include <stddef.h>
 #include <array>
+#include <iosfwd>
 #include <vector>
 #include "sparse_vector.hpp"
 
@@ -25,19 +25,15 @@ struct Orbital {
     TwiceSpin s;
 
     /// Construct an Orbital with the given quantum numbers.
-    Orbital(unsigned n, TwiceSpin s)
-        : n(n)
-        , s(s)
-    {
-    }
+    Orbital(unsigned n, TwiceSpin s);
 
     /// Return the set of conserved quantum numbers.
-    Channel channel() const
-    {
-        return Channel({{this->n, this->s}});
-    }
+    Channel channel() const;
 
 };
+
+/// Write an `Orbital` to a stream.
+std::ostream &operator<<(std::ostream &, const Orbital &);
 
 /// Single-particle basis for the pairing model.
 class Basis {
@@ -54,6 +50,7 @@ public:
     /// @param unoccupied
     /// `0` for the list of occupied orbitals.
     /// `1` for the list of unoccupied orbitals.
+    ///
     const std::vector<Orbital> &orbitals(size_t unoccupied) const;
 
     /// Construct two lists containing channels for each orbital in the exact
@@ -66,12 +63,13 @@ public:
 
 struct Hamiltonian {
 
-    double strength;
+    /// Strength of the two-body interaction.
+    double g;
 
-    Hamiltonian(double strength);
+    /// Construct a Hamiltonian with the given two-body interaction strength.
+    Hamiltonian(double g);
 
     /// Calculate the one-body matrix element.
-    ///
     double one_body(Orbital p1, Orbital p2) const;
 
     /// Calculate the two-body matrix element.
