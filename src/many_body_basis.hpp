@@ -474,6 +474,13 @@ public:
         return this->_channels[block_index];
     }
 
+    /// Allocate a many-body operator for the given many-body basis.
+    std::unique_ptr<double[]> alloc_many_body_operator() const
+    {
+        return std::unique_ptr<double[]>(
+            new double[this->many_body_operator_size()]());
+    }
+
 };
 
 #define ITER_BLOCKS(var, basis, rank)                                          \
@@ -481,18 +488,9 @@ public:
     var < basis.num_channels(rank);                                            \
     ++var
 
-#define ITER_SUBINDICES(var, block_index, group_begin, group_end, basis, rank) \
-    size_t var = basis.block_offset(rank, block_index, group_begin);           \
-    var < basis.block_offset_end(rank, block_index, group_end);                \
+#define ITER_SUBINDICES(var, block_index, part_begin, part_end, basis, rank) \
+    size_t var = basis.block_part_offset(rank, block_index, part_begin);           \
+    var < basis.block_part_offset(rank, block_index, part_end);                \
     ++var
-
-/// Allocate a many-body operator for the given many-body basis.
-template<typename C>
-std::unique_ptr<double[]>
-alloc_many_body_operator(const ManyBodyBasis<C> &mbasis)
-{
-    return std::unique_ptr<double[]>(
-        new double[mbasis.many_body_operator_size()]());
-}
 
 #endif
