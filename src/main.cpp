@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <iostream>
+#include <memory>
 #include "many_body_basis.hpp"
 #include "pairing_model.hpp"
 
@@ -11,40 +12,40 @@ inline double conj(double x)
 }
 
 template<typename C>
-void calc_white_generator(const ManyBodyBasis<C> &b, const ManyBodyOperator &h,
-                          ManyBodyOperator &eta_out)
+void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
+                          ManyBodyOperator eta_out)
 {
     /* SELECT i, a WHERE x(i) = 0 AND x(a) = 1 AND g(i, a) AND g(i, i) AND g(a, a) AND G(i, a, i, a) */
-    for (ITER_BLOCKS(li, b, 1)) {
-        for (ITER_SUBINDICES(ua, li, 1, 2, b, 1)) {
-            for (ITER_SUBINDICES(ui, li, 0, 1, b, 1)) {
-                size_t lii = b.add(1, 1, 2, li, li);
-                size_t uia = b.combine_11(li, ui, li, ua);
-                double z = b.get(h, 1, li, ui, ua) /
-                           (b.get(h, 2, lii, uia, uia) +
-                            b.get(h, 1, li, ui, ui) - b.get(h, 1, li, ua, ua));
-                b.get(eta_out, 1, li, ui, ua) = z;
-                b.get(eta_out, 1, li, ua, ui) = -conj(z);
+    for (ITER_BLOCKS(li, b, RANK_1)) {
+        for (ITER_SUBINDICES(ua, li, 1, 2, b, RANK_1)) {
+            for (ITER_SUBINDICES(ui, li, 0, 1, b, RANK_1)) {
+                size_t lii = b.add(RANK_1, RANK_1, RANK_2, li, li);
+                size_t uia = b.combine(RANK_1, RANK_1, li, ui, li, ua);
+                double z = b.get(h, RANK_1, li, ui, ua) /
+                           (b.get(h, RANK_2, lii, uia, uia) +
+                            b.get(h, RANK_1, li, ui, ui) - b.get(h, 1, li, ua, ua));
+                b.get(eta_out, RANK_1, li, ui, ua) = z;
+                b.get(eta_out, RANK_1, li, ua, ui) = -conj(z);
             }
         }
     }
-    for (ITER_BLOCKS(lij, b, 2)) {
-        for (ITER_SUBINDICES(uab, lij, 3, 4, b, 2)) {
-            for (ITER_SUBINDICES(uij, lij, 0, 1, b, 2)) {
+    for (ITER_BLOCKS(lij, b, RANK_2)) {
+        for (ITER_SUBINDICES(uab, lij, 3, 4, b, RANK_2)) {
+            for (ITER_SUBINDICES(uij, lij, 0, 1, b, RANK_2)) {
                 size_t li, ui, lj, uj;
                 b.split_2(lij, uij, li, ui, lj, uj);
                 size_t la, ua, lb, ub;
                 b.split_2(lij, uab, la, ua, lb, ub);
 
-                size_t lia = b.add(1, 1, 2, li, la);
-                size_t lib = b.add(1, 1, 2, li, lb);
-                size_t lja = b.add(1, 1, 2, lj, la);
-                size_t ljb = b.add(1, 1, 2, lj, lb);
+                size_t lia = b.add(RANK_1, RANK_1, RANK_2, li, la);
+                size_t lib = b.add(RANK_1, RANK_1, RANK_2, li, lb);
+                size_t lja = b.add(RANK_1, RANK_1, RANK_2, lj, la);
+                size_t ljb = b.add(RANK_1, RANK_1, RANK_2, lj, lb);
 
-                size_t uia = b.combine_11(li, ui, la, ua);
-                size_t uib = b.combine_11(li, ui, lb, ub);
-                size_t uja = b.combine_11(lj, uj, la, ua);
-                size_t ujb = b.combine_11(lj, uj, lb, ub);
+                size_t uia = b.combine(RANK_1, RANK_1, li, ui, la, ua);
+                size_t uib = b.combine(RANK_1, RANK_1, li, ui, lb, ub);
+                size_t uja = b.combine(RANK_1, RANK_1, lj, uj, la, ua);
+                size_t ujb = b.combine(RANK_1, RANK_1, lj, uj, lb, ub);
                 double z =
                     b.get(h, 2, lij, uij, uab) /
                     (b.get(h, 1, li, ui, ui) + b.get(h, 1, lj, uj, uj) -
@@ -114,4 +115,7 @@ int main()
     std::cout << basis << std::endl;
     std::cout << pairing_model::get_orbital_channels(basis) << std::endl;
     ManyBodyBasis<pairing_model::Channel> mbasis(pairing_model::get_orbital_channels(basis));
+    std::unique_ptr<double[]> h = mbasis.alloc_many_body_operator();
+    std::unique_ptr<double[]> eta = mbasis.alloc_many_body_operator();
+//    calc_white_generator(mbasis, h.get(), eta.get());
 }
