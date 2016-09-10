@@ -73,12 +73,12 @@ inline std::ostream &operator<<(std::ostream &stream,
     stream << "SparseVector({";
     bool first = true;
     for (const auto &kv : vec.entries()) {
-        stream << "{" << kv.first << ", " << kv.second << "}";
         if (first) {
             first = false;
         } else {
             stream << ", ";
         }
+        stream << "{" << kv.first << ", " << kv.second << "}";
     }
     stream << "})";
     return stream;

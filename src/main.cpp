@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <iostream>
 #include "many_body_basis.hpp"
 #include "pairing_model.hpp"
 
@@ -109,6 +110,8 @@ struct WhiteGenerator {
 
 int main()
 {
-    pairing_model::Basis basis(3, 3);
-    ManyBodyBasis<pairing_model::Channel> mbasis(basis.orbital_channels());
+    pairing_model::Basis basis = pairing_model::get_basis(3, 3);
+    std::cout << basis << std::endl;
+    std::cout << pairing_model::get_orbital_channels(basis) << std::endl;
+    ManyBodyBasis<pairing_model::Channel> mbasis(pairing_model::get_orbital_channels(basis));
 }

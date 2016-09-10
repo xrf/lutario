@@ -421,7 +421,7 @@ public:
         OperatorKind kk = standard_operator_kind(rank);
         return op[this->operator_offset(rank) +
                   this->block_offset(kk, channel_index) +
-                  i * this->block_stride(k, channel_index) + j];
+                  i * this->block_stride(kk, channel_index) + j];
     }
 
     size_t add(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
@@ -436,8 +436,8 @@ public:
 
     size_t sub(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
     {
-        C c1 = this->unpack_channel(r1, l1);
-        C c2 = this->unpack_channel(r2, l2);
+        const C &c1 = this->unpack_channel(r1, l1);
+        const C &c2 = this->unpack_channel(r2, l2);
         C c12 = c1 - c2;
         size_t l12;
         this->pack_channel(r12, c12, l12);

@@ -36,30 +36,21 @@ struct Orbital {
 std::ostream &operator<<(std::ostream &, const Orbital &);
 
 /// Single-particle basis for the pairing model.
-class Basis {
+typedef std::array<std::vector<Orbital>, 2> Basis;
 
-    std::vector<Orbital> _orbitals[2];
+/// Construct the list of orbitals.
+Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells);
 
-public:
+/// Write an `Basis` to a stream.
+std::ostream &operator<<(std::ostream &, const Basis &);
 
-    /// Construct the list of orbitals.
-    Basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells);
+typedef std::array<std::vector<Channel>, 2> OrbitalChannels;
 
-    /// Get the list of orbitals.
-    ///
-    /// @param unoccupied
-    /// `0` for the list of occupied orbitals.
-    /// `1` for the list of unoccupied orbitals.
-    ///
-    const std::vector<Orbital> &orbitals(size_t unoccupied) const;
-
-    /// Construct two lists containing channels for each orbital in the exact
-    /// same order (including possibly duplicates).  The first list contains
-    /// the occupied channels, while the second list contains the unoccupied
-    /// channels.
-    std::array<std::vector<Channel>, 2> orbital_channels() const;
-
-};
+/// Construct two lists containing channels for each orbital in the exact
+/// same order (including possibly duplicates).  The first list contains
+/// the occupied channels, while the second list contains the unoccupied
+/// channels.
+OrbitalChannels get_orbital_channels(const Basis &);
 
 struct Hamiltonian {
 
@@ -90,6 +81,11 @@ struct Hamiltonian {
 
 };
 
+/// Write an `Basis` to a stream.
+std::ostream &operator<<(std::ostream &, const Hamiltonian &);
+
 }
+
+std::ostream &operator<<(std::ostream &, const pairing_model::OrbitalChannels &);
 
 #endif

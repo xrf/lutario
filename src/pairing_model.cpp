@@ -5,6 +5,40 @@
 #include <vector>
 #include "pairing_model.hpp"
 
+namespace {
+
+void write_vector_Orbital(std::ostream &stream, const std::vector<pairing_model::Orbital> &self)
+{
+    bool first = true;
+    stream << "{";
+    for (const pairing_model::Orbital &p : self) {
+        if (first) {
+            first = false;
+        } else {
+            stream << ", ";
+        }
+        stream << "{" << p.n << ", " << p.s << "}";
+    }
+    stream << "}";
+}
+
+void write_vector_Channel(std::ostream &stream, const std::vector<pairing_model::Channel> &self)
+{
+    bool first = true;
+    stream << "{";
+    for (const pairing_model::Channel &l : self) {
+        if (first) {
+            first = false;
+        } else {
+            stream << ", ";
+        }
+        stream << l;
+    }
+    stream << "}";
+}
+
+}
+
 namespace pairing_model {
 
 Orbital::Orbital(unsigned n, TwiceSpin s)
@@ -20,37 +54,44 @@ Channel Orbital::channel() const
 
 std::ostream &operator<<(std::ostream &stream, const Orbital &self)
 {
-    stream << "Orbital(" << self.n << ", " << self.s << ")";
+    stream << "pairing_model::Orbital(" << self.n << ", " << self.s << ")";
     return stream;
 }
 
-Basis::Basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
+Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
 {
+    Basis orbitals;
     unsigned num_total_shells = num_occupied_shells + num_unoccupied_shells;
     for (unsigned n = 0; n < num_occupied_shells; ++n) {
-        this->_orbitals[0].push_back(Orbital(n, -1));
-        this->_orbitals[0].push_back(Orbital(n, 1));
+        orbitals[0].push_back(Orbital(n, -1));
+        orbitals[0].push_back(Orbital(n, 1));
     }
     for (unsigned n = num_occupied_shells; n < num_total_shells; ++n) {
-        this->_orbitals[1].push_back(Orbital(n, -1));
-        this->_orbitals[1].push_back(Orbital(n, 1));
+        orbitals[1].push_back(Orbital(n, -1));
+        orbitals[1].push_back(Orbital(n, 1));
     }
+    return orbitals;
 }
 
-const std::vector<Orbital> &Basis::orbitals(size_t unoccupied) const
-{
-    return this->_orbitals[unoccupied];
-}
-
-std::array<std::vector<Channel>, 2> Basis::orbital_channels() const
+OrbitalChannels get_orbital_channels(const Basis &orbitals)
 {
     std::array<std::vector<Channel>, 2> orbital_channels;
     for (size_t x = 0; x < 2; ++x) {
-        for (Orbital p : this->_orbitals[x]) {
+        for (Orbital p : orbitals[x]) {
             orbital_channels[x].push_back(p.channel());
         }
     }
     return orbital_channels;
+}
+
+std::ostream &operator<<(std::ostream &stream, const Basis &self)
+{
+    stream << "pairing_model::Basis(";
+    write_vector_Orbital(stream, self[0]);
+    stream << ", ";
+    write_vector_Orbital(stream, self[1]);
+    stream << ")";
+    return stream;
 }
 
 Hamiltonian::Hamiltonian(double g)
@@ -97,4 +138,20 @@ double Hamiltonian::two_body_conserv(Orbital p1, Orbital p2, Orbital p3,
     return sign * this->g / 2.0;
 }
 
+std::ostream &operator<<(std::ostream &stream, const Hamiltonian &self)
+{
+    stream << "pairing_model::Hamiltonian(" << self.g << ")";
+    return stream;
+}
+
+}
+
+std::ostream &operator<<(std::ostream &stream, const pairing_model::OrbitalChannels &self)
+{
+    stream << "pairing_model::OrbitalChannels(";
+    write_vector_Channel(stream, self[0]);
+    stream << ", ";
+    write_vector_Channel(stream, self[1]);
+    stream << ")";
+    return stream;
 }
