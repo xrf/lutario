@@ -126,13 +126,13 @@ inline void split_operator_kind(OperatorKind operator_kind,
 ///   - a channel index (associated with a channel in some `ManyBodyBasis`) and
 ///   - an auxiliary index to identify the orbital within the said channel.
 ///
-struct ChannelizedOrbital {
+struct Orbital {
 
     size_t channel_index;
 
     size_t auxiliary_index;
 
-    ChannelizedOrbital(size_t channel_index, size_t auxiliary_index)
+    Orbital(size_t channel_index, size_t auxiliary_index)
         : channel_index(channel_index)
         , auxiliary_index(auxiliary_index)
     {
@@ -142,26 +142,46 @@ struct ChannelizedOrbital {
 
 /// A sequential data structure used to store orbital indices of some rank.
 /// The `rank` is set dynamically, allowing `States` of different rank to be
-/// stored together in a single array.
+/// stored together using the same type.
+///
+/// The data type is conceptually isomorphic to the following type:
+///
+///     struct {
+///         Rank rank;
+///         vector<size_t> part_offsets;
+///         vector<vector<size_t>> orbital_indices;
+///     };
+///
+/// with the invariant that for all `u`, `orbital_indices[u].size() == rank`.
+///
 class States {
 
     Rank _rank;
 
     size_t _size;
 
+    std::vector<size_t> _part_offsets;
+
     std::vector<size_t> _orbital_indices;
 
 public:
 
-    States(Rank rank)
+    States(Rank rank, size_t num_parts)
         : _rank(rank)
         , _size()
+        , _part_offsets(num_parts + 1)
     {
     }
 
     Rank rank() const
     {
         return this->_rank;
+    }
+
+    size_t num_parts() const
+    {
+        assert(this->_part_offsets.size() > 0);
+        return this->_part_offsets.size() - 1;
     }
 
     size_t size() const
@@ -175,16 +195,35 @@ public:
         return this->_orbital_indices.data() + auxiliary_index * this->rank();
     }
 
-    void emplace_back(std::initializer_list<size_t> orbital_indices)
+    size_t part_offset(size_t part) const {
+        assert(part < this->_part_offsets.size());
+        return this->_part_offsets[part];
+    }
+
+    /// Note: parts must be added in ascending order to avoid data corruption.
+    void add(size_t part, std::initializer_list<size_t> orbital_indices)
     {
-        assert(this->rank() == orbital_indices.size());
+        assert(part < this->num_parts());
+        assert(orbital_indices.size() == this->rank());
         for (size_t p : orbital_indices) {
             this->_orbital_indices.emplace_back(p);
         }
         ++this->_size;
+        for (size_t x = part; x < this->num_parts(); ++x) {
+            this->_part_offsets[part + 1] = this->_size;
+        }
     }
 
 };
+
+inline size_t pack_part(std::initializer_list<size_t> part)
+{
+    size_t xs = 0;
+    for (size_t x : part) {
+        xs = xs * 2 + x;
+    }
+    return xs;
+}
 
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
@@ -219,6 +258,8 @@ class ManyBodyBasis {
 
     std::vector<size_t> _block_offsets[OPERATOR_KIND_COUNT];
 
+    size_t _orbital_index_offsets[3];
+
     // _num_channels[r] gives the number of channels for rank r
     size_t _num_channels[RANK_COUNT];
 
@@ -239,14 +280,14 @@ class ManyBodyBasis {
     // _channel_map[c] = l
     std::unordered_map<C, size_t> _channel_map;
 
-    // _states_by_channel[k][l].size() = n_p
+    // _states_by_channel[k][l].size() = n_ps
     // _states_by_channel[k][l][u][i] = p[i]
     std::vector<States> _states_by_channel[STATE_KIND_COUNT];
 
     // _channels_by_state[k][combine(p, n_p)] = {l, u}
     //
     // combine(p, n_p) = ((p[0] * n_p + p[1]) * n_p + p[2]) * n_p + p[3] ...
-    std::vector<ChannelizedOrbital> _channels_by_state[STATE_KIND_COUNT];
+    std::vector<Orbital> _channels_by_state[STATE_KIND_COUNT];
 
     // This function must be called in the correct order, starting with
     // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
@@ -277,16 +318,18 @@ class ManyBodyBasis {
     //
     // p[i + 1] must increment faster than p[i]
     void _add_state(StateKind k, const C &channel,
+                    std::initializer_list<size_t> xs,
                     std::initializer_list<size_t> ps)
     {
         Rank r = state_kind_to_rank(k);
         size_t l;
         this->_get_or_add_channel_index(r, channel, &l);
         if (l >= this->_states_by_channel[k].size()) {
-            this->_states_by_channel[k].resize(l + 1, States(r));
+            this->_states_by_channel[k].resize(l + 1, States(r, 1 << r));
         }
         size_t u = this->_states_by_channel[k][l].size();
-        this->_states_by_channel[k][l].emplace_back(std::move(ps));
+        this->_states_by_channel[k][l].add(pack_part(std::move(xs)),
+                                           std::move(ps));
         this->_channels_by_state[k].emplace_back(l, u);
     }
 
@@ -312,30 +355,39 @@ public:
     ManyBodyBasis(const std::array<std::vector<C>, 2> &orbital_channels)
     {
         // add the zero-particle states
-        this->_add_state(STATE_KIND_00, C(), {});
+        this->_add_state(STATE_KIND_00, C(), {}, {});
 
         // add the one-particle states
+        size_t p = 0;
         for (size_t x = 0; x < 2; ++x) {
+            this->_orbital_index_offsets[x] = p;
             for (const C &c : orbital_channels[x]) {
-                this->_add_state(STATE_KIND_10, c, {this->num_orbitals()});
+                this->_add_state(STATE_KIND_10, c, {x}, {p});
+                ++p;
             }
         }
+        this->_orbital_index_offsets[2] = p;
 
         // add the two-particle states
-        size_t n_p = this->num_orbitals();
         const auto &lu_by_p = this->_channels_by_state[STATE_KIND_10];
-        for (size_t p1 = 0; p1 < n_p; ++p1) {
-            for (size_t p2 = 0; p2 < n_p; ++p2) {
-                size_t l1 = lu_by_p[p1].channel_index;
-                size_t l2 = lu_by_p[p2].channel_index;
-                const C &c1 = this->unpack_channel(RANK_1, l1);
-                const C &c2 = this->unpack_channel(RANK_1, l2);
-                C c12_20 = c1 + c2;
-                C c12_21 = c1 - c2;
-                // warning: c1 and c2 are references and may expire after next
-                // line due to internal data structures being modified
-                this->_add_state(STATE_KIND_20, c12_20, {p1, p2});
-                this->_add_state(STATE_KIND_21, c12_21, {p1, p2});
+        for (size_t x1 = 0; x1 < 2; ++x1) {
+            for (size_t x2 = 0; x2 < 2; ++x2) {
+                for (size_t p1 = this->orbital_index_offset(x1);
+                     p1 < this->orbital_index_offset(x1 + 1); ++p1) {
+                    for (size_t p2 = this->orbital_index_offset(x2);
+                         p2 < this->orbital_index_offset(x2 + 1); ++p2) {
+                        size_t l1 = lu_by_p[p1].channel_index;
+                        size_t l2 = lu_by_p[p2].channel_index;
+                        const C &c1 = this->unpack_channel(RANK_1, l1);
+                        const C &c2 = this->unpack_channel(RANK_1, l2);
+                        C c12_20 = c1 + c2;
+                        C c12_21 = c1 - c2;
+                        // warning: c1 and c2 are references and may expire after next
+                        // line due to internal data structures being modified
+                        this->_add_state(STATE_KIND_20, c12_20, {x1, x2}, {p1, p2});
+                        this->_add_state(STATE_KIND_21, c12_21, {x1, x2}, {p1, p2});
+                    }
+                }
             }
         }
 
@@ -365,9 +417,15 @@ public:
         this->_operator_offsets[RANK_COUNT] = i;
     }
 
-    size_t num_orbitals() const
+    size_t orbital_index_offset(size_t part) const
     {
-        return this->_channels_by_state[STATE_KIND_10].size();
+        assert(part < 3);
+        return this->_orbital_index_offsets[part];
+    }
+
+    size_t num_orbitals(size_t part) const
+    {
+        return this->orbital_index_offset(part + 1);
     }
 
     /// Return the number of elements required to store the underlying array
@@ -414,6 +472,13 @@ public:
         }
     }
 
+    size_t auxiliary_index_offset(StateKind state_kind, size_t channel_index, size_t part) const
+    {
+        assert(state_kind < STATE_KIND_COUNT);
+        assert(channel_index < this->_states_by_channel[state_kind].size());
+        return this->_states_by_channel[state_kind][channel_index].auxiliary_index_offset(part);
+    }
+
     /// Convenience function for getting an element from a many-body operator.
     double &get(ManyBodyOperator op, Rank rank, size_t channel_index, size_t i,
                 size_t j) const
@@ -424,24 +489,29 @@ public:
                   i * this->block_stride(kk, channel_index) + j];
     }
 
-    size_t add(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    size_t add(size_t r1, size_t l1, size_t r2, size_t l2, size_t r12) const
     {
-        const C &c1 = this->unpack_channel(r1, l1);
-        const C &c2 = this->unpack_channel(r2, l2);
+        const C &c1 = this->unpack_channel((Rank)r1, l1);
+        const C &c2 = this->unpack_channel((Rank)r2, l2);
         C c12 = c1 + c2;
         size_t l12;
         this->pack_channel(r12, c12, l12);
         return l12;
     }
 
-    size_t sub(size_t r1, size_t r2, size_t r12, size_t l1, size_t l2) const
+    size_t sub(size_t r1, size_t l1, size_t r2, size_t l2, size_t r12) const
     {
-        const C &c1 = this->unpack_channel(r1, l1);
-        const C &c2 = this->unpack_channel(r2, l2);
+        const C &c1 = this->unpack_channel((Rank)r1, l1);
+        const C &c2 = this->unpack_channel((Rank)r2, l2);
         C c12 = c1 - c2;
         size_t l12;
         this->pack_channel(r12, c12, l12);
         return l12;
+    }
+
+    size_t combine(size_t r1, size_t l1, size_t u1, size_t r2, size_t l2, size_t u2, size_t r12) const
+    {
+        return -1;
     }
 
     size_t num_channels(Rank rank) const
@@ -483,14 +553,14 @@ public:
 
 };
 
-#define ITER_BLOCKS(var, basis, rank)                                          \
-    size_t var = 0;                                                            \
-    var < basis.num_channels(rank);                                            \
+#define ITER_CHANNELS(var, basis, rank)                                      \
+    size_t var = 0;                                                          \
+    var < basis.num_channels(rank);                                          \
     ++var
 
-#define ITER_SUBINDICES(var, block_index, part_begin, part_end, basis, rank) \
-    size_t var = basis.block_part_offset(rank, block_index, part_begin);           \
-    var < basis.block_part_offset(rank, block_index, part_end);                \
+#define ITER_AUXILIARY(var, channel_index, part_begin, part_end, basis, rank) \
+    size_t var = basis.auxiliary_index_offset(rank, channel_index, part_begin); \
+    var < basis.auxiliary_index_offset(rank, channel_index, part_end);  \
     ++var
 
 #endif
