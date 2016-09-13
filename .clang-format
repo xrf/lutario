@@ -10,3 +10,9 @@ ReflowComments: false
 SortIncludes: false
 # not yet available in Clang 3.8.1
 #SpaceAfterTemplateKeyword: false
+
+ForEachMacros:
+  - FOR_CHANNEL_1
+  - FOR_CHANNEL_2
+  - FOR_STATE_1
+  - FOR_STATE_2
