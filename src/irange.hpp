@@ -187,6 +187,12 @@ struct IRange {
         return IntegerIterator<T>(this->start);
     }
 
+    /// Span of the range.
+    size_t size() const
+    {
+        return this->stop - this->start;
+    }
+
     /// Returns the end iterator.
     IntegerIterator<T> end() const
     {

@@ -563,4 +563,7 @@ public:
     var < basis.auxiliary_index_offset(rank, channel_index, part_end);  \
     ++var
 
+#define CHANNEL_1(index, ) \
+    size_t l##index : 
+
 #endif

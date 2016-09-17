@@ -2,9 +2,12 @@ AccessModifierOffset: -4
 AllowShortFunctionsOnASingleLine: None
 AlwaysBreakTemplateDeclarations: true
 BasedOnStyle: LLVM
+#BinPackArguments: false
+#BinPackParameters: false
 BreakBeforeBraces: WebKit
 BreakConstructorInitializersBeforeComma: true
-ColumnLimit: 80
+ColumnLimit: 0
+#ColumnLimit: 80
 IndentWidth: 4
 ReflowComments: false
 SortIncludes: false
