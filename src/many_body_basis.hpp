@@ -6,6 +6,43 @@
 #include <unordered_map>
 #include <vector>
 
+template<typename T>
+class AbelianGroup {
+
+public:
+
+    virtual ~AbelianGroup()
+    {
+    }
+
+    virtual T zero() const = 0;
+
+    virtual T plus(const T &, const T &) const = 0;
+
+    virtual T negate(const T &) const = 0;
+
+};
+
+template<typename T>
+class AdditiveAbelianGroup : public AbelianGroup<T> {
+
+public:
+
+    T zero() const override
+    {
+        return T();
+    }
+
+    T plus(const T &x, const T &y) const override {
+        return x + y;
+    }
+
+    T negate(const T &x) const override {
+        return -x;
+    }
+
+};
+
 /// A many-body operator contains three operators in standard form:
 ///
 ///   - Zero-body operator (constant term) in 000 form.  This is always has a
@@ -259,15 +296,82 @@ struct ChannelTable {
 
 };
 
+template<typename C>
+struct ChannelTranslationTable {
+
+    // Rank-0 part contains just the group identity, which is always stored at
+    // index 0.  Rank-2 contains all channels formed by adding pairs of rank-1
+    // channels, including the zero channel (so it's cumulative).
+    //
+    // [ rank 0 ] [ ====== rank 2 ======= ]
+    std::vector<C> even_rank_channels;
+
+    // For now, this contains only rank-1 channels.
+    //
+    // [ ============ rank 1 ============ ]
+    std::vector<C> odd_rank_channels;
+
+    // um is this gonna be multivalued?
+    std::unordered_map<C, size_t> reverse_table;
+
+    size_t num_channels[3];
+
+    ChannelTranslationTable(const std::vector<C> &channels,
+                            const AbelianGroup<C> &abelian_group =
+                                AdditiveAbelianGroup())
+    {
+        // do something
+        this->add_channel(reverse_table, abelian_group.zero());
+    }
+
+};
+
+struct ChannelIndexGroup {
+
+    // (L1, L1) -> L2
+    std::vector<size_t> _addition_table_112;
+
+    // (L2, L1) -> L1
+    std::vector<size_t> _addition_table_211;
+
+    std::vector<size_t> _even_negation_table;
+
+    std::vector<size_t> _odd_negation_table;
+
+    size_t zero(size_t rank)
+    {
+        assert(rank % 2 == 0);
+    }
+
+    void negate(size_t rank, );
+
+};
+
 struct {
-// L -> n_U
-std::vector<size_t> lu;
-// Note: L2 includes BOTH L1+L1 and L1-L1
-// Note: L1 is closed under negation
-// (L1, L1) -> L2
-std::vector<size_t> addition_table_11;
-// (L2, L1) -> L1
-std::vector<size_t> subtraction_table_21;
+    // L1 -> num_U1
+    std::vector<size_t> lu;
+    // Note: L2 includes BOTH L1+L1 and L1-L1
+    // Note: L1 is closed under negation
+
+    // (L1, L1) -> L2
+    std::vector<size_t> addition_table_112;
+
+    // (L2, L1) -> L1
+    std::vector<size_t> addition_table_211;
+
+    std::vector<size_t> negation_table;
+
+    size_t num_channels(size_t rank) const
+    {
+        switch (rank) {
+        case 0:
+            return 1;
+        case 1:
+            return this->lu.size();
+        case 2:
+            return this->num_channels_2;
+        }
+    }
 }
 
 /// Defines the layout of many-body operator matrices in memory.  The
@@ -387,7 +491,8 @@ public:
     ///         {y_channel, z_channel}
     ///     }
     ///
-    ManyBodyBasis(const std::array<std::vector<C>, 2> &orbital_channels)
+    template<typename O>
+    ManyBodyBasis(const std::vector<O> &orbital_channels)
     {
         // add the zero-particle states
         this->_add_state(STATE_KIND_00, C(), {}, {});
