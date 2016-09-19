@@ -225,10 +225,6 @@ inline size_t pack_part(std::initializer_list<size_t> part)
     return xs;
 }
 
-/// Defines the layout of many-body operator matrices in memory.  The
-/// `ManyBodyBasis` contains information about the many-body states, the
-/// channel arithmetics, as well as the offsets of diagonal blocks in memory.
-///
 /// The `C` type must be an abelian group and support the following binary
 /// operators:
 ///
@@ -239,6 +235,45 @@ inline size_t pack_part(std::initializer_list<size_t> part)
 /// ("zero").
 ///
 template<typename C>
+struct ChannelTable {
+
+    // _num_channels[r] gives the number of channels for rank r
+    size_t _num_channels[RANK_COUNT];
+
+    // _channels[l] = c
+    //
+    // The channels are stored here in one single array:
+    //
+    //   - Element `0` contains the zero channel.
+    //
+    //   - Elements `[1, num_channels(1))` contain the nonzero one-body
+    //     channels.
+    //
+    //   - Elements `[num_channels(1), num_channels(2))` contain the
+    //     two-body channels that aren't also a one-body channel.
+    //
+    std::vector<C> _channels;
+
+    // _channel_map[c] = l
+    std::unordered_map<C, size_t> _channel_map;
+
+};
+
+struct {
+// L -> n_U
+std::vector<size_t> lu;
+// Note: L2 includes BOTH L1+L1 and L1-L1
+// Note: L1 is closed under negation
+// (L1, L1) -> L2
+std::vector<size_t> addition_table_11;
+// (L2, L1) -> L1
+std::vector<size_t> subtraction_table_21;
+}
+
+/// Defines the layout of many-body operator matrices in memory.  The
+/// `ManyBodyBasis` contains information about the many-body states, the
+/// channel arithmetics, as well as the offsets of diagonal blocks in memory.
+///
 class ManyBodyBasis {
 
     // notation:
