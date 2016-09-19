@@ -11,6 +11,7 @@ inline double conj(double x)
     return x;
 }
 
+#if 0
 template<typename C>
 void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
                           ManyBodyOperator eta_out)
@@ -60,8 +61,6 @@ void calc_white_generator(const ManyBodyBasis<C> &b, ManyBodyOperator h,
     }
 }
 
-/*
-
 /// The White generator.
 template<class T>
 struct WhiteGenerator {
@@ -107,7 +106,7 @@ struct WhiteGenerator {
     ntuple_t<std::vector<matrix_view<T>>, BasisM::max_arity> gen;
 };
 
-// */
+#endif
 
 int main()
 {
@@ -117,5 +116,7 @@ int main()
     ManyBodyBasis<pairing_model::Channel> mbasis(pairing_model::get_orbital_channels(basis));
     std::unique_ptr<double[]> h = mbasis.alloc_many_body_operator();
     std::unique_ptr<double[]> eta = mbasis.alloc_many_body_operator();
+#if 0
     calc_white_generator(mbasis, h.get(), eta.get());
+#endif
 }

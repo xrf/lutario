@@ -509,10 +509,11 @@ public:
         return l12;
     }
 
+#if 0
     size_t combine(size_t r1, size_t l1, size_t u1, size_t r2, size_t l2, size_t u2, size_t r12) const
     {
-        return -1;
     }
+#endif
 
     size_t num_channels(Rank rank) const
     {
@@ -553,6 +554,7 @@ public:
 
 };
 
+#if 0
 #define ITER_CHANNELS(var, basis, rank)                                      \
     size_t var = 0;                                                          \
     var < basis.num_channels(rank);                                          \
@@ -564,6 +566,7 @@ public:
     ++var
 
 #define CHANNEL_1(index, ) \
-    size_t l##index : 
+    size_t l##index :
+#endif
 
 #endif
