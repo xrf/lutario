@@ -6,6 +6,13 @@
 #include <unordered_map>
 #include <vector>
 
+/// A channel index used to denote an invalid channel.
+/// The value is greater than all valid channels.
+static const size_t INVALID_CHANNEL = (size_t)(-1);
+
+struct Operator {
+};
+
 /// A many-body operator contains three operators in standard form:
 ///
 ///   - Zero-body operator (constant term) in 000 form.  This is always has a
@@ -15,7 +22,11 @@
 ///
 ///   - Two-body operator in 200 form.
 ///
-typedef double *ManyBodyOperator;
+struct ManyBodyOperator {
+    Operator o0;
+    Operator o1;
+    Operator o2;
+};
 
 /// Determines the number of particles that an operator couples.
 ///
@@ -23,7 +34,9 @@ typedef double *ManyBodyOperator;
 ///   - A one-body operator has `RANK_1`.
 ///   - A two-body operator has `RANK_2`.
 ///
-enum Rank { RANK_0, RANK_1, RANK_2, RANK_COUNT };
+enum Rank { RANK_0, RANK_1, RANK_2 };
+
+static const size_t RANK_COUNT = 3;
 
 /// Determines the number of particles in a state and how their channels are
 /// to be combined.
@@ -201,7 +214,7 @@ public:
     }
 
     /// Note: parts must be added in ascending order to avoid data corruption.
-    void add(size_t part, std::initializer_list<size_t> orbital_indices)
+    void insert(size_t part, std::initializer_list<size_t> orbital_indices)
     {
         assert(part < this->num_parts());
         assert(orbital_indices.size() == this->rank());
@@ -224,6 +237,31 @@ inline size_t pack_part(std::initializer_list<size_t> part)
     }
     return xs;
 }
+
+class ChannelGroup {
+
+public:
+
+    virtual ~ChannelGroup()
+    {
+    }
+
+    // Number of channels in a given rank.
+    virtual size_t num_channels(Rank rank) const = 0;
+
+    // Negate a channel.  The result is always valid.
+    virtual size_t negate(size_t l) const = 0;
+
+    // Add two channels.  The result might be `INVALID_CHANNEL`.
+    virtual size_t add(size_t l1, size_t l2) const = 0;
+
+    // Subtract two channels.  The result might be `INVALID_CHANNEL`.
+    size_t sub(size_t l1, size_t l2) const
+    {
+        return this->add(l1, this->negate(l2));
+    }
+
+};
 
 /// A data structure used for converting channels into abstract indices and
 /// back.  For each channel `l` (which can be the channel of a 0-particle,
@@ -249,7 +287,7 @@ inline size_t pack_part(std::initializer_list<size_t> part)
 /// The default constructor of `C` must construct the group identity ("zero").
 ///
 template<typename C>
-class ChannelTranslationTable {
+class ChannelTranslationTable final : public ChannelGroup {
 
     // Contains all the channel sets, partitioned by rank.
     //
@@ -288,6 +326,7 @@ class ChannelTranslationTable {
     // else knows about it.
     size_t _num_channels_1;
 
+    // Add a channel to the table if it doesn't already exist.
     void _insert(const C &c)
     {
         if (this->_encode_table.find(c) != this->_encode_table.end()) {
@@ -315,7 +354,7 @@ public:
         }
     }
 
-    size_t num_channels(Rank rank) const
+    size_t num_channels(Rank rank) const override
     {
         switch (rank) {
         case RANK_0:
@@ -327,16 +366,26 @@ public:
         }
     }
 
-    bool encode(const C &c, size_t *l_out) const
+    size_t negate(size_t l) const override
+    {
+        size_t l_out = this->encode(-this->decode(l));
+        assert(l_out != INVALID_CHANNEL);
+        return l_out;
+    }
+
+    size_t add(size_t l1, size_t l2) const override
+    {
+        return this->encode(this->decode(l1) + this->decode(l2));
+    }
+
+    /// Returns either INVALID_CHANNEL or a valid channel index.
+    size_t encode(const C &c) const
     {
         auto it = this->_encode_table.find(c);
         if (it == this->_encode_table.end()) {
-            return false;
+            return INVALID_CHANNEL;
         }
-        if (l_out) {
-            *l_out = it->second;
-        }
-        return true;
+        return it->second;
     }
 
     const C &decode(size_t l) const
@@ -344,31 +393,17 @@ public:
         return this->_decode_table.at(l);
     }
 
-    bool add(size_t l1, size_t l2, size_t *l_out) const
-    {
-        const C &c1 = this->decode(l1);
-        const C &c2 = this->decode(l1);
-        return this->encode(c1 + c2, l_out);
-    }
-
-    size_t negate(size_t l) const
-    {
-        size_t l_out;
-        if (!this->encode(-this->decode(l), &l_out)) {
-            throw std::logic_error("channel sets not closed under negation");
-        }
-        return l_out;
-    }
-
 };
 
 template<typename P>
 std::vector<typename P::Channel>
-get_orbitals_channels(const std::vector<P> &orbitals)
+get_orbital_channels(const std::array<std::vector<P>, 2> &orbitals)
 {
     std::vector<typename P::Channel> orbital_channels;
-    for (const P &p : orbitals) {
-        orbital_channels.emplace_back(s.channel());
+    for (size_t x = 0; x < 2; ++x) {
+        for (const P &p : orbitals[x]) {
+            orbital_channels.emplace_back(p.channel());
+        }
     }
     return orbital_channels;
 }
@@ -390,32 +425,41 @@ class OrbitalTranslationTable {
 
     ChannelTranslationTable<typename P::Channel> _channel_translation_table;
 
+    std::vector<size_t> _auxiliary_offsets;
+
     std::vector<std::vector<P>> _decode_table;
 
     std::unordered_map<P, size_t> _encode_table;
 
-    void _insert(const P &p)
+    // note: this must be run for all the x = 0 cases before doing it for the
+    // x = 1 cases
+    void _insert(const P &p, size_t x)
     {
         if (this->_encode_table.find(p) != this->_encode_table.end()) {
             return;
         }
-        size_t l;
-        if (!this->channel_translation_table().encode(p.channel(), &l)) {
-            throw std::logic_error("can't find channel of known state");
+        size_t l = this->channel_translation_table().encode(p.channel());
+        assert(l != INVALID_CHANNEL);
+        size_t u = this->_decode_table.size();
+        this->_encode_table.emplace(p, u);
+        this->_decode_table.at(l).emplace_back(p);
+        if (x == 0) {
+            ++this->_auxiliary_offsets.at(l);
         }
-        this->_encode_table.emplace(p, this->_decode_table.size());
-        this->_decode_table.at(l).emplace_back(c);
     }
 
 public:
 
-    OrbitalTranslationTable(const std::vector<P> &orbitals)
-        : _channel_translation_table(get_orbitals_channels(orbitals))
+    OrbitalTranslationTable(const std::array<std::vector<P>, 2> &orbitals)
+        : _channel_translation_table(get_orbital_channels(orbitals))
     {
-        this->_encode_table.resize(
-            this->channel_translation_table().num_channels(RANK_1));
-        for (const P &p : orbitals) {
-            this->_insert(s);
+        size_t nl1 = this->channel_translation_table().num_channels(RANK_1);
+        this->_auxiliary_offsets.resize(nl1);
+        this->_encode_table.resize(nl1);
+        for (size_t x = 0; x < 2; ++x) {
+            for (const P &p : orbitals[x]) {
+                this->_insert(p, x);
+            }
         }
     }
 
@@ -435,14 +479,29 @@ public:
         return this->_decode_table.at(l).size();
     }
 
+    size_t auxiliary_offset_in_channel_part(size_t l, size_t x) const
+    {
+        switch (x) {
+        case 0:
+            return 0;
+        case 1:
+            return this->_auxiliary_offsets.at(l).size();
+        case 2:
+            return this->num_orbitals_in_channel(l);
+        default:
+            abort();
+        }
+    }
+
     bool encode(const P &p, size_t *l_out, size_t *u_out) const
     {
         auto it = this->_encode_table.find(p);
         if (it == this->_encode_table.end()) {
             return false;
         }
-        if (!this->channel_translation_table().encode(p.channel(), l_out)) {
-            throw std::logic_error("can't find channel of known state");
+        if (l_out) {
+            *l_out = this->channel_translation_table().encode(p.channel());
+            assert(*l_out != INVALID_CHANNEL);
         }
         if (u_out) {
             *u_out = it->second;
@@ -457,11 +516,13 @@ public:
 
 };
 
-class ChannelIndexGroup {
+// TODO: make this class inherit from ChannelGroup
+//       but make sure it does not impact performance for GCC+Clang!
+class ChannelIndexGroup /* final : public ChannelGroup */ {
 
     // Since L1 is a subset of L2, this table suffices for all our purposes.
     //
-    // (L2, L1) -> L1
+    // (L2, L1) -> L2
     //
     std::vector<size_t> _addition_table;
 
@@ -473,18 +534,29 @@ class ChannelIndexGroup {
 
     size_t _num_channels_1;
 
+    // Add two channels.  The result might be `INVALID_CHANNEL`.
+    size_t _add(size_t l1, size_t l2) const
+    {
+        // we only support adding a rank-2 channel to a rank-1 channel (or
+        // vice versa, if the wrapper function `add` is used); we don't allow
+        // adding rank-2 to rank-2, and we shouldn't ever need that
+        assert(l1 < this->num_channels(RANK_2));
+        assert(l2 < this->num_channels(RANK_1));
+        return this->_addition_table[l1 * this->num_channels(RANK_1) + l2];
+    }
+
 public:
 
-    ChannelIndexGroup(const ChannelTranslationTable &table)
+    ChannelIndexGroup(const ChannelGroup &table)
         : _addition_table(table.num_channels(RANK_2) *
                           table.num_channels(RANK_1))
         , _negation_table(table.num_channels(RANK_1))
     {
-        nl1 = table.num_channels(RANK_1);
-        nl2 = table.num_channels(RANK_2);
-        for (size_t l1 = 0; l < nl2; ++l) {
-            for (size_t l2 = 0; l < nl1; ++l) {
-                this->_addition_table[l1 * nl1 + l2] = table.add(l1 + l2);
+        size_t nl1 = table.num_channels(RANK_1);
+        size_t nl2 = table.num_channels(RANK_2);
+        for (size_t l1 = 0; l1 < nl2; ++l1) {
+            for (size_t l2 = 0; l2 < nl1; ++l2) {
+                this->_addition_table[l1 * nl1 + l2] = table.add(l1, l2);
             }
         }
         for (size_t l = 0; l < nl1; ++l) {
@@ -492,7 +564,7 @@ public:
         }
     }
 
-    size_t num_channels(Rank rank) const
+    size_t num_channels(Rank rank) const /* override */
     {
         switch (rank) {
         case RANK_0:
@@ -504,64 +576,28 @@ public:
         }
     }
 
-    size_t negate(size_t l) const
+    // Negate a channel.
+    size_t negate(size_t l) const /* override */
     {
         return this->_negation_table[l];
     }
 
-    bool add(size_t l1, size_t l2, size_t *l_out) const
+    // Add two channels.  The result might be `INVALID_CHANNEL`.
+    size_t add(size_t l1, size_t l2) const /* override */
     {
-        size_t l = this->_addition_table[l1 * nl1 + l2];
-        if (l >= this->num_channels(RANK_2)) {
-            return false;
+        if (l1 < l2) {
+            std::swap(l1, l2);
         }
-        *l_out = l;
-        return true;
+        return this->_add(l1, l2);
     }
 
-    bool sub_12(size_t l1, size_t l2, size_t *l_out) const
+    // Subtract two channels.  The result might be `INVALID_CHANNEL`.
+    size_t sub(size_t l1, size_t l2) const /* override */
     {
-        size_t l;
-        if (!this->sub_21(l2, l1, &l)) {
-            return false;
-        }
-        *l_out = this->negate(l);
-        return true;
-    }
-
-    bool sub_21(size_t l1, size_t l2, size_t *l_out) const
-    {
-        return this->add(l1, this->negate(l2), l_out);
+        return this->add(l1, this->negate(l2));
     }
 
 };
-
-struct {
-    // L1 -> num_U1
-    std::vector<size_t> lu;
-    // Note: L2 includes BOTH L1+L1 and L1-L1
-    // Note: L1 is closed under negation
-
-    // (L1, L1) -> L2
-    std::vector<size_t> addition_table_112;
-
-    // (L2, L1) -> L1
-    std::vector<size_t> addition_table_211;
-
-    std::vector<size_t> negation_table;
-
-    size_t num_channels(size_t rank) const
-    {
-        switch (rank) {
-        case 0:
-            return 1;
-        case 1:
-            return this->lu.size();
-        case 2:
-            return this->num_channels_2;
-        }
-    }
-}
 
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
@@ -580,86 +616,9 @@ class ManyBodyBasis {
     //   - p = orbital_index
     //   - n_p = num_orbitals
 
-    // offsets in a matrix that contains a many-body operator in standard form
-    // (000, 100, 200)
-    size_t _operator_offsets[RANK_COUNT + 1];
-
     std::vector<size_t> _block_offsets[OPERATOR_KIND_COUNT];
 
     size_t _orbital_index_offsets[3];
-
-    // _num_channels[r] gives the number of channels for rank r
-    size_t _num_channels[RANK_COUNT];
-
-    // _channels[l] = c
-    //
-    // The channels are stored here in one single array:
-    //
-    //   - Element `0` contains the zero channel.
-    //
-    //   - Elements `[1, num_channels(1))` contain the nonzero one-body
-    //     channels.
-    //
-    //   - Elements `[num_channels(1), num_channels(2))` contain the
-    //     two-body channels that aren't also a one-body channel.
-    //
-    std::vector<C> _channels;
-
-    // _channel_map[c] = l
-    std::unordered_map<C, size_t> _channel_map;
-
-    // _states_by_channel[k][l].size() = n_ps
-    // _states_by_channel[k][l][u][i] = p[i]
-    std::vector<States> _states_by_channel[STATE_KIND_COUNT];
-
-    // _channels_by_state[k][combine(p, n_p)] = {l, u}
-    //
-    // combine(p, n_p) = ((p[0] * n_p + p[1]) * n_p + p[2]) * n_p + p[3] ...
-    std::vector<Orbital> _channels_by_state[STATE_KIND_COUNT];
-
-    // This function must be called in the correct order, starting with
-    // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
-    // hopelessly corrupt the data structures.
-    bool _get_or_add_channel_index(Rank rank, const C &channel,
-                                   size_t *channel_index_out)
-    {
-        bool exists = this->pack_channel(rank, channel, channel_index_out);
-        if (!exists) {
-            size_t l = this->_channels.size();
-            this->_channel_map.emplace(channel, l);
-            this->_channels.emplace_back(channel);
-            for (size_t &n : this->_num_channels) {
-                ++n;
-            }
-            if (channel_index_out) {
-                *channel_index_out = l;
-            }
-        }
-        return exists;
-    }
-
-    // This function must be called in the correct order, starting with
-    // channels of rank 0, then rank 1, then rank 2.  Otherwise, it will
-    // hopelessly corrupt the data structures.
-    //
-    // Note: for use during initialization phase only.
-    //
-    // p[i + 1] must increment faster than p[i]
-    void _add_state(StateKind k, const C &channel,
-                    std::initializer_list<size_t> xs,
-                    std::initializer_list<size_t> ps)
-    {
-        Rank r = state_kind_to_rank(k);
-        size_t l;
-        this->_get_or_add_channel_index(r, channel, &l);
-        if (l >= this->_states_by_channel[k].size()) {
-            this->_states_by_channel[k].resize(l + 1, States(r, 1 << r));
-        }
-        size_t u = this->_states_by_channel[k][l].size();
-        this->_states_by_channel[k][l].add(pack_part(std::move(xs)),
-                                           std::move(ps));
-        this->_channels_by_state[k].emplace_back(l, u);
-    }
 
 public:
 
@@ -680,45 +639,13 @@ public:
     ///         {y_channel, z_channel}
     ///     }
     ///
-    template<typename O>
-    ManyBodyBasis(const std::vector<O> &orbital_channels)
+    ManyBodyBasis(ChannelTranslationTable table)
+        : _table(std::move(table));
     {
-        // add the zero-particle states
-        this->_add_state(STATE_KIND_00, C(), {}, {});
 
-        // add the one-particle states
-        size_t p = 0;
-        for (size_t x = 0; x < 2; ++x) {
-            this->_orbital_index_offsets[x] = p;
-            for (const C &c : orbital_channels[x]) {
-                this->_add_state(STATE_KIND_10, c, {x}, {p});
-                ++p;
-            }
-        }
-        this->_orbital_index_offsets[2] = p;
-
-        // add the two-particle states
-        const auto &lu_by_p = this->_channels_by_state[STATE_KIND_10];
-        for (size_t x1 = 0; x1 < 2; ++x1) {
-            for (size_t x2 = 0; x2 < 2; ++x2) {
-                for (size_t p1 = this->orbital_index_offset(x1);
-                     p1 < this->orbital_index_offset(x1 + 1); ++p1) {
-                    for (size_t p2 = this->orbital_index_offset(x2);
-                         p2 < this->orbital_index_offset(x2 + 1); ++p2) {
-                        size_t l1 = lu_by_p[p1].channel_index;
-                        size_t l2 = lu_by_p[p2].channel_index;
-                        const C &c1 = this->unpack_channel(RANK_1, l1);
-                        const C &c2 = this->unpack_channel(RANK_1, l2);
-                        C c12_20 = c1 + c2;
-                        C c12_21 = c1 - c2;
-                        // warning: c1 and c2 are references and may expire after next
-                        // line due to internal data structures being modified
-                        this->_add_state(STATE_KIND_20, c12_20, {x1, x2}, {p1, p2});
-                        this->_add_state(STATE_KIND_21, c12_21, {x1, x2}, {p1, p2});
-                    }
-                }
-            }
-        }
+        // _auxiliary_offsets[STATE_20][(l12 * 4 + x12) * nl1 + l1] == starting_offset
+        // _auxiliary_offsets[STATE_21][(l14 * 4 + x12) * nl1 + l1]
+        std::vector<size_t> _auxiliary_offsets[STATE_KIND_COUNT];
 
         // get the offset of blocks within each operator
         for (OperatorKind kk = OperatorKind(); kk < OPERATOR_KIND_COUNT;
@@ -818,60 +745,21 @@ public:
                   i * this->block_stride(kk, channel_index) + j];
     }
 
-    size_t add(size_t r1, size_t l1, size_t r2, size_t l2, size_t r12) const
+    size_t combine(size_t l1, size_t u1, size_t l2, size_t u2, size_t *u12_out) const
     {
-        const C &c1 = this->unpack_channel((Rank)r1, l1);
-        const C &c2 = this->unpack_channel((Rank)r2, l2);
-        C c12 = c1 + c2;
-        size_t l12;
-        this->pack_channel(r12, c12, l12);
+        l12 = add(l1, l2);
+        u12 = auxiliary_offset[l12, l1] +
+              u1 * num_orbitals_in_channel(l2) + u2;
+        if (u12_out) {
+            *u12_out = u12;
+        }
         return l12;
     }
-
-    size_t sub(size_t r1, size_t l1, size_t r2, size_t l2, size_t r12) const
-    {
-        const C &c1 = this->unpack_channel((Rank)r1, l1);
-        const C &c2 = this->unpack_channel((Rank)r2, l2);
-        C c12 = c1 - c2;
-        size_t l12;
-        this->pack_channel(r12, c12, l12);
-        return l12;
-    }
-
-#if 0
-    size_t combine(size_t r1, size_t l1, size_t u1, size_t r2, size_t l2, size_t u2, size_t r12) const
-    {
-    }
-#endif
 
     size_t num_channels(Rank rank) const
     {
         assert(rank < RANK_COUNT);
         return this->_num_channels[rank];
-    }
-
-    bool pack_channel(Rank rank, const C &channel,
-                      size_t *channel_index_out) const
-    {
-        auto it = this->_channel_map.find(channel);
-        if (it == this->_channel_map.end()) {
-            return false;
-        }
-        size_t l = it->second;
-        if (l >= this->num_channels(rank)) {
-            return false;
-        }
-        if (channel_index_out) {
-            *channel_index_out = l;
-        }
-        return true;
-    }
-
-    const C &unpack_channel(Rank rank, size_t block_index) const
-    {
-        (void)rank; // avoid warning about unused `rank` when asserts are off
-        assert(block_index < this->num_channels(rank));
-        return this->_channels[block_index];
     }
 
     /// Allocate a many-body operator for the given many-body basis.

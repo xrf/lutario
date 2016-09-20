@@ -18,6 +18,10 @@ typedef SparseVector<unsigned, TwiceSpin> Channel;
 /// A single-particle state in the pairing model basis.
 struct Orbital {
 
+    /// Alias for `pairing_model::Channel`, which is needed for acceptance by
+    /// `OrbitalTranslationTable`.
+    typedef pairing_model::Channel Channel;
+
     /// Principal quantum number.
     unsigned n;
 
@@ -41,16 +45,8 @@ typedef std::array<std::vector<Orbital>, 2> Basis;
 /// Construct the list of orbitals.
 Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells);
 
-/// Write an `Basis` to a stream.
+/// Write a `Basis` to a stream.
 std::ostream &operator<<(std::ostream &, const Basis &);
-
-typedef std::array<std::vector<Channel>, 2> OrbitalChannels;
-
-/// Construct two lists containing channels for each orbital in the exact
-/// same order (including possibly duplicates).  The first list contains
-/// the occupied channels, while the second list contains the unoccupied
-/// channels.
-OrbitalChannels get_orbital_channels(const Basis &);
 
 struct Hamiltonian {
 
@@ -76,16 +72,14 @@ struct Hamiltonian {
     ///
     /// Pre-condition: the conservation law must hold (i.e. `(p1, p2)` and
     /// `(p3, p4)` must reside in the same channel.
-    double two_body_conserv(Orbital p1, Orbital p2, Orbital p3,
-                            Orbital p4) const;
+    double two_body_conserv(Orbital p1, Orbital p2,
+                            Orbital p3, Orbital p4) const;
 
 };
 
-/// Write an `Basis` to a stream.
+/// Write a `Hamiltonian` to a stream.
 std::ostream &operator<<(std::ostream &, const Hamiltonian &);
 
 }
-
-std::ostream &operator<<(std::ostream &, const pairing_model::OrbitalChannels &);
 
 #endif

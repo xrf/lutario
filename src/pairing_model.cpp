@@ -7,7 +7,8 @@
 
 namespace {
 
-void write_vector_Orbital(std::ostream &stream, const std::vector<pairing_model::Orbital> &self)
+void write_orbital_vector(std::ostream &stream,
+                          const std::vector<pairing_model::Orbital> &self)
 {
     bool first = true;
     stream << "{";
@@ -18,21 +19,6 @@ void write_vector_Orbital(std::ostream &stream, const std::vector<pairing_model:
             stream << ", ";
         }
         stream << "{" << p.n << ", " << p.s << "}";
-    }
-    stream << "}";
-}
-
-void write_vector_Channel(std::ostream &stream, const std::vector<pairing_model::Channel> &self)
-{
-    bool first = true;
-    stream << "{";
-    for (const pairing_model::Channel &l : self) {
-        if (first) {
-            first = false;
-        } else {
-            stream << ", ";
-        }
-        stream << l;
     }
     stream << "}";
 }
@@ -73,23 +59,12 @@ Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
     return orbitals;
 }
 
-OrbitalChannels get_orbital_channels(const Basis &orbitals)
-{
-    std::array<std::vector<Channel>, 2> orbital_channels;
-    for (size_t x = 0; x < 2; ++x) {
-        for (Orbital p : orbitals[x]) {
-            orbital_channels[x].push_back(p.channel());
-        }
-    }
-    return orbital_channels;
-}
-
 std::ostream &operator<<(std::ostream &stream, const Basis &self)
 {
     stream << "pairing_model::Basis(";
-    write_vector_Orbital(stream, self[0]);
+    write_orbital_vector(stream, self[0]);
     stream << ", ";
-    write_vector_Orbital(stream, self[1]);
+    write_orbital_vector(stream, self[1]);
     stream << ")";
     return stream;
 }
@@ -144,14 +119,4 @@ std::ostream &operator<<(std::ostream &stream, const Hamiltonian &self)
     return stream;
 }
 
-}
-
-std::ostream &operator<<(std::ostream &stream, const pairing_model::OrbitalChannels &self)
-{
-    stream << "pairing_model::OrbitalChannels(";
-    write_vector_Channel(stream, self[0]);
-    stream << ", ";
-    write_vector_Channel(stream, self[1]);
-    stream << ")";
-    return stream;
 }
