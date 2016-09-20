@@ -6,43 +6,6 @@
 #include <unordered_map>
 #include <vector>
 
-template<typename T>
-class AbelianGroup {
-
-public:
-
-    virtual ~AbelianGroup()
-    {
-    }
-
-    virtual T zero() const = 0;
-
-    virtual T plus(const T &, const T &) const = 0;
-
-    virtual T negate(const T &) const = 0;
-
-};
-
-template<typename T>
-class AdditiveAbelianGroup : public AbelianGroup<T> {
-
-public:
-
-    T zero() const override
-    {
-        return T();
-    }
-
-    T plus(const T &x, const T &y) const override {
-        return x + y;
-    }
-
-    T negate(const T &x) const override {
-        return -x;
-    }
-
-};
-
 /// A many-body operator contains three operators in standard form:
 ///
 ///   - Zero-body operator (constant term) in 000 form.  This is always has a
@@ -297,53 +260,188 @@ struct ChannelTable {
 };
 
 template<typename C>
-struct ChannelTranslationTable {
+class ChannelTranslationTable {
 
-    // Rank-0 part contains just the group identity, which is always stored at
-    // index 0.  Rank-2 contains all channels formed by adding pairs of rank-1
-    // channels, including the zero channel (so it's cumulative).
+    // Contains all the channel sets, partitioned by rank.
     //
-    // [ rank 0 ] [ ====== rank 2 ======= ]
-    std::vector<C> even_rank_channels;
-
-    // For now, this contains only rank-1 channels.
+    // [ rank-0 ] [ == rank-1-exclusive == ] [ ==== rank-2-exclusive ==== ]
     //
-    // [ ============ rank 1 ============ ]
-    std::vector<C> odd_rank_channels;
+    // There's only one rank-0 channel, namely the group identity.  The number
+    // of rank-1 channels is given by `_num_channels_1`.
+    //
+    // The channel sets are cumulative: rank-2 channels include rank-1
+    // channels, which include rank-0 channels.  This may not coincide with
+    // the physical channel sets.  In fact, it usually does not because in
+    // most fermionic systems the physical rank-1 channel set is disjoint from
+    // the physical rank-0 or rank-2 channel sets due to the spin projection
+    // being half-integers.  Nonetheless, it is useful to have a universal
+    // translation table is not rank-dependent to avoid implementation
+    // complexity.
+    //
+    std::vector<C> _decode_table;
 
-    // um is this gonna be multivalued?
-    std::unordered_map<C, size_t> reverse_table;
+    // Inverse mapping of `_decode_table`.  Must satisfy:
+    //
+    //   - for all `l`, `_encode_table[_decode_table[l]] == l`
+    //   - for all `c`, `_decode_table[_encode_table[c]] == c`
+    //
+    std::unordered_map<C, size_t> _encode_table;
 
-    size_t num_channels[3];
+    // Must store the number of single-particle channels here because nothing
+    // else knows about it.
+    size_t _num_channels_1;
 
-    ChannelTranslationTable(const std::vector<C> &channels,
-                            const AbelianGroup<C> &abelian_group =
-                                AdditiveAbelianGroup())
+    void _insert(const C &c)
     {
-        // do something
-        this->add_channel(reverse_table, abelian_group.zero());
+        if (this->_encode_table.find(c) != this->_encode_table.end()) {
+            return;
+        }
+        this->_encode_table.emplace(c, this->_decode_table.size());
+        this->_decode_table.emplace_back(c);
+    }
+
+public:
+
+    ChannelTranslationTable(const std::vector<C> &orbital_channels)
+    {
+        this->_insert(C());
+
+        for (const C &c : orbital_channels) {
+            this->_insert(c);
+            // make sure set is closed under negation
+            this->_insert(-c);
+        }
+
+        this->_num_channels_1 = this->_decode_table.size();
+
+        for (const C &c1 : orbital_channels) {
+            for (const C &c2 : orbital_channels) {
+                this->_insert(c1 + c2);
+            }
+        }
+    }
+
+    size_t num_channels(Rank rank) const
+    {
+        switch (rank) {
+        case RANK_0:
+            return 1;
+        case RANK_1:
+            return this->_num_channels_1;
+        case RANK_2:
+            return this->_decode_table.size();
+        }
+    }
+
+    bool encode(const C &c, size_t *l_out) const
+    {
+        auto it = this->_encode_table.find(c);
+        if (it == this->_encode_table.end()) {
+            return false;
+        }
+        *l_out = it->second;
+        return true;
+    }
+
+    const C &decode(size_t l) const
+    {
+        return this->_decode_table.at(l);
+    }
+
+    bool add(size_t l1, size_t l2, size_t *l_out) const
+    {
+        const C &c1 = this->decode(l1);
+        const C &c2 = this->decode(l1);
+        return this->encode(c1 + c2, l_out);
+    }
+
+    size_t negate(size_t l) const
+    {
+        size_t l_out;
+        if (!this->encode(-this->decode(l), &l_out)) {
+            throw std::logic_error("channel sets not closed under negation");
+        }
+        return l_out;
     }
 
 };
 
-struct ChannelIndexGroup {
+class ChannelIndexGroup {
 
-    // (L1, L1) -> L2
-    std::vector<size_t> _addition_table_112;
-
+    // Since L1 is a subset of L2, this table suffices for all our purposes.
+    //
     // (L2, L1) -> L1
-    std::vector<size_t> _addition_table_211;
+    //
+    std::vector<size_t> _addition_table;
 
-    std::vector<size_t> _even_negation_table;
+    // Negation table
+    //
+    // L2 -> L2
+    //
+    std::vector<size_t> _negation_table;
 
-    std::vector<size_t> _odd_negation_table;
+    size_t _num_channels_1;
 
-    size_t zero(size_t rank)
+public:
+
+    ChannelIndexGroup(const ChannelTranslationTable &table)
+        : _addition_table(table.num_channels(RANK_2) *
+                          table.num_channels(RANK_1))
+        , _negation_table(table.num_channels(RANK_1))
     {
-        assert(rank % 2 == 0);
+        nl1 = table.num_channels(RANK_1);
+        nl2 = table.num_channels(RANK_2);
+        for (size_t l1 = 0; l < nl2; ++l) {
+            for (size_t l2 = 0; l < nl1; ++l) {
+                this->_addition_table[l1 * nl1 + l2] = table.add(l1 + l2);
+            }
+        }
+        for (size_t l = 0; l < nl1; ++l) {
+            this->_negation_table[l] = table.negate(l);
+        }
     }
 
-    void negate(size_t rank, );
+    size_t num_channels(Rank rank) const
+    {
+        switch (rank) {
+        case RANK_0:
+            return 1;
+        case RANK_1:
+            return this->_num_channels_1;
+        case RANK_2:
+            return this->_negation_table.size();
+        }
+    }
+
+    size_t negate(size_t l) const
+    {
+        return this->_negation_table[l];
+    }
+
+    bool add(size_t l1, size_t l2, size_t *l_out) const
+    {
+        size_t l = this->_addition_table[l1 * nl1 + l2];
+        if (l >= this->num_channels(RANK_2)) {
+            return false;
+        }
+        *l_out = l;
+        return true;
+    }
+
+    bool sub_12(size_t l1, size_t l2, size_t *l_out) const
+    {
+        size_t l;
+        if (!this->sub_21(l2, l1, &l)) {
+            return false;
+        }
+        *l_out = this->negate(l);
+        return true;
+    }
+
+    bool sub_21(size_t l1, size_t l2, size_t *l_out) const
+    {
+        return this->add(l1, this->negate(l2), l_out);
+    }
 
 };
 
