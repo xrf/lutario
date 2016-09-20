@@ -225,40 +225,29 @@ inline size_t pack_part(std::initializer_list<size_t> part)
     return xs;
 }
 
+/// A data structure used for converting channels into abstract indices and
+/// back.  For each channel `l` (which can be the channel of a 0-particle,
+/// 1-particle, or 2-particle state) we associate with a unique abstract index
+/// `l` called the channel index.
+///
+/// This, in conjunction with the `ChannelIndexGroup`, allows us to abstract
+/// over the operations on channels in a way that does not care about the
+/// internal details of what a channel means and can improve efficiency by
+/// reducing channel operations that may be moderately expensive to compute to
+/// simple table lookups.
+///
+/// The indices are contiguous, so if two indices `l1` and `l2` correspond to
+/// two channels and `l3` is sandwiched between `l1` and `l2`, then `l3` must
+/// also correspond to another channel.
+///
 /// The `C` type must be an abelian group and support the following binary
 /// operators:
 ///
-///   - `+` ("addition")
-///   - `-` ("subtraction", inverse of "addition")
+///   - `x + y` ("addition", the binary group operation)
+///   - `-x` ("negation", returns the inverse element)
 ///
-/// The default constructor of `C` must construct the additive identity
-/// ("zero").
+/// The default constructor of `C` must construct the group identity ("zero").
 ///
-template<typename C>
-struct ChannelTable {
-
-    // _num_channels[r] gives the number of channels for rank r
-    size_t _num_channels[RANK_COUNT];
-
-    // _channels[l] = c
-    //
-    // The channels are stored here in one single array:
-    //
-    //   - Element `0` contains the zero channel.
-    //
-    //   - Elements `[1, num_channels(1))` contain the nonzero one-body
-    //     channels.
-    //
-    //   - Elements `[num_channels(1), num_channels(2))` contain the
-    //     two-body channels that aren't also a one-body channel.
-    //
-    std::vector<C> _channels;
-
-    // _channel_map[c] = l
-    std::unordered_map<C, size_t> _channel_map;
-
-};
-
 template<typename C>
 class ChannelTranslationTable {
 
@@ -266,8 +255,16 @@ class ChannelTranslationTable {
     //
     // [ rank-0 ] [ == rank-1-exclusive == ] [ ==== rank-2-exclusive ==== ]
     //
-    // There's only one rank-0 channel, namely the group identity.  The number
-    // of rank-1 channels is given by `_num_channels_1`.
+    // The channels are stored here in one single array:
+    //
+    //   - Elements `[0, num_channels(RANK_0))` contain the zero channel
+    //     (there is only one, so `num_channels(RANK_0)` is trivially `1`.
+    //
+    //   - Elements `[num_channels(RANK_0), num_channels(RANK_1))` contain the
+    //     nonzero one-body channels.
+    //
+    //   - Elements `[num_channels(RANK_1), num_channels(RANK_2))` contain the
+    //     two-body channels that aren't also a one-body channel.
     //
     // The channel sets are cumulative: rank-2 channels include rank-1
     // channels, which include rank-0 channels.  This may not coincide with
@@ -305,15 +302,12 @@ public:
     ChannelTranslationTable(const std::vector<C> &orbital_channels)
     {
         this->_insert(C());
-
         for (const C &c : orbital_channels) {
             this->_insert(c);
             // make sure set is closed under negation
             this->_insert(-c);
         }
-
         this->_num_channels_1 = this->_decode_table.size();
-
         for (const C &c1 : orbital_channels) {
             for (const C &c2 : orbital_channels) {
                 this->_insert(c1 + c2);
@@ -339,7 +333,9 @@ public:
         if (it == this->_encode_table.end()) {
             return false;
         }
-        *l_out = it->second;
+        if (l_out) {
+            *l_out = it->second;
+        }
         return true;
     }
 
@@ -362,6 +358,101 @@ public:
             throw std::logic_error("channel sets not closed under negation");
         }
         return l_out;
+    }
+
+};
+
+template<typename P>
+std::vector<typename P::Channel>
+get_orbitals_channels(const std::vector<P> &orbitals)
+{
+    std::vector<typename P::Channel> orbital_channels;
+    for (const P &p : orbitals) {
+        orbital_channels.emplace_back(s.channel());
+    }
+    return orbital_channels;
+}
+
+/// An orbital translation table is a more powerful version of the
+/// `ChannelTranslationTable` that maps orbitals (single-particle states) of a
+/// basis to index pairs of the form `(l, u)` and vice versa.
+///
+/// Here `l` is the channel index, and `u` is the auxiliary index.  The `l` is
+/// unique for each channel, with `u` serving as the discriminator for
+/// orbitals that share the same channel.  Similar to the
+/// `ChannelTranslationTable`, the indices are contiguous, so if two indices
+/// `u1` and `u2` correspond to orbitals of the same channel `l` and `u3` is
+/// sandwiched between `u1` and `u2`, then `u3` must also correspond to
+/// another orbital of the same channel.
+///
+template<typename P>
+class OrbitalTranslationTable {
+
+    ChannelTranslationTable<typename P::Channel> _channel_translation_table;
+
+    std::vector<std::vector<P>> _decode_table;
+
+    std::unordered_map<P, size_t> _encode_table;
+
+    void _insert(const P &p)
+    {
+        if (this->_encode_table.find(p) != this->_encode_table.end()) {
+            return;
+        }
+        size_t l;
+        if (!this->channel_translation_table().encode(p.channel(), &l)) {
+            throw std::logic_error("can't find channel of known state");
+        }
+        this->_encode_table.emplace(p, this->_decode_table.size());
+        this->_decode_table.at(l).emplace_back(c);
+    }
+
+public:
+
+    OrbitalTranslationTable(const std::vector<P> &orbitals)
+        : _channel_translation_table(get_orbitals_channels(orbitals))
+    {
+        this->_encode_table.resize(
+            this->channel_translation_table().num_channels(RANK_1));
+        for (const P &p : orbitals) {
+            this->_insert(s);
+        }
+    }
+
+    ChannelTranslationTable<typename P::Channel>
+    channel_translation_table() const
+    {
+        return this->_channel_translation_table;
+    }
+
+    size_t num_orbitals() const
+    {
+        return this->_encode_table.size();
+    }
+
+    size_t num_orbitals_in_channel(size_t l) const
+    {
+        return this->_decode_table.at(l).size();
+    }
+
+    bool encode(const P &p, size_t *l_out, size_t *u_out) const
+    {
+        auto it = this->_encode_table.find(p);
+        if (it == this->_encode_table.end()) {
+            return false;
+        }
+        if (!this->channel_translation_table().encode(p.channel(), l_out)) {
+            throw std::logic_error("can't find channel of known state");
+        }
+        if (u_out) {
+            *u_out = it->second;
+        }
+        return true;
+    }
+
+    const P &decode(size_t l, size_t u) const
+    {
+        return this->_decode_table.at(l).at(u);
     }
 
 };
