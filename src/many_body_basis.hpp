@@ -34,7 +34,11 @@ struct ManyBodyOperator {
 ///   - A one-body operator has `RANK_1`.
 ///   - A two-body operator has `RANK_2`.
 ///
-enum Rank { RANK_0, RANK_1, RANK_2 };
+enum Rank {
+    RANK_0,
+    RANK_1,
+    RANK_2
+};
 
 static const size_t RANK_COUNT = 3;
 
@@ -44,9 +48,9 @@ enum StateKind {
     STATE_KIND_00,
     STATE_KIND_10,
     STATE_KIND_20,
-    STATE_KIND_21,
-    STATE_KIND_COUNT
+    STATE_KIND_21
 };
+static const size_t STATE_KIND_COUNT = 4;
 
 /// Get the number of particles in a state of the given kind.
 inline Rank state_kind_to_rank(StateKind state_kind)
@@ -67,9 +71,9 @@ enum OperatorKind {
     OPERATOR_KIND_000,
     OPERATOR_KIND_100,
     OPERATOR_KIND_200,
-    OPERATOR_KIND_211,
-    OPERATOR_KIND_COUNT
+    OPERATOR_KIND_211
 };
+static const size_t OPERATOR_KIND_COUNT = 4;
 
 /// Get the rank of an operator with the given kind.
 inline Rank operator_kind_to_rank(OperatorKind operator_kind)
@@ -94,8 +98,6 @@ inline OperatorKind standard_operator_kind(Rank rank)
         return OPERATOR_KIND_100;
     case RANK_2:
         return OPERATOR_KIND_200;
-    default:
-        abort(); // unreachable
     }
 }
 
@@ -123,8 +125,6 @@ inline void split_operator_kind(OperatorKind operator_kind,
         k1 = STATE_KIND_21;
         k2 = STATE_KIND_21;
         break;
-    default:
-        abort(); // unreachable
     }
     if (state_kind_1_out) {
         *state_kind_1_out = k1;
@@ -616,9 +616,8 @@ class ManyBodyBasis {
     //   - p = orbital_index
     //   - n_p = num_orbitals
 
-    std::vector<size_t> _block_offsets[OPERATOR_KIND_COUNT];
-
-    size_t _orbital_index_offsets[3];
+    std::vector<size_t> _auxiliary_offsets_20;
+    std::vector<size_t> _auxiliary_offsets_21;
 
 public:
 
@@ -639,38 +638,55 @@ public:
     ///         {y_channel, z_channel}
     ///     }
     ///
-    ManyBodyBasis(ChannelTranslationTable table)
-        : _table(std::move(table));
+    ManyBodyBasis(ChannelIndexGroup table)
+        : _table(std::move(table))
+        , _auxiliary_offsets_20(table.num_channels(RANK_2) * 4 *
+                                table.num_channels(RANK_1) + 1)
+        , _auxiliary_offsets_21(table.num_channels(RANK_2) * 4 *
+                                table.num_channels(RANK_1) + 1)
     {
-
-        // _auxiliary_offsets[STATE_20][(l12 * 4 + x12) * nl1 + l1] == starting_offset
-        // _auxiliary_offsets[STATE_21][(l14 * 4 + x12) * nl1 + l1]
-        std::vector<size_t> _auxiliary_offsets[STATE_KIND_COUNT];
-
-        // get the offset of blocks within each operator
-        for (OperatorKind kk = OperatorKind(); kk < OPERATOR_KIND_COUNT;
-             kk = (OperatorKind)(kk + 1)) {
-            StateKind k1, k2;
-            split_operator_kind(kk, &k1, &k2);
+        size_t nl1 = this->_table.num_channels(RANK_1);
+        size_t nl2 = this->_table.num_channels(RANK_2);
+        // _auxiliary_offsets_20[(l12 * 4 + x12) * nl1 + l1]
+        {
             size_t i = 0;
-            size_t n_l = std::min(this->_states_by_channel[k1].size(),
-                                  this->_states_by_channel[k2].size());
-            for (size_t l = 0; l < n_l; ++l) {
-                this->_block_offsets[kk].emplace_back(i);
-                size_t n_u1, n_u2;
-                this->block_size(kk, l, &n_u1, &n_u2);
-                i += n_u1 * n_u2;
+            for (size_t l12 = 0; l12 < nl2; ++l12) {
+                for (size_t x1 = 0; x1 < 2; ++x1) {
+                    for (size_t x2 = 0; x2 < 2; ++x2) {
+                        for (size_t l1 = 0; l1 < nl1; ++l1) {
+                            size_t l2 = table.sub(l12, l1);
+                            if (l2 >= nl1) {
+                                continue;
+                            }
+                            this->_auxiliary_offsets_20.emplace_back(i);
+                            i += this->_table.num_orbitals_in_channel_part(l1, x1) *
+                                 this->_table.num_orbitals_in_channel_part(l2, x2);
+                        }
+                    }
+                }
             }
-            this->_block_offsets[kk].emplace_back(i);
+            this->_auxiliary_offsets_20.emplace_back(i);
         }
-
-        // get the offset of operators within a many-body operator
-        size_t i = 0;
-        for (Rank r = Rank(); r < RANK_COUNT; r = (Rank)(r + 1)) {
-            this->_operator_offsets[r] = i;
-            i += this->_block_offsets[standard_operator_kind(r)].back();
+        // _auxiliary_offsets_21[(l14 * 4 + x14) * nl1 + l1]
+        {
+            size_t i = 0;
+            for (size_t l14 = 0; l14 < nl2; ++l14) {
+                for (size_t x1 = 0; x1 < 2; ++x1) {
+                    for (size_t x2 = 0; x2 < 2; ++x2) {
+                        for (size_t l1 = 0; l1 < nl1; ++l1) {
+                            size_t l2 = table.sub(l1, l14);
+                            if (l2 >= nl1) {
+                                continue;
+                            }
+                            this->_auxiliary_offsets_21.emplace_back(i);
+                            i += this->_table.num_orbitals_in_channel_part(l1, x1) *
+                                 this->_table.num_orbitals_in_channel_part(l2, x2);
+                        }
+                    }
+                }
+            }
+            this->_auxiliary_offsets_21.emplace_back(i);
         }
-        this->_operator_offsets[RANK_COUNT] = i;
     }
 
     size_t orbital_index_offset(size_t part) const
