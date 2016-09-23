@@ -6,6 +6,37 @@
 #include <unordered_map>
 #include <vector>
 
+/*
+
+There's several pieces of information we need to use a type-erased channelized
+basis effectively:
+
+  (e) number of l in rank 1 (this comes directly from the translation table)
+  (a) number of l in rank r (this comes directly from the translation table)
+  (b) number of u in rank r and channel l (this is implied by (c))
+  (c) offsets of u groupings in rank r and channel l (this requires n_u(r=1, l))
+  (d) addition table of l
+
+There's a couple different ways to get (d): we can do this separately by
+building up the addition table from the translation table, or we can do it
+while building up the translation table itself.
+
+There's also other things that are useful for relating back to the physics and
+also debugging, but these are <C> and <P> dependent and therefore must be
+put outside ManyBodyBasis:
+
+  (0) translation between l1 and c
+  (1) translation between l and c (requires (0))
+  (2) translation between (l, u1) and p
+  (3) addition helpers for l
+
+Do we want to store everything in separate pieces?  Keep the <C/P> dependent
+parts completely in separate variables from the ManyBodyBasis?  Or do we wanna
+keep them together but use virtual stuff?  (arguably less safe since you still
+need dynamic_cast to do things like say printing <C/P> objects)
+
+*/
+
 /// A channel index used to denote an invalid channel.
 /// The value is greater than all valid channels.
 static const size_t INVALID_CHANNEL = (size_t)(-1);
