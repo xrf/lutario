@@ -630,6 +630,15 @@ public:
 
 };
 
+// TODO: need a better name for this
+class NumOrbitalsInChannelPart {
+
+    size_t operator()(size_t l, Part x) const
+    {
+    }
+
+};
+
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
 /// channel arithmetics, as well as the offsets of diagonal blocks in memory.
@@ -669,8 +678,10 @@ public:
     ///         {y_channel, z_channel}
     ///     }
     ///
-    ManyBodyBasis(ChannelIndexGroup table)
+    ManyBodyBasis(ChannelIndexGroup table,
+                  NumOrbitalsInChannelPart num_orbitals_in_channel_part)
         : _table(std::move(table))
+        , _num_orbitals_in_channel_part(std::move(num_orbitals_in_channel_part))
         , _auxiliary_offsets_20(table.num_channels(RANK_2) * 4 *
                                 table.num_channels(RANK_1) + 1)
         , _auxiliary_offsets_21(table.num_channels(RANK_2) * 4 *
@@ -690,8 +701,8 @@ public:
                                 continue;
                             }
                             this->_auxiliary_offsets_20.emplace_back(i);
-                            i += this->_table.num_orbitals_in_channel_part(l1, x1) *
-                                 this->_table.num_orbitals_in_channel_part(l2, x2);
+                            i += this->_num_orbitals_in_channel_part(l1, x1) *
+                                 this->_num_orbitals_in_channel_part(l2, x2);
                         }
                     }
                 }
@@ -710,8 +721,8 @@ public:
                                 continue;
                             }
                             this->_auxiliary_offsets_21.emplace_back(i);
-                            i += this->_table.num_orbitals_in_channel_part(l1, x1) *
-                                 this->_table.num_orbitals_in_channel_part(l2, x2);
+                            i += this->_num_orbitals_in_channel_part(l1, x1) *
+                                 this->_num_orbitals_in_channel_part(l2, x2);
                         }
                     }
                 }
