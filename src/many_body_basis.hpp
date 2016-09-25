@@ -6,42 +6,15 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "indexed_set.hpp"
 
-/*
+// TODO: 'part' could mean just the occupation number, or it could refer to
+// the combination of occupation number and secondary channel indices;
+// figure out a better nomenclature
 
-There's several pieces of information we need to use a type-erased channelized
-basis effectively:
-
-  (e) number of l in rank 1 (this comes directly from the translation table)
-  (a) number of l in rank r (this comes directly from the translation table)
-  (b) number of u in rank r and channel l (this is implied by (c))
-  (c) offsets of u groupings in rank r and channel l (this requires n_u(r=1, l))
-  (d) addition table of l
-
-There's a couple different ways to get (d): we can do this separately by
-building up the addition table from the translation table, or we can do it
-while building up the translation table itself.
-
-There's also other things that are useful for relating back to the physics and
-also debugging, but these are <C> and <P> dependent and therefore must be
-put outside ManyBodyBasis:
-
-  (0) translation between l1 and c
-  (1) translation between l and c (requires (0))
-  (2) translation between (l, u1) and p
-  (3) addition helpers for l
-
-Do we want to store everything in separate pieces?  Keep the <C/P> dependent
-parts completely in separate variables from the ManyBodyBasis?  Or do we wanna
-keep them together but use virtual stuff?  (arguably less safe since you still
-need dynamic_cast to do things like say printing <C/P> objects)
-
-*/
-
-/// A channel index used to denote an invalid channel.
-/// The value is greater than all valid channels.
-static const size_t INVALID_CHANNEL = (size_t)(-1);
+/// A value used to denote an invalid index (such as channel index or
+/// auxiliary orbital index).  It is defined to be `SIZE_MAX`.  Hence, it is
+/// larger than all valid indices.
+static const size_t INVALID_INDEX = (size_t)(-1);
 
 struct Operator {
 };
@@ -88,7 +61,6 @@ static const size_t STATE_KIND_COUNT = 4;
 /// Get the number of particles in a state of the given kind.
 inline Rank state_kind_to_rank(StateKind state_kind)
 {
-    assert(state_kind < STATE_KIND_COUNT);
     if (state_kind >= STATE_KIND_20) {
         return RANK_2;
     }
@@ -111,7 +83,6 @@ static const size_t OPERATOR_KIND_COUNT = 4;
 /// Get the rank of an operator with the given kind.
 inline Rank operator_kind_to_rank(OperatorKind operator_kind)
 {
-    assert(operator_kind < OPERATOR_KIND_COUNT);
     if (operator_kind >= OPERATOR_KIND_200) {
         return RANK_2;
     }
@@ -186,82 +157,6 @@ struct Orbital {
 
 };
 
-/// A sequential data structure used to store orbital indices of some rank.
-/// The `rank` is set dynamically, allowing `States` of different rank to be
-/// stored together using the same type.
-///
-/// The data type is conceptually isomorphic to the following type:
-///
-///     struct {
-///         Rank rank;
-///         vector<size_t> part_offsets;
-///         vector<vector<size_t>> orbital_indices;
-///     };
-///
-/// with the invariant that for all `u`, `orbital_indices[u].size() == rank`.
-///
-class States {
-
-    Rank _rank;
-
-    size_t _size;
-
-    std::vector<size_t> _part_offsets;
-
-    std::vector<size_t> _orbital_indices;
-
-public:
-
-    States(Rank rank, size_t num_parts)
-        : _rank(rank)
-        , _size()
-        , _part_offsets(num_parts + 1)
-    {
-    }
-
-    Rank rank() const
-    {
-        return this->_rank;
-    }
-
-    size_t num_parts() const
-    {
-        assert(this->_part_offsets.size() > 0);
-        return this->_part_offsets.size() - 1;
-    }
-
-    size_t size() const
-    {
-        return this->_size;
-    }
-
-    const size_t *operator[](size_t auxiliary_index) const
-    {
-        assert(auxiliary_index < this->size());
-        return this->_orbital_indices.data() + auxiliary_index * this->rank();
-    }
-
-    size_t part_offset(size_t part) const {
-        assert(part < this->_part_offsets.size());
-        return this->_part_offsets[part];
-    }
-
-    /// Note: parts must be added in ascending order to avoid data corruption.
-    void insert(size_t part, std::initializer_list<size_t> orbital_indices)
-    {
-        assert(part < this->num_parts());
-        assert(orbital_indices.size() == this->rank());
-        for (size_t p : orbital_indices) {
-            this->_orbital_indices.emplace_back(p);
-        }
-        ++this->_size;
-        for (size_t x = part; x < this->num_parts(); ++x) {
-            this->_part_offsets[part + 1] = this->_size;
-        }
-    }
-
-};
-
 inline size_t pack_part(std::initializer_list<size_t> part)
 {
     size_t xs = 0;
@@ -271,55 +166,72 @@ inline size_t pack_part(std::initializer_list<size_t> part)
     return xs;
 }
 
-class ChannelIndexGroup {
+class OrbitalIndexLayout {
 
 public:
 
-    virtual ~ChannelIndexGroup()
+    virtual ~OrbitalIndexLayout()
     {
     }
 
-    // Number of channels in a given rank.
+    /// Number of channels in a given rank.
     virtual size_t num_channels(Rank rank) const = 0;
 
-    // Negate a valid channel.  The result is always valid.
+    /// Negate a valid channel.  The result is always valid.
     virtual size_t negate_channel(size_t channel) const = 0;
 
-    // Add two valid channels.  The result might be `INVALID_CHANNEL`.
-    virtual size_t add_channel(size_t channel_1, size_t channel_2) const = 0;
+    /// Add two valid channels.  The result might be `INVALID_INDEX`.
+    virtual size_t add_channels(size_t channel_1, size_t channel_2) const = 0;
 
-    // Subtract two valid channels.  The result might be `INVALID_CHANNEL`.
+    /// Subtract two valid channels.  The result might be `INVALID_INDEX`.
     size_t subtract_channel(size_t channel_1, size_t channel_2) const
     {
-        return this->add_channel(l1, this->negate_channel(l2));
+        return this->add_channels(channel_1, this->negate_channel(channel_2));
     }
 
-};
+    virtual size_t orbital_offset(size_t channel, size_t part) const = 0;
 
-class OrbitalIndexLayout : public ChannelIndexGroup {
-
-public:
-
-    virtual size_t orbital_offset(size_t channel, Part part) const = 0;
-
-    // Subtract two valid channels.  The result might be `INVALID_CHANNEL`.
     size_t num_orbitals_in_channel(size_t channel) const
     {
-        return this->orbital_offset(channel, 2) - this->orbital_offset(channel, 0);
+        assert(channel < this->num_channels(RANK_1));
+        return this->orbital_offset(channel, 2) -
+               this->orbital_offset(channel, 0);
+    }
+
+    size_t num_orbitals_in_channel_part(size_t channel, size_t part) const
+    {
+        assert(channel < this->num_channels(RANK_1));
+        assert(part < 2);
+        return this->orbital_offset(channel, part + 1) -
+               this->orbital_offset(channel, part);
     }
 
 };
 
-/// A data structure used for converting channels into abstract indices and
-/// back.  For each channel `l` (which can be the channel of a 0-particle,
-/// 1-particle, or 2-particle state) we associate with a unique abstract index
-/// `l` called the channel index.
+/// An orbital translation table that maps orbitals (single-particle states)
+/// of a basis to index pairs of the form `(l, u)` and vice versa.
+/// Additionally, the translation table allows channels to be converted into
+/// abstract indices and back.
 ///
-/// This, in conjunction with the `ChannelIndexTable`, allows us to abstract
-/// over the operations on channels in a way that does not care about the
-/// internal details of what a channel means and can improve efficiency by
-/// reducing channel operations that may be moderately expensive to compute to
-/// simple table lookups.
+/// For each channel `c` (which can be the channel of a 0-particle,
+/// 1-particle, or 2-particle state) we associate with a unique abstract index
+/// `l` called the channel index.  The channel index is independent of rank,
+/// so the same `l` may denote the channel of a 1-particle or 2-particle
+/// state.  In particular, the set of valid `l` for 1-particle states is a
+/// subset of the set of valid `l` for 2-particle states.
+///
+/// The auxiliary orbital index `u` serves as the discriminator for orbitals
+/// that share the same channel.  The indices are contiguous, so if two
+/// indices `u1` and `u2` correspond to orbitals of the same channel `l` and
+/// `u3` is sandwiched between `u1` and `u2`, then `u3` must also correspond
+/// to another orbital of the same channel.  (By definition, the auxiliary
+/// orbital index is for rank-1 states.)
+///
+/// In conjunction with the `OrbitalIndexTable`, the data structure allows us
+/// to abstract over the operations on channels in a way that does not care
+/// about the internal details of what a channel means and can improve
+/// efficiency by reducing channel operations that may be moderately expensive
+/// to compute to simple table lookups.
 ///
 /// The indices are contiguous, so if two indices `l1` and `l2` correspond to
 /// two channels and `l3` is sandwiched between `l1` and `l2`, then `l3` must
@@ -333,249 +245,223 @@ public:
 ///
 /// The default constructor of `C` must construct the group identity ("zero").
 ///
-template<typename C>
-class ChannelTranslationTable final : public ChannelIndexGroup {
+template<typename P, typename C>
+class OrbitalTranslationTable final : public OrbitalIndexLayout {
 
-    // Contains all the channel sets, partitioned by rank.
+    // Channels are stored here in one single array, subdivided into three
+    // channel sets based on rank:
     //
-    // [ rank-0 ] [ == rank-1-exclusive == ] [ ==== rank-2-exclusive ==== ]
+    //   - [0, num_channels(RANK_0)) contains the one and only rank-0 channel.
     //
-    // The channels are stored here in one single array:
+    //   - [0, num_channels(RANK_1)) contains the rank-1 channels.
     //
-    //   - Elements `[0, num_channels(RANK_0))` contain the zero channel
-    //     (there is only one, so `num_channels(RANK_0)` is trivially `1`.
+    //   - [0, num_channels(RANK_2)) contains the rank-2 channels.
     //
-    //   - Elements `[num_channels(RANK_0), num_channels(RANK_1))` contain the
-    //     nonzero one-body channels.
+    // The channel sets here aren't necessarily the same as the physical
+    // channel sets, but they are always supersets of the physical sets.
+    // Usually, they are *strict* supersets because in most fermionic systems
+    // the physical rank-1 channel set is disjoint from the physical rank-0 or
+    // rank-2 channel sets due to the spin projection being half-integers.
+    // Nonetheless, we choose to enforce cumulativeness on the channel sets to
+    // simplify the implementation.
     //
-    //   - Elements `[num_channels(RANK_1), num_channels(RANK_2))` contain the
-    //     two-body channels that aren't also a one-body channel.
-    //
-    // The channel sets are cumulative: rank-2 channels include rank-1
-    // channels, which include rank-0 channels.  This may not coincide with
-    // the physical channel sets.  In fact, it usually does not because in
-    // most fermionic systems the physical rank-1 channel set is disjoint from
-    // the physical rank-0 or rank-2 channel sets due to the spin projection
-    // being half-integers.  Nonetheless, it is useful to have a universal
-    // translation table is not rank-dependent to avoid implementation
-    // complexity.
-    //
-    IndexedSet<C> _table;
+    // L2 -> C
+    std::vector<C> _channel_decoder;
 
-    // Must store the number of single-particle channels here because nothing
-    // else knows about it.
-    size_t _num_channels_1;
+    // Inverse mapping of _channel_decoder.  Must satisfy:
+    //
+    //   - for all l, _channel_encoder[_channel_decoder[l]] == l
+    //   - for all c, _channel_decoder[_channel_encoder[c]] == c
+    //
+    // C -> L2
+    std::unordered_map<C, size_t> _channel_encoder;
+
+    // L1 -> U1
+    std::vector<size_t> _orbital_offsets;
+
+    // L1 -> U1 -> P
+    std::vector<std::vector<P>> _orbital_decoders;
+
+    // P -> U1
+    std::unordered_map<P, size_t> _orbital_encoder;
+
+    // Add a channel to the table if it doesn't already exist.
+    void _insert_channel(const C &c)
+    {
+        if (this->encode_channel(c) != INVALID_INDEX) {
+            return;
+        }
+        size_t l = this->_channel_decoder.size();
+        this->_channel_encoder.emplace(c, l);
+        this->_channel_decoder.emplace_back(c);
+    }
+
+    // Add an orbital to the table.
+    void _insert_orbital(const P &p, const C &c)
+    {
+        size_t l = this->encode_channel(c);
+        if (l == INVALID_INDEX) {
+            throw std::logic_error("channel not found");
+        }
+        if (this->encode_orbital(p) != INVALID_INDEX) {
+            throw std::logic_error("orbitals are not unique");
+        }
+        size_t u = this->_orbital_decoders.at(l).size();
+        this->_orbital_encoder.emplace(p, u);
+        this->_orbital_decoders.at(l).emplace_back(p);
+    }
 
 public:
 
-    ChannelTranslationTable(const std::vector<C> &orbital_channels)
+    /// Construct an `OrbitalTranslationTable` from a list of orbitals for a
+    /// basis.  The list contains triples of the form `(p, c, x)` where `p` is
+    /// the orbital, `c` is its corresponding channel, and `x` is a boolean
+    /// indicating whether the orbital is unoccupied.  The list must contain
+    /// unique orbitals.
+    explicit OrbitalTranslationTable(
+        const std::vector<std::tuple<P, C, bool>> &orbitals)
     {
-        this->_table.insert(C());
-        for (const C &c : orbital_channels) {
-            this->_table.insert(c);
-            // make sure set is closed under negation
-            this->_table.insert(-c);
+        // construct channel translation table
+        this->_insert_channel(C());
+        for (bool x_filter : {false, true}) {
+            for (const auto &pcx : orbitals) {
+                const C &c = std::get<1>(pcx);
+                size_t x = std::get<2>(pcx);
+                if (x == x_filter) {
+                    this->_insert_channel(c);
+                    this->_insert_channel(-c); // ensure closure under negation
+                }
+            }
         }
-        this->_num_channels_1 = this->_table.size();
-        for (const C &c1 : orbital_channels) {
-            for (const C &c2 : orbital_channels) {
-                this->_table.insert(c1 + c2);
+        size_t nl1 = this->_channel_decoder.size();
+        for (size_t l1 = 0; l1 < nl1; ++l1) {
+            for (size_t l2 = 0; l2 <= l1; ++l2) {
+                const C &c1 = this->decode_channel(l1);
+                const C &c2 = this->decode_channel(l2);
+                this->_insert_channel(c1 + c2);
+            }
+        }
+
+        // construct orbital translation table
+        this->_orbital_offsets.resize(nl1);
+        this->_orbital_decoders.resize(nl1);
+        for (bool x_filter : {false, true}) {
+            for (const auto &pcx : orbitals) {
+                const P &p = std::get<0>(pcx);
+                const C &c = std::get<1>(pcx);
+                size_t x = std::get<2>(pcx);
+                if (x == x_filter) {
+                    this->_insert_orbital(p, c);
+                }
+            }
+            if (x_filter == 0) {
+                for (size_t l = 0; l < nl1; ++l) {
+                    this->_orbital_offsets.at(l) =
+                        this->_orbital_decoders.at(l).size();
+                }
             }
         }
     }
 
-    size_t num_channels(Rank rank) const override
+    size_t num_channels(Rank r) const override
     {
-        switch (rank) {
+        switch (r) {
         case RANK_0:
             return 1;
         case RANK_1:
-            return this->_num_channels_1;
+            return this->_orbital_decoders.size();
         case RANK_2:
-            return this->_table.size();
+            return this->_channel_decoder.size();
+        }
+    }
+
+    size_t num_orbitals() const
+    {
+        return this->_orbital_encoder.size();
+    }
+
+    size_t orbital_offset(size_t l, size_t x) const override
+    {
+        switch (x) {
+        case 0:
+            return 0;
+        case 1:
+            return this->_orbital_offsets.at(l);
+        case 2:
+            return this->_orbital_decoders.at(l).size();
+        default:
+            throw std::logic_error("invalid part");
         }
     }
 
     size_t negate_channel(size_t l) const override
     {
         size_t l_out = this->encode_channel(-this->decode_channel(l));
-        assert(l_out != INVALID_CHANNEL);
+        assert(l_out != INVALID_INDEX);
         return l_out;
     }
 
-    size_t add_channel(size_t l1, size_t l2) const override
+    size_t add_channels(size_t l1, size_t l2) const override
     {
-        return this->encode_channel(
-            this->decode_channel(l1) +
-            this->decode_channel(l2)
-        );
+        return this->encode_channel(this->decode_channel(l1) +
+                                    this->decode_channel(l2));
     }
 
-    /// Returns either INVALID_CHANNEL or a valid channel index.
+    /// Returns either INVALID_INDEX or a valid channel index.
     size_t encode_channel(const C &c) const
     {
-        size_t l;
-        if (this->_table.find(c, &l)) {
-            return l;
+        auto it = this->_channel_encoder.find(c);
+        if (it == this->_channel_encoder.end()) {
+            return INVALID_INDEX;
         }
-        return INVALID_CHANNEL;
+        return it->second;
     }
 
     const C &decode_channel(size_t l) const
     {
-        return this->_table.at(l);
+        return this->_channel_decoder.at(l);
     }
 
-};
-
-/// An orbital translation table is a more powerful version of the
-/// `ChannelTranslationTable` that maps orbitals (single-particle states) of a
-/// basis to index pairs of the form `(l, u)` and vice versa.
-///
-/// Here `l` is the channel index, and `u` is the auxiliary index.  The `l` is
-/// unique for each channel, with `u` serving as the discriminator for
-/// orbitals that share the same channel.  Similar to the
-/// `ChannelTranslationTable`, the indices are contiguous, so if two indices
-/// `u1` and `u2` correspond to orbitals of the same channel `l` and `u3` is
-/// sandwiched between `u1` and `u2`, then `u3` must also correspond to
-/// another orbital of the same channel.
-///
-template<typename P, typename C>
-class OrbitalTranslationTable final : public OrbitalIndexLayout {
-
-    ChannelTranslationTable<C> _channel_translation_table;
-
-    std::vector<size_t> _auxiliary_offsets;
-
-    std::vector<std::indexed_set<P>> _tables;
-
-    size_t _num_orbitals = 0;
-
-    // get the channels from the list of orbitals, sorted such that occupied
-    // orbitals appear before unoccupied orbitals
-    static std::vector<C>
-    _get_channels(const std::vector<std::tuple<P, C, bool>> &pcxs)
+    /// Returns either INVALID_INDEX or a valid auxiliary orbital index.
+    size_t encode_orbital(const P &p) const
     {
-        std::vector<C> cs[2];
-        for (const std::tuple<P, C, bool> &pcx : pcxs) {
-            cs[std::get<2>(pcx)].emplace_back(std::get<1>(pcx));
+        auto it = this->_orbital_encoder.find(p);
+        if (it == this->_orbital_encoder.end()) {
+            return INVALID_INDEX;
         }
-        cs[0].insert(cs[0].end(),
-                     std::make_move_iterator(cs[1].begin()),
-                     std::make_move_iterator(cs[1].end()));
-        return cs[0];
-    }
-
-    // note: this must be run for all the x = 0 cases before doing it for the
-    // x = 1 cases
-    void _insert(const P &p, const C &c, size_t x)
-    {
-        size_t l = this->channel_translation_table().encode_channel(c);
-        assert(l != INVALID_CHANNEL);
-        bool exists = !this->_tables.at(l).insert(p);
-        if (exists) {
-            throw std::logic_error("orbitals are not unique");
-        }
-        if (x == 0) {
-            ++this->_auxiliary_offsets.at(l);
-        }
-        ++this->_num_orbitals;
-    }
-
-public:
-
-    OrbitalTranslationTable(const std::vector<std::tuple<P, C, bool>> &orbitals)
-        : _channel_translation_table(
-            OrbitalTranslationTable::_get_channels(orbitals))
-    {
-        size_t nl1 = this->channel_translation_table().num_channels(RANK_1);
-        this->_auxiliary_offsets.resize(nl1);
-        this->_tables.resize(nl1);
-        for (size_t x = 0; x < 2; ++x) {
-            for (const std::tuple<P, C, bool> &pcx : orbitals) {
-                if (std::get<2>(pcx) == x) {
-                    this->_insert(std::get<0>(pcx), std::get<1>(pcx), x);
-                }
-            }
-        }
-    }
-
-    ChannelTranslationTable<C> channel_translation_table() const
-    {
-        return this->_channel_translation_table;
-    }
-
-    size_t num_orbitals() const
-    {
-        return this->_num_orbitals;
-    }
-
-    size_t auxiliary_offset_in_channel_part(size_t l, size_t x) const
-    {
-        switch (x) {
-        case 0:
-            return 0;
-        case 1:
-            return this->_auxiliary_offsets.at(l).size();
-        case 2:
-            return this->num_orbitals_in_channel(l);
-        default:
-            abort();
-        }
-    }
-
-    bool encode_orbital(const P &p, const C &c,
-                        size_t *l_out, size_t *u_out) const
-    {
-        size_t l = this->channel_translation_table().encode_channel(c);
-        if (l == INVALID_CHANNEL) {
-            return false;
-        }
-        size_t u;
-        bool found = this->_tables.at(l).find(p, &u);
-        if (!found) {
-            return false;
-        }
-        if (l_out) {
-            *l_out = l;
-        }
-        if (u_out) {
-            *u_out = u;
-        }
-        return true;
+        return it->second;
     }
 
     const P &decode_orbital(size_t l, size_t u) const
     {
-        return this->_tables.at(l).at(u);
+        return this->_orbital_decoders.at(l).at(u);
     }
 
 };
 
 // TODO: make this class inherit from ChannelIndexGroup
 //       but make sure it does not impact performance for GCC+Clang!
-class ChannelIndexTable /* final : public ChannelIndexGroup */ {
+class ChannelIndexTable /* final : public OrbitalIndexLayout */ {
 
     // Since L1 is a subset of L2, this table suffices for all our purposes.
     //
     // (L2, L1) -> L2
-    //
     std::vector<size_t> _addition_table;
 
     // Negation table
     //
     // L2 -> L2
-    //
     std::vector<size_t> _negation_table;
+
+    // StateKind -> L -> U
+    std::vector<size_t> _state_offsets[STATE_KIND_COUNT];
 
     size_t _num_channels_1;
 
-    // Add two channels.  The result might be `INVALID_CHANNEL`.
-    size_t _add(size_t l1, size_t l2) const
+    // Adds a rank-2 channel to a rank-1 channel.  The result might be
+    // `INVALID_INDEX`.
+    size_t _add_channels(size_t l1, size_t l2) const
     {
-        // we only support adding a rank-2 channel to a rank-1 channel (or
-        // vice versa, if the wrapper function `add` is used); we don't allow
-        // adding rank-2 to rank-2, and we shouldn't ever need that
         assert(l1 < this->num_channels(RANK_2));
         assert(l2 < this->num_channels(RANK_1));
         return this->_addition_table[l1 * this->num_channels(RANK_1) + l2];
@@ -583,20 +469,69 @@ class ChannelIndexTable /* final : public ChannelIndexGroup */ {
 
 public:
 
-    ChannelIndexTable(const ChannelIndexGroup &table)
-        : _addition_table(table.num_channels(RANK_2) *
-                          table.num_channels(RANK_1))
-        , _negation_table(table.num_channels(RANK_1))
+    explicit ChannelIndexTable(const OrbitalIndexLayout &table)
     {
         size_t nl1 = table.num_channels(RANK_1);
         size_t nl2 = table.num_channels(RANK_2);
+
+        // construct the addition and negation tables for channels
+        this->_num_channels_1 = nl1;
+        this->_addition_table.resize(nl2 * nl1);
         for (size_t l1 = 0; l1 < nl2; ++l1) {
             for (size_t l2 = 0; l2 < nl1; ++l2) {
-                this->_addition_table[l1 * nl1 + l2] = table.add(l1, l2);
+                this->_addition_table.at(l1 * nl1 + l2) =
+                    table.add_channels(l1, l2);
             }
         }
+        this->_negation_table.resize(nl2);
+        for (size_t l = 0; l < nl2; ++l) {
+            this->_negation_table.at(l) = table.negate_channel(l);
+        }
+
+        // construct the rank-0 state offset table
+        this->_state_offsets[STATE_KIND_00].emplace_back(0);
+        this->_state_offsets[STATE_KIND_00].emplace_back(1);
+
+        // construct the rank-1 state offset table
         for (size_t l = 0; l < nl1; ++l) {
-            this->_negation_table[l] = table.negate(l);
+            for (size_t x = 0; x <= 2; ++x) {
+                this->_state_offsets[STATE_KIND_10].emplace_back(
+                    table.orbital_offset(l, x));
+            }
+        }
+
+        // construct the rank-2 state offset tables
+        for (size_t l12 = 0; l12 < nl2; ++l12) {
+            size_t u = 0;
+            for (size_t x1 = 0; x1 < 2; ++x1) {
+                for (size_t x2 = 0; x2 < 2; ++x2) {
+                    for (size_t l1 = 0; l1 < nl1; ++l1) {
+                        this->_state_offsets[STATE_KIND_20].emplace_back(u);
+                        size_t l2 = this->subtract_channels(l12, l1);
+                        if (l2 < nl1) {
+                            u += this->num_orbitals_in_channel_part(l1, x1) *
+                                 this->num_orbitals_in_channel_part(l2, x2);
+                        }
+                    }
+                }
+            }
+            this->_state_offsets[STATE_KIND_20].emplace_back(u);
+        }
+        for (size_t l14 = 0; l14 < nl2; ++l14) {
+            size_t u = 0;
+            for (size_t x1 = 0; x1 < 2; ++x1) {
+                for (size_t x4 = 0; x4 < 2; ++x4) {
+                    for (size_t l1 = 0; l1 < nl1; ++l1) {
+                        this->_state_offsets[STATE_KIND_21].emplace_back(u);
+                        size_t l4 = this->subtract_channels(l1, l14);
+                        if (l4 < nl1) {
+                            u += this->num_orbitals_in_channel_part(l1, x1) *
+                                 this->num_orbitals_in_channel_part(l4, x4);
+                        }
+                    }
+                }
+            }
+            this->_state_offsets[STATE_KIND_21].emplace_back(u);
         }
     }
 
@@ -612,39 +547,80 @@ public:
         }
     }
 
+    size_t orbital_offset(size_t l, size_t x) const /* override */
+    {
+        return this->state_offset(STATE_KIND_10, l, x);
+    }
+
+    size_t num_orbitals_in_channel(size_t channel) const /* delete me later */
+    {
+        assert(channel < this->num_channels(RANK_1));
+        return this->orbital_offset(channel, 2) -
+               this->orbital_offset(channel, 0);
+    }
+
+    size_t num_orbitals_in_channel_part(size_t channel,
+                                        size_t part) const /* delete me later */
+    {
+        assert(channel < this->num_channels(RANK_1));
+        assert(part < 2);
+        return this->orbital_offset(channel, part + 1) -
+               this->orbital_offset(channel, part);
+    }
+
+    size_t state_offset(StateKind k, size_t l, size_t x) const
+    {
+        size_t nl1 = this->num_channels(RANK_1);
+        size_t nx;
+        switch (k) {
+        case STATE_KIND_00:
+            nx = 1;
+            break;
+        case STATE_KIND_10:
+            nx = 2;
+            break;
+        case STATE_KIND_20:
+            nx = 4 * nl1;
+            break;
+        case STATE_KIND_21:
+            nx = 4 * nl1;
+            break;
+        }
+        assert(x <= nx);
+        assert(l < this->num_channels(state_kind_to_rank(k)));
+        return this->_state_offsets[k][l * (nx + 1) + x];
+    }
+
+    size_t num_states_in_channel_part(StateKind k, size_t l, size_t x) const
+    {
+        return this->state_offset(k, l, x + 1) - this->state_offset(k, l, x);
+    }
+
     // Negate a channel.
-    size_t negate(size_t l) const /* override */
+    size_t negate_channel(size_t l) const /* override */
     {
         return this->_negation_table[l];
     }
 
-    // Add two channels.  The result might be `INVALID_CHANNEL`.
-    size_t add(size_t l1, size_t l2) const /* override */
+    // Adds a rank-1 channel to a rank-2 channel or vice versa.  The result
+    // might be `INVALID_INDEX`.
+    size_t add_channels(size_t l1, size_t l2) const /* override */
     {
         if (l1 < l2) {
             std::swap(l1, l2);
         }
-        return this->_add(l1, l2);
+        return this->_add_channels(l1, l2);
     }
 
-    // Subtract two channels.  The result might be `INVALID_CHANNEL`.
-    size_t sub(size_t l1, size_t l2) const /* override */
+    // Subtract two channels.  The result might be `INVALID_INDEX`.
+    size_t subtract_channels(size_t l1, size_t l2) const /* delete me later */
     {
-        return this->add(l1, this->negate(l2));
+        return this->add_channels(l1, this->negate_channel(l2));
     }
 
 };
 
-class OrbitalIndexTable {
-
-    OrbitalIndexTable(ChannelIndexTable table,
-                      std::function<size_t (size_t l, Part x)>
-                      num_orbitals_in_channel_part)
-    {
-    }
-
-};
-
+#if 0
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
 /// channel arithmetics, as well as the offsets of diagonal blocks in memory.
@@ -660,10 +636,6 @@ class ManyBodyBasis {
     //   - r = rank
     //   - i = particle_index
     //   - p = orbital_index
-    //   - n_p = num_orbitals
-
-    std::vector<size_t> _auxiliary_offsets_20;
-    std::vector<size_t> _auxiliary_offsets_21;
 
 public:
 
@@ -760,11 +732,6 @@ public:
         return this->_operator_offsets[rank];
     }
 
-    size_t state_offset(StateKind k, size_t l, Part x) const
-    {
-        return this->_state_offset[k][l * n_x + x];
-    }
-
     size_t block_stride(OperatorKind operator_kind, size_t channel_index) const
     {
         size_t n;
@@ -841,7 +808,6 @@ public:
 
 };
 
-#if 0
 #define ITER_CHANNELS(var, basis, rank)                                      \
     size_t var = 0;                                                          \
     var < basis.num_channels(rank);                                          \

@@ -35,7 +35,7 @@ public:
     SparseVector operator+(const SparseVector &other) const
     {
         SparseVector r = *this;
-        for (const std::pair<K, T> &kv : other.entries()) {
+        for (const std::pair<const K, T> &kv : other.entries()) {
             if (!(r._entries[kv.first] += kv.second)) {
                 r._entries.erase(kv.first);
             }
@@ -46,10 +46,19 @@ public:
     SparseVector operator-(const SparseVector &other) const
     {
         SparseVector r = *this;
-        for (const std::pair<K, T> &kv : other.entries()) {
+        for (const std::pair<const K, T> &kv : other.entries()) {
             if (!(r._entries[kv.first] -= kv.second)) {
                 r._entries.erase(kv.first);
             }
+        }
+        return r;
+    }
+
+    SparseVector operator-() const
+    {
+        SparseVector r = *this;
+        for (std::pair<const K, T> &kv : r._entries) {
+            kv.second = -kv.second;
         }
         return r;
     }

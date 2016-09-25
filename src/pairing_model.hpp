@@ -1,8 +1,9 @@
 #ifndef PAIRING_MODEL_HPP
 #define PAIRING_MODEL_HPP
 #include <stddef.h>
-#include <array>
+#include <functional>
 #include <iosfwd>
+#include <tuple>
 #include <vector>
 #include "sparse_vector.hpp"
 
@@ -18,10 +19,6 @@ typedef SparseVector<unsigned, TwiceSpin> Channel;
 /// A single-particle state in the pairing model basis.
 struct Orbital {
 
-    /// Alias for `pairing_model::Channel`, which is needed for acceptance by
-    /// `OrbitalTranslationTable`.
-    typedef pairing_model::Channel Channel;
-
     /// Principal quantum number.
     unsigned n;
 
@@ -34,13 +31,15 @@ struct Orbital {
     /// Return the set of conserved quantum numbers.
     Channel channel() const;
 
+    bool operator==(const Orbital &) const;
+
 };
 
 /// Write an `Orbital` to a stream.
 std::ostream &operator<<(std::ostream &, const Orbital &);
 
 /// Single-particle basis for the pairing model.
-typedef std::array<std::vector<Orbital>, 2> Basis;
+typedef std::vector<std::tuple<Orbital, Channel, bool>> Basis;
 
 /// Construct the list of orbitals.
 Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells);
@@ -79,6 +78,23 @@ struct Hamiltonian {
 
 /// Write a `Hamiltonian` to a stream.
 std::ostream &operator<<(std::ostream &, const Hamiltonian &);
+
+}
+
+namespace std {
+
+template<>
+struct hash<pairing_model::Orbital> {
+
+    size_t operator()(const pairing_model::Orbital &channel) const;
+
+private:
+
+    hash<unsigned> _hash_n;
+
+    hash<pairing_model::TwiceSpin> _hash_s;
+
+};
 
 }
 
