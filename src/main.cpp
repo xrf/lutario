@@ -13,11 +13,11 @@ int main()
     Basis basis = pairing_model::get_basis(3, 3);
     std::cout << basis << std::endl;
 
-    OrbitalTranslationTable<Orbital, Channel> tr(basis);
-    ChannelIndexTable table(tr);
+    OrbitalTranslationTable<Orbital, Channel> trans(basis);
+    StateIndexTable table(trans);
 
 #if 0
-    ManyBodyBasis<pairing_model::Channel> mbasis(pairing_model::get_orbital_channels(basis));
+    ManyBodyBasis mbasis(table);
     std::unique_ptr<double[]> h = mbasis.alloc_many_body_operator();
     std::unique_ptr<double[]> eta = mbasis.alloc_many_body_operator();
     calc_white_generator(mbasis, h.get(), eta.get());

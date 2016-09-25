@@ -148,11 +148,11 @@ inline size_t pack_part(std::initializer_list<size_t> part)
     return xs;
 }
 
-class OrbitalIndexLayout {
+class GenericOrbitalTable {
 
 public:
 
-    virtual ~OrbitalIndexLayout()
+    virtual ~GenericOrbitalTable()
     {
     }
 
@@ -228,7 +228,7 @@ public:
 /// The default constructor of `C` must construct the group identity ("zero").
 ///
 template<typename P, typename C>
-class OrbitalTranslationTable final : public OrbitalIndexLayout {
+class OrbitalTranslationTable final : public GenericOrbitalTable {
 
     // Channels are stored here in one single array, subdivided into three
     // channel sets based on rank:
@@ -423,7 +423,7 @@ public:
 
 // TODO: make this class inherit from ChannelIndexGroup
 //       but make sure it does not impact performance for GCC+Clang!
-class ChannelIndexTable /* final : public OrbitalIndexLayout */ {
+class StateIndexTable /* final : public GenericOrbitalTable */ {
 
     // Since L1 is a subset of L2, this table suffices for all our purposes.
     //
@@ -451,7 +451,7 @@ class ChannelIndexTable /* final : public OrbitalIndexLayout */ {
 
 public:
 
-    explicit ChannelIndexTable(const OrbitalIndexLayout &table);
+    explicit StateIndexTable(const GenericOrbitalTable &table);
 
     size_t num_channels(Rank rank) const /* override */
     {

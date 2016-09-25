@@ -1,6 +1,6 @@
 #include "many_body_basis.hpp"
 
-ChannelIndexTable::ChannelIndexTable(const OrbitalIndexLayout &table)
+StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
 {
     size_t nl1 = table.num_channels(RANK_1);
     size_t nl2 = table.num_channels(RANK_2);
