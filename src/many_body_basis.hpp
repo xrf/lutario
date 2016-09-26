@@ -73,7 +73,8 @@ enum OperatorKind {
 };
 static const size_t OPERATOR_KIND_COUNT = 4;
 
-/// Get the rank of an operator with the given kind.
+/// Get the rank of an operator with the given kind, equal to the lower of the
+/// ranks of the respective state kinds.
 inline Rank operator_kind_to_rank(OperatorKind operator_kind)
 {
     if (operator_kind >= OPERATOR_KIND_200) {
@@ -641,9 +642,18 @@ public:
 
     size_t combine(size_t l1, size_t u1, size_t l2, size_t u2, size_t *u12_out) const
     {
-        l12 = add(l1, l2);
-        u12 = auxiliary_offset[l12, l1] +
-              u1 * num_orbitals_in_channel(l2) + u2;
+        size_t l12 = this->table().add_channels(l1, l2);
+        if (l12 == INVALID_INDEX) {
+            return INVALID_INDEX;
+        }
+        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
+        bool x2 = u2 >= this->table().orbital_offset(l2, 1);
+        size_t uo1 = this->table().orbital_offset(l1, x1);
+        size_t uo2 = this->table().orbital_offset(l2, x2);
+        size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
+        size_t ub = this->table().state_offset(STATE_KIND_11, l12,
+                                               (x1 * 2 + x2) * nl1 + l1);
+        size_t u12 = ub + (u1 - uo1) * nu + u2;
         if (u12_out) {
             *u12_out = u12;
         }
@@ -656,18 +666,53 @@ public:
         return this->_num_channels[rank];
     }
 
-    /// Allocate a many-body operator for the given many-body basis.
-    std::unique_ptr<double[]> alloc_operator(OperatorKind kk, Operator *op_out) const
+    void async_alloc_operator(OperatorKind kk,
+                              CompactArena<double> &arena,
+                              Operator &q) const
     {
-        return std::unique_ptr<double[]>(
-            new double[this->many_body_operator_size()]());
+        StateKind k1, k2;
+        split_operator_kind(kk, &k1, &k2);
+        Rank r = operator_kind_to_rank(kk);
+        size_t nl = this->table().num_channel(r);
+        for (size_t l = 0; l < nl; ++nl) {
+            size_t nu1 = this->table().num_states_in_channel(k1, l);
+            size_t nu2 = this->table().num_states_in_channel(k2, l);
+            arena.async_alloc(mat.alloc_req(nu1, nu2),
+                              [&](Matrix<double> m) { q.emplace_back(m); });
+        }
+    }
+
+    std::unique_ptr<double[]>
+    alloc_operator(OperatorKind kk, Operator *q_out) const
+    {
+        Operator q;
+        CompactArena<double> arena;
+        this->async_alloc_operator(kk, arena, q);
+        arena.reify();
+        if (q_out) {
+            *q_out = std::move(q);
+        }
+        return std::move(arena).as_ptr();
     }
 
     /// Allocate a many-body operator for the given many-body basis.
-    std::unique_ptr<double[]> alloc_many_body_operator(ManyBodyOperator *op_out) const
+    std::unique_ptr<double[]>
+    alloc_many_body_operator(ManyBodyOperator *mq_out) const
     {
-        return std::unique_ptr<double[]>(
-            new double[this->many_body_operator_size()]());
+        ManyBodyOperator mq;
+        CompactArena<double> arena;
+        this->async_alloc_operator(kk, arena, q);
+        for (OperatorKind kk : {OPERATOR_KIND_000,
+                                OPERATOR_KIND_100,
+                                OPERATOR_KIND_200}) {
+            Rank r = operator_kind_to_rank(kk);
+            this->async_alloc_operator(ManyBodyOperator, mq[r]);
+        }
+        arena.reify();
+        if (mq_out) {
+            *mq_out = std::move(mq);
+        }
+        return std::move(arena).as_ptr();
     }
 
 };
