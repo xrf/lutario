@@ -498,27 +498,33 @@ public:
                this->orbital_offset(channel, part);
     }
 
-    size_t state_offset(StateKind k, size_t l, size_t x) const
+    size_t num_parts(StateKind k) const
     {
         size_t nl1 = this->num_channels(RANK_1);
-        size_t nx;
         switch (k) {
         case STATE_KIND_00:
-            nx = 1;
-            break;
+            return 1;
         case STATE_KIND_10:
-            nx = 2;
-            break;
+            return 2;
         case STATE_KIND_20:
-            nx = 4 * nl1;
-            break;
+            return 4 * nl1;
         case STATE_KIND_21:
-            nx = 4 * nl1;
-            break;
+            return 4 * nl1;
         }
+    }
+
+    size_t state_offset(StateKind k, size_t l, size_t x) const
+    {
+        size_t nx = this->num_parts(k);
         assert(x <= nx);
         assert(l < this->num_channels(state_kind_to_rank(k)));
         return this->_state_offsets[k][l * (nx + 1) + x];
+    }
+
+    size_t num_states_in_channel(StateKind k, size_t l) const
+    {
+        return this->state_offset(k, l, 0) -
+               this->state_offset(k, l, this->num_parts(k));
     }
 
     size_t num_states_in_channel_part(StateKind k, size_t l, size_t x) const
@@ -550,44 +556,23 @@ public:
 
 };
 
-#if 0
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
 /// channel arithmetics, as well as the offsets of diagonal blocks in memory.
-///
 class ManyBodyBasis {
 
-    StateIndexTable table;
+    StateIndexTable _table;
 
 public:
 
-    /// Create a generic `ManyBodyBasis` from a single-particle basis defined
-    /// by the provided `orbital_channels`, which contains two vectors: one
-    /// for occupied orbitals and one for unoccupied orbitals.  The vectors
-    /// contain a sequence of channels for each orbital in some arbitrary
-    /// order defined by the single-particle basis itself.
-    ///
-    /// For example, consider an ordered sequence of 5 orbitals `{v, w, x, y,
-    /// z}` that form a single-particle basis, with states `{v, w, x}`
-    /// occupied, and `{y, z}` unoccupied.  If we denote the channel of an
-    /// orbital `x` by `x_channel`, then one should pass the following as an
-    /// argument:
-    ///
-    ///     {
-    ///         {v_channel, w_channel, x_channel},
-    ///         {y_channel, z_channel}
-    ///     }
-    ///
     ManyBodyBasis(StateIndexTable table)
         : _table(std::move(table))
     {
     }
 
-    /// Offset of an operator inside a many-body operator.
-    size_t operator_offset(Rank rank) const
+    const StateIndexTable &table() const
     {
-        assert(rank <= RANK_COUNT);
-        return this->_operator_offsets[rank];
+        return this->_table;
     }
 
     size_t block_stride(OperatorKind operator_kind, size_t channel_index) const
@@ -598,85 +583,80 @@ public:
         return n;
     }
 
-    void block_size(OperatorKind operator_kind, size_t channel_index,
-                    size_t *block_size_1_out, size_t *block_size_2_out) const
+    void block_size(OperatorKind kk, size_t l,
+                    size_t *nu1_out, size_t *nu2_out) const
     {
         StateKind k1, k2;
-        split_operator_kind(operator_kind, &k1, &k2);
-        size_t n_u1 = this->_states_by_channel[k1][channel_index].size();
-        size_t n_u2 = this->_states_by_channel[k2][channel_index].size();
-        if (block_size_1_out) {
-            *block_size_1_out = n_u1;
+        split_operator_kind(kk, &k1, &k2);
+        size_t nu1 = this->table().num_states_in_channel(k1, l);
+        size_t nu2 = this->table().num_states_in_channel(k2, l);
+        if (nu1_out) {
+            *nu1_out = nu1;
         }
-        if (block_size_2_out) {
-            *block_size_2_out = n_u2;
+        if (nu2_out) {
+            *nu2_out = nu2;
         }
     }
 
-    size_t auxiliary_index_offset(StateKind state_kind, size_t channel_index, size_t part) const
-    {
-        assert(state_kind < STATE_KIND_COUNT);
-        assert(channel_index < this->_states_by_channel[state_kind].size());
-        return this->_states_by_channel[state_kind][channel_index].auxiliary_index_offset(part);
-    }
-
-    /// Convenience function for getting an element from a many-body operator.
-    double &get(ManyBodyOperator &op, Rank r, size_t l, size_t i, size_t j) const
-    {
-        return op[this->get_index(r, l, i, j)];
-    }
-
-    double get(const ManyBodyOperator &op, Rank r, size_t l, size_t i, size_t j) const
-    {
-        return op[this->get_index(r, l, i, j)];
-    }
-
-    /// Convenience function for getting an element from a many-body operator.
-    size_t get_index(Rank rank, size_t channel_index, size_t i, size_t j) const
-    {
-        OperatorKind kk = standard_operator_kind(rank);
-        return this->operator_offset(rank) +
-            this->block_offset(kk, channel_index) +
-            i * this->block_stride(kk, channel_index) + j;
-    }
-
-    size_t combine(size_t l1, size_t u1, size_t l2, size_t u2, size_t *u12_out) const
+    bool combine_20(size_t l1, size_t u1, size_t l2, size_t u2,
+                    size_t *l12_out, size_t *u12_out) const
     {
         size_t l12 = this->table().add_channels(l1, l2);
         if (l12 == INVALID_INDEX) {
-            return INVALID_INDEX;
+            return false;
         }
-        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
-        bool x2 = u2 >= this->table().orbital_offset(l2, 1);
-        size_t uo1 = this->table().orbital_offset(l1, x1);
-        size_t uo2 = this->table().orbital_offset(l2, x2);
-        size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
-        size_t ub = this->table().state_offset(STATE_KIND_11, l12,
-                                               (x1 * 2 + x2) * nl1 + l1);
-        size_t u12 = ub + (u1 - uo1) * nu + u2;
+        if (l12_out) {
+            *l12_out = l12;
+        }
         if (u12_out) {
+            bool x1 = u1 >= this->table().orbital_offset(l1, 1);
+            bool x2 = u2 >= this->table().orbital_offset(l2, 1);
+            size_t uo1 = this->table().orbital_offset(l1, x1);
+            size_t uo2 = this->table().orbital_offset(l2, x2);
+            size_t nl1 = this->table().num_channels(RANK_1);
+            size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
+            size_t ub = this->table().state_offset(STATE_KIND_20, l12,
+                                                   (x1 * 2 + x2) * nl1 + l1);
+            size_t u12 = ub + (u1 - uo1) * nu + (u2 - uo2);
             *u12_out = u12;
         }
-        return l12;
+        return true;
     }
 
-    size_t num_channels(Rank rank) const
+    bool combine_21(size_t l1, size_t u1, size_t l4, size_t u4,
+                    size_t *l14_out, size_t *u14_out) const
     {
-        assert(rank < RANK_COUNT);
-        return this->_num_channels[rank];
+        size_t l14 = this->table().subtract_channels(l1, l4);
+        if (l14 == INVALID_INDEX) {
+            return false;
+        }
+        if (l14_out) {
+            *l14_out = l14;
+        }
+        if (u14_out) {
+            bool x1 = u1 >= this->table().orbital_offset(l1, 1);
+            bool x4 = u4 >= this->table().orbital_offset(l4, 1);
+            size_t uo1 = this->table().orbital_offset(l1, x1);
+            size_t uo4 = this->table().orbital_offset(l4, x4);
+            size_t nl1 = this->table().num_channels(RANK_1);
+            size_t nu = this->table().num_orbitals_in_channel_part(l4, x4);
+            size_t ub = this->table().state_offset(STATE_KIND_21, l14,
+                                                   (x1 * 2 + x4) * nl1 + l1);
+            size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
+            *u14_out = u14;
+        }
+        return true;
     }
 
     void async_alloc_operator(OperatorKind kk,
                               CompactArena<double> &arena,
                               Operator *q) const
     {
-        StateKind k1, k2;
-        split_operator_kind(kk, &k1, &k2);
         Rank r = operator_kind_to_rank(kk);
-        size_t nl = this->table().num_channel(r);
-        for (size_t l = 0; l < nl; ++nl) {
-            size_t nu1 = this->table().num_states_in_channel(k1, l);
-            size_t nu2 = this->table().num_states_in_channel(k2, l);
+        size_t nl = this->table().num_channels(r);
+        for (size_t l = 0; l < nl; ++l) {
+            size_t nu1, nu2;
+            this->block_size(kk, l, &nu1, &nu2);
             arena.async_alloc(
                 Matrix<double>::alloc_req(nu1, nu2),
                 [q](Matrix<double> m)
@@ -694,12 +674,12 @@ public:
     {
         CompactArena<double> arena;
         Operator q;
-        this->async_alloc_operator(kk, arena, q);
+        this->async_alloc_operator(kk, arena, &q);
         arena.reify();
         if (q_out) {
             *q_out = std::move(q);
         }
-        return std::move(arena).as_ptr();
+        return std::move(arena).release();
     }
 
     /// Allocate a many-body operator for the given many-body basis.
@@ -712,13 +692,13 @@ public:
                                 OPERATOR_KIND_100,
                                 OPERATOR_KIND_200}) {
             Rank r = operator_kind_to_rank(kk);
-            this->async_alloc_operator(kk, arena, mq[r]);
+            this->async_alloc_operator(kk, arena, &mq[r]);
         }
         arena.reify();
         if (mq_out) {
             *mq_out = std::move(mq);
         }
-        return std::move(arena).as_ptr();
+        return std::move(arena).release();
     }
 
 };
@@ -732,9 +712,5 @@ public:
     size_t var = basis.auxiliary_index_offset(rank, channel_index, part_begin); \
     var < basis.auxiliary_index_offset(rank, channel_index, part_end);  \
     ++var
-
-#define CHANNEL_1(index, ) \
-    size_t l##index :
-#endif
 
 #endif

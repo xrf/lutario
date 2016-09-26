@@ -14,12 +14,12 @@ int main()
     std::cout << basis << std::endl;
 
     OrbitalTranslationTable<Orbital, Channel> trans(basis);
-    StateIndexTable table(trans);
+    ManyBodyBasis mbasis = StateIndexTable(trans);
 
+    ManyBodyOperator h, eta;
+    std::unique_ptr<double[]> h_buf = mbasis.alloc_many_body_operator(&h);
+    std::unique_ptr<double[]> eta_buf = mbasis.alloc_many_body_operator(&eta);
 #if 0
-    ManyBodyBasis mbasis(table);
-    std::unique_ptr<double[]> h = mbasis.alloc_many_body_operator();
-    std::unique_ptr<double[]> eta = mbasis.alloc_many_body_operator();
     calc_white_generator(mbasis, h.get(), eta.get());
 #endif
 
