@@ -668,7 +668,7 @@ public:
 
     void async_alloc_operator(OperatorKind kk,
                               CompactArena<double> &arena,
-                              Operator &q) const
+                              Operator *q) const
     {
         StateKind k1, k2;
         split_operator_kind(kk, &k1, &k2);
@@ -677,16 +677,23 @@ public:
         for (size_t l = 0; l < nl; ++nl) {
             size_t nu1 = this->table().num_states_in_channel(k1, l);
             size_t nu2 = this->table().num_states_in_channel(k2, l);
-            arena.async_alloc(mat.alloc_req(nu1, nu2),
-                              [&](Matrix<double> m) { q.emplace_back(m); });
+            arena.async_alloc(
+                Matrix<double>::alloc_req(nu1, nu2),
+                [q](Matrix<double> m)
+                {
+                    if (q) {
+                        q->emplace_back(m);
+                    }
+                }
+            );
         }
     }
 
     std::unique_ptr<double[]>
     alloc_operator(OperatorKind kk, Operator *q_out) const
     {
-        Operator q;
         CompactArena<double> arena;
+        Operator q;
         this->async_alloc_operator(kk, arena, q);
         arena.reify();
         if (q_out) {
@@ -699,14 +706,13 @@ public:
     std::unique_ptr<double[]>
     alloc_many_body_operator(ManyBodyOperator *mq_out) const
     {
-        ManyBodyOperator mq;
         CompactArena<double> arena;
-        this->async_alloc_operator(kk, arena, q);
+        ManyBodyOperator mq;
         for (OperatorKind kk : {OPERATOR_KIND_000,
                                 OPERATOR_KIND_100,
                                 OPERATOR_KIND_200}) {
             Rank r = operator_kind_to_rank(kk);
-            this->async_alloc_operator(ManyBodyOperator, mq[r]);
+            this->async_alloc_operator(kk, arena, mq[r]);
         }
         arena.reify();
         if (mq_out) {
