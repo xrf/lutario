@@ -22,4 +22,6 @@ int main()
     std::unique_ptr<double[]> eta = mbasis.alloc_many_body_operator();
     calc_white_generator(mbasis, h.get(), eta.get());
 #endif
+
+    return 0;
 }

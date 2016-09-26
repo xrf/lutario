@@ -2,7 +2,9 @@
 #define MATRIX_HPP
 #include <assert.h>
 #include <stddef.h>
-#include <cblas.h>
+#include <array>                        // for ManyBodyOperator
+#include <vector>                       // for Operator
+#include "blas.hpp"
 #include "allocation.hpp"
 #include "irange.hpp"
 
@@ -199,17 +201,30 @@ inline void gemm(CBLAS_TRANSPOSE transa,
     cblas_dgemm(CblasRowMajor,
                 transa,
                 transb,
-                m_c,
-                n_c,
-                k_a,
+                (CBLAS_INT)m_c,
+                (CBLAS_INT)n_c,
+                (CBLAS_INT)k_a,
                 alpha,
                 a.data(),
-                a.stride(),
+                (CBLAS_INT)a.stride(),
                 b.data(),
-                b.stride(),
+                (CBLAS_INT)b.stride(),
                 beta,
                 c.data(),
-                c.stride());
+                (CBLAS_INT)c.stride());
 }
+
+typedef std::vector<Matrix<double>> Operator;
+
+/// A many-body operator contains three operators in standard form:
+///
+///   - Zero-body operator (constant term) in 000 form.  This is always has a
+///     single block containing one element.
+///
+///   - One-body operator in 100 form.
+///
+///   - Two-body operator in 200 form.
+///
+typedef std::array<Operator, 3> ManyBodyOperator;
 
 #endif

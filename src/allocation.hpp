@@ -44,15 +44,27 @@ public:
         return this->_data.get();
     }
 
+    std::unique_ptr<T[]> release() && {
+        std::unique_ptr<T[]> p;
+        std::swap(p, this->_data);
+        this->_size = 0;
+        this->_callbacks.clear();
+        //this->_callbacks.shrink_to_fit(); // TODO: put this back
+        return p;
+    }
+
     void reify()
     {
+        if (this->_data) {
+            throw std::logic_error("cannot reify more than once");
+        }
         this->_data.reset(new T[this->size()]());
         T *ptr = this->_data.get();
-        for (const auto &callback : this->_callbacks) {
+        for (const std::function<T * (T *)> &callback : this->_callbacks) {
             ptr = callback(ptr);
         }
         this->_callbacks.clear();
-        this->_callbacks.shrink_to_fit();
+        //this->_callbacks.shrink_to_fit(); // TODO: put this back
     }
 
     template<typename R>

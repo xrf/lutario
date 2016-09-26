@@ -6,10 +6,21 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "matrix.hpp"                   // for Operator stuff
 
 // TODO: 'part' could mean just the occupation number, or it could refer to
 // the combination of occupation number and secondary channel indices;
 // figure out a better nomenclature
+
+// Notation:
+//
+//   - k = state_kind
+//   - c = channel
+//   - l = channel_index
+//   - u = auxiliary_index
+//   - r = rank
+//   - i = particle_index
+//   - p = orbital_index
 
 /// A value used to denote an invalid index (such as channel index or
 /// auxiliary orbital index).  It is defined to be `SIZE_MAX`.  Hence, it is
@@ -545,15 +556,7 @@ public:
 ///
 class ManyBodyBasis {
 
-    // notation:
-    //
-    //   - k = state_kind
-    //   - c = channel
-    //   - l = channel_index
-    //   - u = auxiliary_index
-    //   - r = rank
-    //   - i = particle_index
-    //   - p = orbital_index
+    StateIndexTable table;
 
 public:
 
@@ -574,73 +577,9 @@ public:
     ///         {y_channel, z_channel}
     ///     }
     ///
-    ManyBodyBasis(OrbitalIndexTable table)
+    ManyBodyBasis(StateIndexTable table)
         : _table(std::move(table))
-        , _auxiliary_offsets_20(table.num_channels(RANK_2) * 4 *
-                                table.num_channels(RANK_1) + 1)
-        , _auxiliary_offsets_21(table.num_channels(RANK_2) * 4 *
-                                table.num_channels(RANK_1) + 1)
     {
-        size_t nl1 = this->_table.num_channels(RANK_1);
-        size_t nl2 = this->_table.num_channels(RANK_2);
-        // _auxiliary_offsets_20[(l12 * 4 + x12) * nl1 + l1]
-        {
-            size_t i = 0;
-            for (size_t l12 = 0; l12 < nl2; ++l12) {
-                for (size_t x1 = 0; x1 < 2; ++x1) {
-                    for (size_t x2 = 0; x2 < 2; ++x2) {
-                        for (size_t l1 = 0; l1 < nl1; ++l1) {
-                            size_t l2 = table.sub(l12, l1);
-                            if (l2 >= nl1) {
-                                continue;
-                            }
-                            this->_auxiliary_offsets_20.emplace_back(i);
-                            i += this->_num_orbitals_in_channel_part(l1, x1) *
-                                 this->_num_orbitals_in_channel_part(l2, x2);
-                        }
-                    }
-                }
-            }
-            this->_auxiliary_offsets_20.emplace_back(i);
-        }
-        // _auxiliary_offsets_21[(l14 * 4 + x14) * nl1 + l1]
-        {
-            size_t i = 0;
-            for (size_t l14 = 0; l14 < nl2; ++l14) {
-                for (size_t x1 = 0; x1 < 2; ++x1) {
-                    for (size_t x2 = 0; x2 < 2; ++x2) {
-                        for (size_t l1 = 0; l1 < nl1; ++l1) {
-                            size_t l2 = table.sub(l1, l14);
-                            if (l2 >= nl1) {
-                                continue;
-                            }
-                            this->_auxiliary_offsets_21.emplace_back(i);
-                            i += this->_num_orbitals_in_channel_part(l1, x1) *
-                                 this->_num_orbitals_in_channel_part(l2, x2);
-                        }
-                    }
-                }
-            }
-            this->_auxiliary_offsets_21.emplace_back(i);
-        }
-    }
-
-    size_t orbital_index_offset(size_t part) const
-    {
-        assert(part < 3);
-        return this->_orbital_index_offsets[part];
-    }
-
-    size_t num_orbitals(size_t part) const
-    {
-        return this->orbital_index_offset(part + 1);
-    }
-
-    /// Return the number of elements required to store the underlying array
-    /// of a many-body operator.
-    size_t many_body_operator_size() const
-    {
-        return this->operator_offset(RANK_COUNT);
     }
 
     /// Offset of an operator inside a many-body operator.
@@ -718,7 +657,14 @@ public:
     }
 
     /// Allocate a many-body operator for the given many-body basis.
-    std::unique_ptr<double[]> alloc_many_body_operator() const
+    std::unique_ptr<double[]> alloc_operator(OperatorKind kk, Operator *op_out) const
+    {
+        return std::unique_ptr<double[]>(
+            new double[this->many_body_operator_size()]());
+    }
+
+    /// Allocate a many-body operator for the given many-body basis.
+    std::unique_ptr<double[]> alloc_many_body_operator(ManyBodyOperator *op_out) const
     {
         return std::unique_ptr<double[]>(
             new double[this->many_body_operator_size()]());
@@ -739,23 +685,5 @@ public:
 #define CHANNEL_1(index, ) \
     size_t l##index :
 #endif
-
-struct Operator {
-};
-
-/// A many-body operator contains three operators in standard form:
-///
-///   - Zero-body operator (constant term) in 000 form.  This is always has a
-///     single block containing one element.
-///
-///   - One-body operator in 100 form.
-///
-///   - Two-body operator in 200 form.
-///
-struct ManyBodyOperator {
-    Operator o0;
-    Operator o1;
-    Operator o2;
-};
 
 #endif
