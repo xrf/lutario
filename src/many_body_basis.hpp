@@ -648,57 +648,47 @@ public:
         return true;
     }
 
-    void async_alloc_operator(OperatorKind kk,
-                              CompactArena<double> &arena,
-                              Operator *q) const
+    void prepare_operator(OperatorKind kk,
+                          Stage<double> &stage,
+                          Operator &q_out) const
     {
         Rank r = operator_kind_to_rank(kk);
         size_t nl = this->table().num_channels(r);
+        q_out.resize(nl);
         for (size_t l = 0; l < nl; ++l) {
             size_t nu1, nu2;
             this->block_size(kk, l, &nu1, &nu2);
-            arena.async_alloc(
-                Matrix<double>::alloc_req(nu1, nu2),
-                [q](Matrix<double> m)
-                {
-                    if (q) {
-                        q->emplace_back(m);
-                    }
-                }
-            );
+            stage.prepare(q_out[l].alloc_req(nu1, nu2));
         }
     }
 
+    /// Allocate an `Operator` for the given many-body basis into a
+    /// single-block of memory.  Returns a pointer to the memory, and stores
+    /// the `Operator` in `q_out`.
     std::unique_ptr<double[]>
-    alloc_operator(OperatorKind kk, Operator *q_out) const
+    alloc_operator(OperatorKind kk, Operator &q_out) const
     {
-        CompactArena<double> arena;
-        Operator q;
-        this->async_alloc_operator(kk, arena, &q);
-        arena.reify();
-        if (q_out) {
-            *q_out = std::move(q);
-        }
-        return std::move(arena).release();
+        Stage<double> stage;
+        this->prepare_operator(kk, stage, q_out);
+        stage.execute();
+        return stage.release();
     }
 
-    /// Allocate a many-body operator for the given many-body basis.
+    /// Allocate a `ManyBodyOperator` for the given many-body basis into a
+    /// single-block of memory.  Returns a pointer to the memory, and stores
+    /// the `ManyBodyOperator` in `q_out`.
     std::unique_ptr<double[]>
-    alloc_many_body_operator(ManyBodyOperator *mq_out) const
+    alloc_many_body_operator(ManyBodyOperator &mq_out) const
     {
-        CompactArena<double> arena;
-        ManyBodyOperator mq;
+        Stage<double> stage;
         for (OperatorKind kk : {OPERATOR_KIND_000,
                                 OPERATOR_KIND_100,
                                 OPERATOR_KIND_200}) {
             Rank r = operator_kind_to_rank(kk);
-            this->async_alloc_operator(kk, arena, &mq[r]);
+            this->prepare_operator(kk, stage, mq_out[r]);
         }
-        arena.reify();
-        if (mq_out) {
-            *mq_out = std::move(mq);
-        }
-        return std::move(arena).release();
+        stage.execute();
+        return stage.release();
     }
 
 };

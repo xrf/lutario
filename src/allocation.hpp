@@ -1,31 +1,41 @@
 #ifndef ALLOCATION_HPP
 #define ALLOCATION_HPP
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
 
-template<typename R>
-std::unique_ptr<typename R::value_type[]>
-alloc(R request, typename R::object_type *out)
-{
-    typedef typename R::value_type value_type;
-    std::unique_ptr<value_type[]> ptr(new value_type[request.size()]);
-    if (out) {
-        *out = request.construct(ptr.get());
+template<typename T>
+class GenericAllocReq {
+
+public:
+
+    virtual ~GenericAllocReq()
+    {
     }
-    return ptr;
+
+    virtual size_t size() const = 0;
+
+    virtual void fulfill(T *) const = 0;
+
+};
+
+template<typename T>
+std::unique_ptr<T[]> alloc(const GenericAllocReq<T> &req)
+{
+    std::unique_ptr<T[]> p(new T[req.size()]);
+    req.fulfill(p.get());
+    return p;
 }
 
 template<typename T>
-class CompactArena {
+class Stage {
 
     std::unique_ptr<T[]> _data;
 
     size_t _size = 0;
 
-    std::vector<std::function<T * (T *)>> _callbacks;
+    std::vector<std::unique_ptr<GenericAllocReq<T>>> _requests;
 
 public:
 
@@ -44,52 +54,36 @@ public:
         return this->_data.get();
     }
 
-    std::unique_ptr<T[]> release() && {
-        std::unique_ptr<T[]> p;
-        std::swap(p, this->_data);
-        this->_size = 0;
-        this->_callbacks.clear();
-        //this->_callbacks.shrink_to_fit(); // TODO: put this back
-        return p;
-    }
-
-    void reify()
+    template<typename R>
+    void prepare(R req)
     {
         if (this->_data) {
-            throw std::logic_error("cannot reify more than once");
+            throw std::logic_error("Stage.prepare must no be called after "
+                                   "Stage.execute has already occurred");
+        }
+        this->_size += req.size();
+        this->_requests.emplace_back(new R(std::move(req)));
+    }
+
+    void execute()
+    {
+        if (this->_data) {
+            throw std::logic_error("cannot execute more than once");
         }
         this->_data.reset(new T[this->size()]());
         T *ptr = this->_data.get();
-        for (const std::function<T * (T *)> &callback : this->_callbacks) {
-            ptr = callback(ptr);
+        for (const auto &req : this->_requests) {
+            req->fulfill(ptr);
+            ptr += req->size();
         }
-        this->_callbacks.clear();
-        //this->_callbacks.shrink_to_fit(); // TODO: put this back
+        this->_requests.clear();
     }
 
-    template<typename R>
-    void async_alloc(R request,
-                     std::function<void (typename R::object_type)> callback)
+    std::unique_ptr<T[]> release()
     {
-        using std::placeholders::_1;
-        typedef std::function<void (typename R::object_type)> callback_type;
-        static_assert(std::is_same<typename R::value_type, T>::value,
-                      "R::value_type and T must be the same type");
-        if (this->_data) {
-            throw std::logic_error("cannot allocate after arena "
-                                   "has already been reified");
-        }
-        this->_size += request.size();
-        this->_callbacks.emplace_back(std::bind(
-            [](R request, callback_type callback, T *ptr)
-            {
-                callback(request.construct(ptr));
-                return ptr + request.size();
-            },
-            std::move(request),
-            std::move(callback),
-            _1
-        ));
+        std::unique_ptr<T[]> ptr = std::move(this->_data);
+        *this = Stage();
+        return ptr;
     }
 
 };

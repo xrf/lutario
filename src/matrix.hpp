@@ -14,26 +14,23 @@
 /// Usually, to create a `Matrix` from scratch, you would do:
 ///
 ///     Matrix<double> mat;
-///     std::unique_ptr<double[]> buf = alloc(mat.alloc_req(100, 100), &mat);
+///     std::unique_ptr<double[]> buf = alloc(mat.alloc_req(100, 100));
 ///
 /// The `buf` variable holds the actual memory buffer.  When `buf` is
 /// destroyed, so is the memory associated with the matrix.  It is the user's
 /// responsibility to make sure that `mat` does not outlive `buf`.
 ///
-/// It is also possible to use `CompactArena` for allocations.  This allows
-/// multiple `Matrix` and similar objects to be stored in a single block of
-/// memory.  For example:
+/// It is also possible to use `Stage` for allocations.  This allows multiple
+/// `Matrix` and similar objects to be stored in a single contiguous block of
+/// memory.  For example, this example allocates two 100-by-100 matrices into
+/// a single array of length 200000:
 ///
 ///     Matrix<double> mat;
-///     CompactArena<double> arena;
-///     arena.async_alloc(mat.alloc_req(100, 100),
-///                       [&](Matrix<double> m) { mat = m; });
-///
-/// Note that the `AllocReq` returned by `alloc_req` can be re-used for
-/// multiple allocations.  Moreover, `alloc_req` is a static member function,
-/// so it can be used without an existing `Matrix` via, say,
-/// `Matrix<double>::alloc_req(100, 100)`.  It just so happens that it can be
-/// conveniently used on instances of `Matrix` too.
+///     Stage<double> stage;
+///     arena.prepare(mat.alloc_req(100, 100));
+///     arena.prepare(mat.alloc_req(100, 100));
+///     arena.execute();
+///     assert(arena.size() == 200000);
 ///
 template<typename T>
 class Matrix {
@@ -48,38 +45,32 @@ class Matrix {
 
 public:
 
-    struct AllocReq {
+    struct AllocReq : public GenericAllocReq<T> {
 
-        typedef Matrix object_type;
-
-        typedef T value_type;
+        Matrix &matrix;
 
         size_t num_rows;
 
         size_t num_cols;
 
-        AllocReq(size_t num_rows, size_t num_cols)
-            : num_rows(num_rows)
+        AllocReq(Matrix &matrix, size_t num_rows, size_t num_cols)
+            : matrix(matrix)
+            , num_rows(num_rows)
             , num_cols(num_cols)
         {
         }
 
-        size_t size() const
+        size_t size() const override
         {
             return this->num_rows * this->num_cols;
         }
 
-        object_type construct(value_type *ptr) const
+        void fulfill(T *data) const override
         {
-            return object_type(ptr, this->num_rows, this->num_cols);
+            matrix = Matrix(data, this->num_rows, this->num_cols);
         }
 
     };
-
-    static AllocReq alloc_req(size_t num_rows, size_t num_cols)
-    {
-        return AllocReq(num_rows, num_cols);
-    }
 
     Matrix()
     {
@@ -99,6 +90,11 @@ public:
         , _num_cols(num_cols)
         , _stride(stride)
     {
+    }
+
+    AllocReq alloc_req(size_t num_rows, size_t num_cols)
+    {
+        return AllocReq(*this, num_rows, num_cols);
     }
 
     operator Matrix<const T>() const
