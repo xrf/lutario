@@ -17,8 +17,8 @@ int main()
     ManyBodyBasis mbasis = StateIndexTable(trans);
 
     ManyBodyOperator h, eta;
-    std::unique_ptr<double[]> h_buf = mbasis.alloc_many_body_operator(h);
-    std::unique_ptr<double[]> eta_buf = mbasis.alloc_many_body_operator(eta);
+    std::unique_ptr<double[]> h_buf = alloc(h.alloc(mbasis))
+    std::unique_ptr<double[]> eta_buf = alloc(eta.alloc(mbasis));
 #if 0
     calc_white_generator(mbasis, h.get(), eta.get());
 #endif

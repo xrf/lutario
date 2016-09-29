@@ -209,18 +209,6 @@ inline void gemm(CBLAS_TRANSPOSE transa,
                 c.data(),
                 (CBLAS_INT)c.stride());
 }
-
-typedef std::vector<Matrix<double>> Operator;
-
-/// A many-body operator contains three operators in standard form:
-///
-///   - Zero-body operator (constant term) in 000 form.  This is always has a
-///     single block containing one element.
-///
-///   - One-body operator in 100 form.
-///
-///   - Two-body operator in 200 form.
-///
-typedef std::array<Operator, 3> ManyBodyOperator;
+};
 
 #endif
