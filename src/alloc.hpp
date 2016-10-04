@@ -53,8 +53,8 @@ std::unique_ptr<T[]> alloc(GenericAllocReq<T> &&req)
 ///
 ///     MyString x, y;
 ///     AllocReqBatch a;
-///     a.emplace_back(x.alloc_req("hello"));
-///     a.emplace_back(y.alloc_req("world"));
+///     a.push(x.alloc_req("hello"));
+///     a.push(y.alloc_req("world"));
 ///     // until now, neither x and y have been allocated
 ///     std::unique_ptr<char> buf = alloc(a);
 ///     // now, both x and y have been allocated
@@ -87,8 +87,9 @@ public:
     /// Adds another sub-object that is to be allocated within the memory
     /// block.  The `R` type must be derived from `GenericAllocReq`.
     template<typename R>
-    void emplace_back(R req)
+    void push(R req)
     {
+        this->_size += req.size();
         this->_reqs.emplace_back(new auto(std::move(req)));
     }
 

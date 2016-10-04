@@ -23,7 +23,7 @@ public:
         return this->_size;
     }
 
-    void fulfill(int *ptr) const override
+    void fulfill(int *ptr) override
     {
         assert(ptr != nullptr);
         this->_ptr = ptr;
@@ -45,20 +45,19 @@ int main()
 
     {
         int *p0, *p1;
-        Stage<int> stage;
-        stage.prepare(MockAllocReq(N, p0));
-        stage.prepare(MockAllocReq(N, p1));
-        stage.execute();
-        assert(stage.size() == N * 2);
-        assert(p0 == stage.data());
-        assert(p1 == stage.data() + N);
+        AllocReqBatch<int> reqs;
+        reqs.push(MockAllocReq(N, p0));
+        reqs.push(MockAllocReq(N, p1));
+        assert(reqs.size() == N * 2);
+        std::unique_ptr<int[]> u = alloc(std::move(reqs));
+        assert(p0 == u.get());
+        assert(p1 == u.get() + N);
         for (int i = 0; i < (int)N; ++i) {
             assert(p0[i] == i);
         }
         for (int i = 0; i < (int)N; ++i) {
             assert(p1[i] == i);
         }
-        std::unique_ptr<int[]> u = stage.release();
         assert(p0 == u.get());
     }
 
