@@ -5,7 +5,7 @@
 #include <array>                        // for ManyBodyOperator
 #include <vector>                       // for Operator
 #include "blas.hpp"
-#include "allocation.hpp"
+#include "alloc.hpp"
 #include "irange.hpp"
 
 /// A non-owning matrix view.  "Non-owning" means that the memory associated
@@ -45,15 +45,21 @@ class Matrix {
 
 public:
 
-    struct AllocReq : public GenericAllocReq<T> {
+    class AllocReq final : public GenericAllocReq<T> {
 
-        Matrix &matrix;
+    public:
 
-        size_t num_rows;
+        Matrix *matrix = nullptr;
 
-        size_t num_cols;
+        size_t num_rows = 0;
 
-        AllocReq(Matrix &matrix, size_t num_rows, size_t num_cols)
+        size_t num_cols = 0;
+
+        AllocReq()
+        {
+        }
+
+        AllocReq(Matrix *matrix, size_t num_rows, size_t num_cols)
             : matrix(matrix)
             , num_rows(num_rows)
             , num_cols(num_cols)
@@ -65,9 +71,13 @@ public:
             return this->num_rows * this->num_cols;
         }
 
-        void fulfill(T *data) const override
+        void fulfill(T *data) override
         {
-            matrix = Matrix(data, this->num_rows, this->num_cols);
+            if (!this->matrix) {
+                return;
+            }
+            *this->matrix = Matrix(data, this->num_rows, this->num_cols);
+            *this = AllocReq();
         }
 
     };
@@ -94,7 +104,7 @@ public:
 
     AllocReq alloc_req(size_t num_rows, size_t num_cols)
     {
-        return AllocReq(*this, num_rows, num_cols);
+        return AllocReq(this, num_rows, num_cols);
     }
 
     operator Matrix<const T>() const
@@ -209,6 +219,5 @@ inline void gemm(CBLAS_TRANSPOSE transa,
                 c.data(),
                 (CBLAS_INT)c.stride());
 }
-};
 
 #endif

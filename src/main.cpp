@@ -1,7 +1,8 @@
 #include <stddef.h>
 #include <iostream>
 #include <memory>
-#include "many_body_basis.hpp"
+#include "basis.hpp"
+#include "oper.hpp"
 #include "pairing_model.hpp"
 
 int main()
@@ -16,9 +17,9 @@ int main()
     OrbitalTranslationTable<Orbital, Channel> trans(basis);
     ManyBodyBasis mbasis = StateIndexTable(trans);
 
-    ManyBodyOperator h, eta;
-    std::unique_ptr<double[]> h_buf = alloc(h.alloc(mbasis))
-    std::unique_ptr<double[]> eta_buf = alloc(eta.alloc(mbasis));
+    ManyBodyOper h, eta;
+    std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(mbasis));
+    std::unique_ptr<double[]> eta_buf = alloc(eta.alloc_req(mbasis));
 #if 0
     calc_white_generator(mbasis, h.get(), eta.get());
 #endif

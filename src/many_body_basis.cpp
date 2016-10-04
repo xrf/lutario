@@ -1,4 +1,4 @@
-#include "many_body_basis.hpp"
+#include "basis.hpp"
 
 StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
 {

@@ -6,7 +6,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "matrix.hpp"                   // for Operator stuff
 
 // TODO: 'part' could mean just the occupation number, or it could refer to
 // the combination of occupation number and secondary channel indices;
@@ -65,61 +64,61 @@ inline Rank state_kind_to_rank(StateKind state_kind)
 
 /// Determines the rank of an operator as well as how the matrix element
 /// blocks of the operator are to be organized.
-enum OperatorKind {
-    OPERATOR_KIND_000,
-    OPERATOR_KIND_100,
-    OPERATOR_KIND_200,
-    OPERATOR_KIND_211
+enum OperKind {
+    OPER_KIND_000,
+    OPER_KIND_100,
+    OPER_KIND_200,
+    OPER_KIND_211
 };
-static const size_t OPERATOR_KIND_COUNT = 4;
+static const size_t OPER_KIND_COUNT = 4;
 
 /// Get the rank of an operator with the given kind, equal to the lower of the
 /// ranks of the respective state kinds.
-inline Rank operator_kind_to_rank(OperatorKind operator_kind)
+inline Rank oper_kind_to_rank(OperKind oper_kind)
 {
-    if (operator_kind >= OPERATOR_KIND_200) {
+    if (oper_kind >= OPER_KIND_200) {
         return RANK_2;
     }
-    if (operator_kind >= OPERATOR_KIND_100) {
+    if (oper_kind >= OPER_KIND_100) {
         return RANK_1;
     }
     return RANK_0;
 }
 
 /// Get the canonical operator representation for a given operator rank.
-inline OperatorKind standard_operator_kind(Rank rank)
+inline OperKind standard_oper_kind(Rank rank)
 {
     switch (rank) {
     case RANK_0:
-        return OPERATOR_KIND_000;
+        return OPER_KIND_000;
     case RANK_1:
-        return OPERATOR_KIND_100;
+        return OPER_KIND_100;
     case RANK_2:
-        return OPERATOR_KIND_200;
+        return OPER_KIND_200;
     }
 }
 
 /// Get the kind of the left states and the kind of right states that the
 /// operator couples.
-inline void split_operator_kind(OperatorKind operator_kind,
-                                StateKind *state_kind_1_out,
-                                StateKind *state_kind_2_out)
+inline void split_oper_kind(OperKind oper_kind,
+                            StateKind *state_kind_1_out,
+                            StateKind *state_kind_2_out)
 {
     StateKind k1, k2;
-    switch (operator_kind) {
-    case OPERATOR_KIND_000:
+    switch (oper_kind) {
+    case OPER_KIND_000:
         k1 = STATE_KIND_00;
         k2 = STATE_KIND_00;
         break;
-    case OPERATOR_KIND_100:
+    case OPER_KIND_100:
         k1 = STATE_KIND_10;
         k2 = STATE_KIND_10;
         break;
-    case OPERATOR_KIND_200:
+    case OPER_KIND_200:
         k1 = STATE_KIND_20;
         k2 = STATE_KIND_20;
         break;
-    case OPERATOR_KIND_211:
+    case OPER_KIND_211:
         k1 = STATE_KIND_21;
         k2 = STATE_KIND_21;
         break;
@@ -575,19 +574,19 @@ public:
         return this->_table;
     }
 
-    size_t block_stride(OperatorKind operator_kind, size_t channel_index) const
+    size_t block_stride(OperKind oper_kind, size_t channel_index) const
     {
         size_t n;
         // assuming row-major
-        this->block_size(operator_kind, channel_index, NULL, &n);
+        this->block_size(oper_kind, channel_index, NULL, &n);
         return n;
     }
 
-    void block_size(OperatorKind kk, size_t l,
+    void block_size(OperKind kk, size_t l,
                     size_t *nu1_out, size_t *nu2_out) const
     {
         StateKind k1, k2;
-        split_operator_kind(kk, &k1, &k2);
+        split_oper_kind(kk, &k1, &k2);
         size_t nu1 = this->table().num_states_in_channel(k1, l);
         size_t nu2 = this->table().num_states_in_channel(k2, l);
         if (nu1_out) {
@@ -646,49 +645,6 @@ public:
             *u14_out = u14;
         }
         return true;
-    }
-
-    void prepare_operator(OperatorKind kk,
-                          Stage<double> &stage,
-                          Operator &q_out) const
-    {
-        Rank r = operator_kind_to_rank(kk);
-        size_t nl = this->table().num_channels(r);
-        q_out.resize(nl);
-        for (size_t l = 0; l < nl; ++l) {
-            size_t nu1, nu2;
-            this->block_size(kk, l, &nu1, &nu2);
-            stage.prepare(q_out[l].alloc_req(nu1, nu2));
-        }
-    }
-
-    /// Allocate an `Operator` for the given many-body basis into a
-    /// single-block of memory.  Returns a pointer to the memory, and stores
-    /// the `Operator` in `q_out`.
-    std::unique_ptr<double[]>
-    alloc_operator(OperatorKind kk, Operator &q_out) const
-    {
-        Stage<double> stage;
-        this->prepare_operator(kk, stage, q_out);
-        stage.execute();
-        return stage.release();
-    }
-
-    /// Allocate a `ManyBodyOperator` for the given many-body basis into a
-    /// single-block of memory.  Returns a pointer to the memory, and stores
-    /// the `ManyBodyOperator` in `q_out`.
-    std::unique_ptr<double[]>
-    alloc_many_body_operator(ManyBodyOperator &mq_out) const
-    {
-        Stage<double> stage;
-        for (OperatorKind kk : {OPERATOR_KIND_000,
-                                OPERATOR_KIND_100,
-                                OPERATOR_KIND_200}) {
-            Rank r = operator_kind_to_rank(kk);
-            this->prepare_operator(kk, stage, mq_out[r]);
-        }
-        stage.execute();
-        return stage.release();
     }
 
 };

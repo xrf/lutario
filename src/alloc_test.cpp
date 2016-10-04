@@ -1,6 +1,6 @@
 #undef NDEBUG
 #include <assert.h>
-#include "allocation.hpp"
+#include "alloc.hpp"
 
 static const size_t N = 42;
 
