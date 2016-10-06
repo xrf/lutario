@@ -45,43 +45,6 @@ class Matrix {
 
 public:
 
-    class AllocReq final : public GenericAllocReq<T> {
-
-    public:
-
-        Matrix *matrix = nullptr;
-
-        size_t num_rows = 0;
-
-        size_t num_cols = 0;
-
-        AllocReq()
-        {
-        }
-
-        AllocReq(Matrix *matrix, size_t num_rows, size_t num_cols)
-            : matrix(matrix)
-            , num_rows(num_rows)
-            , num_cols(num_cols)
-        {
-        }
-
-        size_t size() const override
-        {
-            return this->num_rows * this->num_cols;
-        }
-
-        void fulfill(T *data) override
-        {
-            if (!this->matrix) {
-                return;
-            }
-            *this->matrix = Matrix(data, this->num_rows, this->num_cols);
-            *this = AllocReq();
-        }
-
-    };
-
     Matrix()
     {
     }
@@ -102,9 +65,10 @@ public:
     {
     }
 
-    AllocReq alloc_req(size_t num_rows, size_t num_cols)
+    PtrAllocReq<T> alloc_req(size_t num_rows, size_t num_cols)
     {
-        return AllocReq(this, num_rows, num_cols);
+        *this = Matrix(nullptr, num_rows, num_cols);
+        return PtrAllocReq<T>(&this->_data, num_rows * num_cols);
     }
 
     operator Matrix<const T>() const
@@ -142,12 +106,13 @@ public:
 
     const T &operator()(size_t row_index, size_t col_index) const
     {
-        // this is totally safe
+        // this is indeed safe :P
         return const_cast<Matrix &>(*this)(row_index, col_index);
     }
 
     T &operator()(size_t row_index, size_t col_index)
     {
+        assert(this->data());
         assert(row_index < this->num_rows());
         assert(col_index < this->num_cols());
         return this->data[row_index * this->stride() + col_index];
@@ -156,6 +121,7 @@ public:
     Matrix<const T> slice(const IRange<size_t> &row_index_range,
                           const IRange<size_t> &col_index_range) const
     {
+        // this is fine :)
         return const_cast<Matrix *>(this)->slice(row_index_range,
                                                  col_index_range);
     }

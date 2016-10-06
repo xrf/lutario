@@ -28,6 +28,37 @@ public:
 
 };
 
+template<typename T>
+class PtrAllocReq : public GenericAllocReq<T> {
+
+    T **_ptr;
+    size_t _size;
+
+public:
+
+    PtrAllocReq(T **ptr, size_t size)
+        : _ptr(ptr)
+        , _size(size)
+    {
+    }
+
+    T **ptr() const
+    {
+        return this->_ptr;
+    }
+
+    size_t size() const override
+    {
+        return this->_size;
+    }
+
+    void fulfill(T *ptr) override
+    {
+        *this->ptr() = ptr;
+    }
+
+};
+
 /// Fulfill an allocation request directly via `new`.
 template<typename T>
 std::unique_ptr<T[]> alloc(GenericAllocReq<T> &&req)
