@@ -35,8 +35,9 @@ StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
             for (size_t x2 = 0; x2 < 2; ++x2) {
                 for (size_t l1 = 0; l1 < nl1; ++l1) {
                     this->_state_offsets[STATE_KIND_20].emplace_back(u);
-                    size_t l2 = this->subtract_channels(l12, l1);
-                    if (l2 < nl1) {
+                    size_t l2;
+                    if (try_get(this->subtract_channels(l12, l1)
+                                .within({0, nl1}), &l2)) {
                         u += this->num_orbitals_in_channel_part(l1, x1) *
                              this->num_orbitals_in_channel_part(l2, x2);
                     }
@@ -51,8 +52,9 @@ StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
             for (size_t x4 = 0; x4 < 2; ++x4) {
                 for (size_t l1 = 0; l1 < nl1; ++l1) {
                     this->_state_offsets[STATE_KIND_21].emplace_back(u);
-                    size_t l4 = this->subtract_channels(l1, l14);
-                    if (l4 < nl1) {
+                    size_t l4;
+                    if (try_get(this->subtract_channels(l1, l14)
+                                .within({0, nl1}), &l4)) {
                         u += this->num_orbitals_in_channel_part(l1, x1) *
                              this->num_orbitals_in_channel_part(l4, x4);
                     }

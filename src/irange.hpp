@@ -201,4 +201,6 @@ struct IRange {
 
 };
 
+typedef IRange<size_t> IndexRange;
+
 #endif

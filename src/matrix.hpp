@@ -2,8 +2,6 @@
 #define MATRIX_HPP
 #include <assert.h>
 #include <stddef.h>
-#include <array>                        // for ManyBodyOperator
-#include <vector>                       // for Operator
 #include "blas.hpp"
 #include "alloc.hpp"
 #include "irange.hpp"
@@ -20,17 +18,20 @@
 /// destroyed, so is the memory associated with the matrix.  It is the user's
 /// responsibility to make sure that `mat` does not outlive `buf`.
 ///
-/// It is also possible to use `Stage` for allocations.  This allows multiple
-/// `Matrix` and similar objects to be stored in a single contiguous block of
-/// memory.  For example, this example allocates two 100-by-100 matrices into
-/// a single array of length 200000:
+/// It is also possible to use `AllocReqBatch` for allocations.  This allows
+/// multiple `Matrix` and similar objects to be stored in a single contiguous
+/// block of memory.  For example, this example allocates two 100-by-100
+/// matrices into a single array of length 20000:
 ///
-///     Matrix<double> mat;
-///     Stage<double> stage;
-///     arena.prepare(mat.alloc_req(100, 100));
-///     arena.prepare(mat.alloc_req(100, 100));
-///     arena.execute();
-///     assert(arena.size() == 200000);
+///     Matrix<double> mat1, mat2;
+///     std::unique_ptr<double[]> buf;
+///     {
+///         AllocReqBatch<double> batch;
+///         batch.push(mat1.alloc_req(100, 100));
+///         batch.push(mat2.alloc_req(100, 100));
+///         assert(batch.size() == 20000);
+///         buf = alloc(std::move(alloc_req_batch));
+///     }
 ///
 template<typename T>
 class Matrix {
@@ -115,24 +116,34 @@ public:
         assert(this->data());
         assert(row_index < this->num_rows());
         assert(col_index < this->num_cols());
-        return this->data[row_index * this->stride() + col_index];
+        return this->data()[row_index * this->stride() + col_index];
     }
 
-    Matrix<const T> slice(const IRange<size_t> &row_index_range,
-                          const IRange<size_t> &col_index_range) const
+    Matrix<const T> slice(const IndexRange &row_index_range,
+                          const IndexRange &col_index_range) const
     {
         // this is fine :)
         return const_cast<Matrix *>(this)->slice(row_index_range,
                                                  col_index_range);
     }
 
-    Matrix slice(const IRange<size_t> &row_index_range,
-                 const IRange<size_t> &col_index_range)
+    Matrix slice(const IndexRange &row_index_range,
+                 const IndexRange &col_index_range)
     {
         return Matrix(&(*this)(row_index_range.start, col_index_range.start),
                       row_index_range.size(),
                       col_index_range.size(),
                       this->stride());
+    }
+
+    Matrix &operator=(double value)
+    {
+        for (size_t i = 0; i < this->num_rows(); ++i) {
+            for (size_t j = 0; j < this->num_cols(); ++j) {
+                (*this)(i, j) = value;
+            }
+        }
+        return *this;
     }
 
 };

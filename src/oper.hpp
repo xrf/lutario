@@ -6,17 +6,19 @@
 
 class Oper {
 
-    const ManyBodyBasis *_many_body_basis = nullptr;
+    const ManyBodyBasis *_basis = nullptr;
 
     std::vector<Matrix<double>> _blocks;
 
+    OperKind _oper_kind;
+
 public:
 
-    AllocReqBatch<double> alloc_req(const ManyBodyBasis &mbasis, OperKind kk);
+    AllocReqBatch<double> alloc_req(const ManyBodyBasis &, OperKind);
 
-    const ManyBodyBasis &many_body_basis() const
+    const ManyBodyBasis &basis() const
     {
-        return *this->_many_body_basis;
+        return *this->_basis;
     }
 
     const Matrix<double> &operator[](size_t l) const
@@ -29,6 +31,66 @@ public:
     {
         assert(l < this->_blocks.size());
         return this->_blocks[l];
+    }
+
+    OperKind oper_kind() const
+    {
+        return this->_oper_kind;
+    }
+
+    double operator()() const
+    {
+        return const_cast<Oper &>(*this)();
+    }
+
+    double operator()(const Orbital &p1, const Orbital &p2) const
+    {
+        return const_cast<Oper &>(*this)(p1, p2);
+    }
+
+    double operator()(const Orbital &p1, const Orbital &p2,
+                      const Orbital &p3, const Orbital &p4) const
+    {
+        return const_cast<Oper &>(*this)(p1, p2, p3, p4);
+    }
+
+    double &operator()()
+    {
+        assert(this->oper_kind() == OPER_KIND_000);
+        return (*this)[0](0, 0);
+    }
+
+    double &operator()(const Orbital &lu1, const Orbital &lu2)
+    {
+        assert(this->oper_kind() == OPER_KIND_100);
+        size_t l1 = lu1.channel_index();
+        size_t l2 = lu2.channel_index();
+        size_t u1 = lu1.auxiliary_index();
+        size_t u2 = lu2.auxiliary_index();
+        assert(l1 == l2);
+        return (*this)[l1](u1, u2);
+    }
+
+    double &operator()(const Orbital &lu1, const Orbital &lu2,
+                       const Orbital &lu3, const Orbital &lu4)
+    {
+        assert(this->oper_kind() == OPER_KIND_200);
+        Orbital lu12 = *this->basis().combine_20(lu1, lu2);
+        Orbital lu34 = *this->basis().combine_20(lu3, lu4);
+        size_t l12 = lu12.channel_index();
+        size_t l34 = lu34.channel_index();
+        size_t u12 = lu12.auxiliary_index();
+        size_t u34 = lu34.auxiliary_index();
+        assert(l12 == l34);
+        return (*this)[l12](u12, u34);
+    }
+
+    Oper &operator=(double value)
+    {
+        for (Matrix<double> &block : this->_blocks) {
+            block = value;
+        }
+        return *this;
     }
 
 };
@@ -44,29 +106,45 @@ public:
 ///
 class ManyBodyOper {
 
-    const ManyBodyBasis *_many_body_basis = nullptr;
-
-    Oper _opers[3];
+    const ManyBodyBasis *_basis = nullptr;
 
 public:
 
-    AllocReqBatch<double> alloc_req(const ManyBodyBasis &mbasis);
+    Oper opers[3];
 
-    const ManyBodyBasis &many_body_basis() const
+    AllocReqBatch<double> alloc_req(const ManyBodyBasis &);
+
+    const ManyBodyBasis &basis() const
     {
-        return *this->_many_body_basis;
+        return *this->_basis;
     }
 
-    const Oper &operator[](size_t r) const
+    /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
+    /// calls on the rank-`r` operator.
+    template<typename ...Ts>
+    double operator()(Ts &&... args) const
     {
-        assert(r < 3);
-        return this->_opers[r];
+        return const_cast<ManyBodyOper &>(*this)(std::forward<Ts>(args)...);
     }
 
-    Oper &operator[](size_t r)
+    /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
+    /// calls on the rank-`r` operator.
+    template<typename ...Ts>
+    double &operator()(Ts &&... args)
     {
-        assert(r < 3);
-        return this->_opers[r];
+        constexpr size_t r = sizeof...(Ts) / 2;
+        static_assert(sizeof...(Ts) % 2 == 0,
+                      "must call operator() with even number of arguments");
+        static_assert(r < 3, "too many arguments to call of operator()");
+        return this->opers[r](std::forward<Ts>(args)...);
+    }
+
+    ManyBodyOper &operator=(double value)
+    {
+        for (Oper &oper : this->opers) {
+            oper = value;
+        }
+        return *this;
     }
 
 };

@@ -4,8 +4,7 @@
 // do this ONE TERM AT A TIME (!!) starting with the C222(0)
 
 template<typename C>
-void imsrg(const ManyBodyBasis<C> &many_body_basis, const ManyBodyOperator &A,
-           const ManyBodyOperator &B, Operator &D, double alpha)
+void imsrg(const ManyBodyOperator &A, const ManyBodyOperator &B, Operator &D, double alpha)
 {
     // D21 & D22
     D21.clear();

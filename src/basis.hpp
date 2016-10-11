@@ -6,6 +6,8 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "irange.hpp"
+#include "optional.hpp"
 
 // TODO: 'part' could mean just the occupation number, or it could refer to
 // the combination of occupation number and secondary channel indices;
@@ -20,11 +22,6 @@
 //   - r = rank
 //   - i = particle_index
 //   - p = orbital_index
-
-/// A value used to denote an invalid index (such as channel index or
-/// auxiliary orbital index).  It is defined to be `SIZE_MAX`.  Hence, it is
-/// larger than all valid indices.
-static const size_t INVALID_INDEX = (size_t)(-1);
 
 /// Determines the number of particles that an operator couples.
 ///
@@ -131,21 +128,149 @@ inline void split_oper_kind(OperKind oper_kind,
     }
 }
 
+/// Call the given unary function on the OperKind.  It is semantically
+/// equivalent to simply calling `unary_func(oper_kind)` directly, but the
+/// function body is duplciated for every possible value of `oper_kind`.  This
+/// can sometimes expose additional optimizations.
+template<typename F>
+auto dispatch_on_oper_kind(OperKind oper_kind, F unary_func) ->
+    decltype(unary_func(OPER_KIND_000))
+{
+    switch (oper_kind) {
+    case OPER_KIND_000:
+        return unary_func(OPER_KIND_000);
+    case OPER_KIND_100:
+        return unary_func(OPER_KIND_100);
+    case OPER_KIND_200:
+        return unary_func(OPER_KIND_200);
+    case OPER_KIND_211:
+        return unary_func(OPER_KIND_211);
+    }
+}
+
+/// An index that may or may not be valid.  This is typically used to indicate
+/// failure in some operation.
+class OptionalIndex {
+
+    size_t _value;
+
+public:
+
+    // A value used to denote an invalid index (such as channel index or
+    // auxiliary orbital index).  It is defined to be `SIZE_MAX`.  Hence, it
+    // is larger than all valid indices.
+    static const size_t INVALID_VALUE = (size_t)(-1);
+
+    /// Construct an optional that does not contain a value.
+    OptionalIndex()
+        : _value(INVALID_VALUE)
+    {
+    }
+
+    /// Construct an optional that contains the given value.
+    OptionalIndex(size_t value)
+        : _value(value)
+    {
+        // INVALID_VALUE is reserved
+        assert(value != INVALID_VALUE);
+    }
+
+    /// Check if a value is present.
+    explicit operator bool() const
+    {
+        return this->_value != INVALID_VALUE;
+    }
+
+    /// Extract the value.  The value must exist.
+    size_t operator*() const
+    {
+        assert(static_cast<bool>(*this));
+        return this->_value;
+    }
+
+    /// Check if the index is within the given half-open range.
+    /// If there is no value, the result is always `false`.
+    Optional<size_t> within(const IndexRange &range) const
+    {
+        // we take advantage of the fact that INVALID_VALUE is SIZE_MAX to
+        // eliminate the unnecessary check that "value != INVALID_VALUE"
+        if (!(this->_value >= range.start && this->_value < range.stop)) {
+            return {};
+        }
+        return **this;
+    }
+
+};
+
 /// A channelized representation of orbitals.  Each orbital is determined by
 ///
 ///   - a channel index (associated with a channel in some `ManyBodyBasis`) and
 ///   - an auxiliary index to identify the orbital within the said channel.
 ///
-struct Orbital {
+class Orbital {
 
-    size_t channel_index;
+    friend class OptionalOrbital;
 
-    size_t auxiliary_index;
+    size_t _channel_index;
+
+    size_t _auxiliary_index;
+
+public:
 
     Orbital(size_t channel_index, size_t auxiliary_index)
-        : channel_index(channel_index)
-        , auxiliary_index(auxiliary_index)
+        : _channel_index(channel_index)
+        , _auxiliary_index(auxiliary_index)
     {
+        assert(this->_channel_index != OptionalIndex::INVALID_VALUE);
+        assert(this->_auxiliary_index != OptionalIndex::INVALID_VALUE);
+    }
+
+    size_t channel_index() const
+    {
+        return this->_channel_index;
+    }
+
+    size_t auxiliary_index() const
+    {
+        return this->_auxiliary_index;
+    }
+
+};
+
+/// An `Orbital` that may or may not be valid.  This is typically used to
+/// indicate failure in some operation.
+class OptionalOrbital {
+
+    Orbital _value;
+
+public:
+
+    /// Construct an optional that does not contain a value.
+    OptionalOrbital()
+        : _value(0, 0)
+    {
+        this->_value._channel_index = OptionalIndex::INVALID_VALUE;
+        this->_value._auxiliary_index = OptionalIndex::INVALID_VALUE;
+    }
+
+    /// Construct an optional that contains the given value.
+    OptionalOrbital(Orbital orbital)
+        : _value(std::move(orbital))
+    {
+        assert(static_cast<bool>(*this));
+    }
+
+    /// Check if a value is present.
+    explicit operator bool() const
+    {
+        return this->_value._channel_index != OptionalIndex::INVALID_VALUE;
+    }
+
+    /// Extract the value.  It is an error to do this if there is no value.
+    const Orbital &operator*() const
+    {
+        assert(static_cast<bool>(*this));
+        return this->_value;
     }
 
 };
@@ -170,14 +295,15 @@ public:
     /// Number of channels in a given rank.
     virtual size_t num_channels(Rank rank) const = 0;
 
-    /// Negate a valid channel.  The result is always valid.
+    /// Negate a channel.
     virtual size_t negate_channel(size_t channel) const = 0;
 
-    /// Add two valid channels.  The result might be `INVALID_INDEX`.
-    virtual size_t add_channels(size_t channel_1, size_t channel_2) const = 0;
+    /// Add two channels.  The result may not exist.
+    virtual OptionalIndex add_channels(size_t channel_1,
+                                       size_t channel_2) const = 0;
 
-    /// Subtract two valid channels.  The result might be `INVALID_INDEX`.
-    size_t subtract_channel(size_t channel_1, size_t channel_2) const
+    /// Subtract two channels.  The result may not exist.
+    OptionalIndex subtract_channel(size_t channel_1, size_t channel_2) const
     {
         return this->add_channels(channel_1, this->negate_channel(channel_2));
     }
@@ -281,7 +407,7 @@ class OrbitalTranslationTable final : public GenericOrbitalTable {
     // Add a channel to the table if it doesn't already exist.
     void _insert_channel(const C &c)
     {
-        if (this->encode_channel(c) != INVALID_INDEX) {
+        if (this->encode_channel(c)) {
             return;
         }
         size_t l = this->_channel_decoder.size();
@@ -292,11 +418,11 @@ class OrbitalTranslationTable final : public GenericOrbitalTable {
     // Add an orbital to the table.
     void _insert_orbital(const P &p, const C &c)
     {
-        size_t l = this->encode_channel(c);
-        if (l == INVALID_INDEX) {
+        size_t l;
+        if (!try_get(this->encode_channel(c), &l)) {
             throw std::logic_error("channel not found");
         }
-        if (this->encode_orbital(p) != INVALID_INDEX) {
+        if (this->encode_orbital(p)) {
             throw std::logic_error("orbitals are not unique");
         }
         size_t u = this->_orbital_decoders.at(l).size();
@@ -389,25 +515,22 @@ public:
 
     size_t negate_channel(size_t l) const override
     {
-        size_t l_out = this->encode_channel(-this->decode_channel(l));
-        assert(l_out != INVALID_INDEX);
-        return l_out;
+        return *this->encode_channel(-this->decode_channel(l));
     }
 
-    size_t add_channels(size_t l1, size_t l2) const override
+    OptionalIndex add_channels(size_t l1, size_t l2) const override
     {
         return this->encode_channel(this->decode_channel(l1) +
                                     this->decode_channel(l2));
     }
 
-    /// Returns either INVALID_INDEX or a valid channel index.
-    size_t encode_channel(const C &c) const
+    OptionalIndex encode_channel(const C &c) const
     {
         auto it = this->_channel_encoder.find(c);
         if (it == this->_channel_encoder.end()) {
-            return INVALID_INDEX;
+            return OptionalIndex();
         }
-        return it->second;
+        return OptionalIndex(it->second);
     }
 
     const C &decode_channel(size_t l) const
@@ -415,14 +538,13 @@ public:
         return this->_channel_decoder.at(l);
     }
 
-    /// Returns either INVALID_INDEX or a valid auxiliary orbital index.
-    size_t encode_orbital(const P &p) const
+    OptionalIndex encode_orbital(const P &p) const
     {
         auto it = this->_orbital_encoder.find(p);
         if (it == this->_orbital_encoder.end()) {
-            return INVALID_INDEX;
+            return OptionalIndex();
         }
-        return it->second;
+        return OptionalIndex(it->second);
     }
 
     const P &decode_orbital(size_t l, size_t u) const
@@ -432,14 +554,12 @@ public:
 
 };
 
-// TODO: make this class inherit from ChannelIndexGroup
-//       but make sure it does not impact performance for GCC+Clang!
-class StateIndexTable /* final : public GenericOrbitalTable */ {
+class StateIndexTable {
 
     // Since L1 is a subset of L2, this table suffices for all our purposes.
     //
     // (L2, L1) -> L2
-    std::vector<size_t> _addition_table;
+    std::vector<OptionalIndex> _addition_table;
 
     // Negation table
     //
@@ -451,9 +571,8 @@ class StateIndexTable /* final : public GenericOrbitalTable */ {
 
     size_t _num_channels_1;
 
-    // Adds a rank-2 channel to a rank-1 channel.  The result might be
-    // `INVALID_INDEX`.
-    size_t _add_channels(size_t l1, size_t l2) const
+    // Adds a rank-2 channel to a rank-1 channel.
+    OptionalIndex _add_channels(size_t l1, size_t l2) const
     {
         assert(l1 < this->num_channels(RANK_2));
         assert(l2 < this->num_channels(RANK_1));
@@ -464,7 +583,7 @@ public:
 
     explicit StateIndexTable(const GenericOrbitalTable &table);
 
-    size_t num_channels(Rank rank) const /* override */
+    size_t num_channels(Rank rank) const
     {
         switch (rank) {
         case RANK_0:
@@ -476,12 +595,12 @@ public:
         }
     }
 
-    size_t orbital_offset(size_t l, size_t x) const /* override */
+    size_t orbital_offset(size_t l, size_t x) const
     {
         return this->state_offset(STATE_KIND_10, l, x);
     }
 
-    size_t num_orbitals_in_channel(size_t channel) const /* delete me later */
+    size_t num_orbitals_in_channel(size_t channel) const
     {
         assert(channel < this->num_channels(RANK_1));
         return this->orbital_offset(channel, 2) -
@@ -489,7 +608,7 @@ public:
     }
 
     size_t num_orbitals_in_channel_part(size_t channel,
-                                        size_t part) const /* delete me later */
+                                        size_t part) const
     {
         assert(channel < this->num_channels(RANK_1));
         assert(part < 2);
@@ -532,14 +651,13 @@ public:
     }
 
     // Negate a channel.
-    size_t negate_channel(size_t l) const /* override */
+    size_t negate_channel(size_t l) const
     {
         return this->_negation_table[l];
     }
 
-    // Adds a rank-1 channel to a rank-2 channel or vice versa.  The result
-    // might be `INVALID_INDEX`.
-    size_t add_channels(size_t l1, size_t l2) const /* override */
+    // Adds a rank-1 channel to a rank-2 channel or vice versa.
+    OptionalIndex add_channels(size_t l1, size_t l2) const
     {
         if (l1 < l2) {
             std::swap(l1, l2);
@@ -547,8 +665,8 @@ public:
         return this->_add_channels(l1, l2);
     }
 
-    // Subtract two channels.  The result might be `INVALID_INDEX`.
-    size_t subtract_channels(size_t l1, size_t l2) const /* delete me later */
+    // Subtract two channels.
+    OptionalIndex subtract_channels(size_t l1, size_t l2) const
     {
         return this->add_channels(l1, this->negate_channel(l2));
     }
@@ -597,54 +715,48 @@ public:
         }
     }
 
-    bool combine_20(size_t l1, size_t u1, size_t l2, size_t u2,
-                    size_t *l12_out, size_t *u12_out) const
+    OptionalOrbital combine_20(Orbital lu1, Orbital lu2) const
     {
-        size_t l12 = this->table().add_channels(l1, l2);
-        if (l12 == INVALID_INDEX) {
-            return false;
+        size_t l1 = lu1.channel_index();
+        size_t u1 = lu1.auxiliary_index();
+        size_t l2 = lu2.channel_index();
+        size_t u2 = lu2.auxiliary_index();
+        size_t l12;
+        if (!try_get(this->table().add_channels(l1, l2), &l12)) {
+            return OptionalOrbital();
         }
-        if (l12_out) {
-            *l12_out = l12;
-        }
-        if (u12_out) {
-            bool x1 = u1 >= this->table().orbital_offset(l1, 1);
-            bool x2 = u2 >= this->table().orbital_offset(l2, 1);
-            size_t uo1 = this->table().orbital_offset(l1, x1);
-            size_t uo2 = this->table().orbital_offset(l2, x2);
-            size_t nl1 = this->table().num_channels(RANK_1);
-            size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
-            size_t ub = this->table().state_offset(STATE_KIND_20, l12,
-                                                   (x1 * 2 + x2) * nl1 + l1);
-            size_t u12 = ub + (u1 - uo1) * nu + (u2 - uo2);
-            *u12_out = u12;
-        }
-        return true;
+        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
+        bool x2 = u2 >= this->table().orbital_offset(l2, 1);
+        size_t uo1 = this->table().orbital_offset(l1, x1);
+        size_t uo2 = this->table().orbital_offset(l2, x2);
+        size_t nl1 = this->table().num_channels(RANK_1);
+        size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
+        size_t ub = this->table().state_offset(STATE_KIND_20, l12,
+                                               (x1 * 2 + x2) * nl1 + l1);
+        size_t u12 = ub + (u1 - uo1) * nu + (u2 - uo2);
+        return OptionalOrbital({l12, u12});
     }
 
-    bool combine_21(size_t l1, size_t u1, size_t l4, size_t u4,
-                    size_t *l14_out, size_t *u14_out) const
+    OptionalOrbital combine_21(Orbital lu1, Orbital lu4) const
     {
-        size_t l14 = this->table().subtract_channels(l1, l4);
-        if (l14 == INVALID_INDEX) {
-            return false;
+        size_t l1 = lu1.channel_index();
+        size_t u1 = lu1.auxiliary_index();
+        size_t l4 = lu4.channel_index();
+        size_t u4 = lu4.auxiliary_index();
+        size_t l14;
+        if (!try_get(this->table().subtract_channels(l1, l4), &l14)) {
+            return OptionalOrbital();
         }
-        if (l14_out) {
-            *l14_out = l14;
-        }
-        if (u14_out) {
-            bool x1 = u1 >= this->table().orbital_offset(l1, 1);
-            bool x4 = u4 >= this->table().orbital_offset(l4, 1);
-            size_t uo1 = this->table().orbital_offset(l1, x1);
-            size_t uo4 = this->table().orbital_offset(l4, x4);
-            size_t nl1 = this->table().num_channels(RANK_1);
-            size_t nu = this->table().num_orbitals_in_channel_part(l4, x4);
-            size_t ub = this->table().state_offset(STATE_KIND_21, l14,
-                                                   (x1 * 2 + x4) * nl1 + l1);
-            size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
-            *u14_out = u14;
-        }
-        return true;
+        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
+        bool x4 = u4 >= this->table().orbital_offset(l4, 1);
+        size_t uo1 = this->table().orbital_offset(l1, x1);
+        size_t uo4 = this->table().orbital_offset(l4, x4);
+        size_t nl1 = this->table().num_channels(RANK_1);
+        size_t nu = this->table().num_orbitals_in_channel_part(l4, x4);
+        size_t ub = this->table().state_offset(STATE_KIND_21, l14,
+                                               (x1 * 2 + x4) * nl1 + l1);
+        size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
+        return OptionalOrbital({l14, u14});
     }
 
 };
