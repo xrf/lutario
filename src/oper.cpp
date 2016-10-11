@@ -5,7 +5,7 @@
 AllocReqBatch<double> Oper::alloc_req(const ManyBodyBasis &basis, OperKind kk)
 {
     this->_basis = &basis;
-    this->_oper_kind = kk;
+    this->_kind = kk;
     Rank r = oper_kind_to_rank(kk);
     size_t nl = basis.table().num_channels(r);
     this->_blocks.resize(nl);

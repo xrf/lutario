@@ -10,7 +10,7 @@ class Oper {
 
     std::vector<Matrix<double>> _blocks;
 
-    OperKind _oper_kind;
+    OperKind _kind;
 
 public:
 
@@ -33,9 +33,9 @@ public:
         return this->_blocks[l];
     }
 
-    OperKind oper_kind() const
+    OperKind kind() const
     {
-        return this->_oper_kind;
+        return this->_kind;
     }
 
     double operator()() const
@@ -56,13 +56,13 @@ public:
 
     double &operator()()
     {
-        assert(this->oper_kind() == OPER_KIND_000);
+        assert(this->kind() == OPER_KIND_000);
         return (*this)[0](0, 0);
     }
 
     double &operator()(const Orbital &lu1, const Orbital &lu2)
     {
-        assert(this->oper_kind() == OPER_KIND_100);
+        assert(this->kind() == OPER_KIND_100);
         size_t l1 = lu1.channel_index();
         size_t l2 = lu2.channel_index();
         size_t u1 = lu1.auxiliary_index();
@@ -74,7 +74,7 @@ public:
     double &operator()(const Orbital &lu1, const Orbital &lu2,
                        const Orbital &lu3, const Orbital &lu4)
     {
-        assert(this->oper_kind() == OPER_KIND_200);
+        assert(this->kind() == OPER_KIND_200);
         Orbital lu12 = *this->basis().combine_20(lu1, lu2);
         Orbital lu34 = *this->basis().combine_20(lu3, lu4);
         size_t l12 = lu12.channel_index();

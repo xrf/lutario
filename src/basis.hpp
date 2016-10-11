@@ -209,8 +209,6 @@ public:
 ///
 class Orbital {
 
-    friend class OptionalOrbital;
-
     size_t _channel_index;
 
     size_t _auxiliary_index;
@@ -241,21 +239,23 @@ public:
 /// indicate failure in some operation.
 class OptionalOrbital {
 
-    Orbital _value;
+    size_t _channel_index;
+
+    size_t _auxiliary_index;
 
 public:
 
     /// Construct an optional that does not contain a value.
     OptionalOrbital()
-        : _value(0, 0)
+        : _channel_index(OptionalIndex::INVALID_VALUE)
+        , _auxiliary_index(OptionalIndex::INVALID_VALUE)
     {
-        this->_value._channel_index = OptionalIndex::INVALID_VALUE;
-        this->_value._auxiliary_index = OptionalIndex::INVALID_VALUE;
     }
 
     /// Construct an optional that contains the given value.
-    OptionalOrbital(Orbital orbital)
-        : _value(std::move(orbital))
+    OptionalOrbital(const Orbital &orbital)
+        : _channel_index(orbital.channel_index())
+        , _auxiliary_index(orbital.auxiliary_index())
     {
         assert(static_cast<bool>(*this));
     }
@@ -263,14 +263,16 @@ public:
     /// Check if a value is present.
     explicit operator bool() const
     {
-        return this->_value._channel_index != OptionalIndex::INVALID_VALUE;
+        assert((this->_channel_index != OptionalIndex::INVALID_VALUE) ==
+               (this->_auxiliary_index != OptionalIndex::INVALID_VALUE));
+        return this->_channel_index != OptionalIndex::INVALID_VALUE;
     }
 
     /// Extract the value.  It is an error to do this if there is no value.
-    const Orbital &operator*() const
+    Orbital operator*() const
     {
         assert(static_cast<bool>(*this));
-        return this->_value;
+        return {this->_channel_index, this->_auxiliary_index};
     }
 
 };
@@ -717,46 +719,68 @@ public:
 
     OptionalOrbital combine_20(Orbital lu1, Orbital lu2) const
     {
+        const StateIndexTable &table = this->table();
         size_t l1 = lu1.channel_index();
         size_t u1 = lu1.auxiliary_index();
         size_t l2 = lu2.channel_index();
         size_t u2 = lu2.auxiliary_index();
         size_t l12;
-        if (!try_get(this->table().add_channels(l1, l2), &l12)) {
+        if (!try_get(table.add_channels(l1, l2), &l12)) {
             return OptionalOrbital();
         }
-        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
-        bool x2 = u2 >= this->table().orbital_offset(l2, 1);
-        size_t uo1 = this->table().orbital_offset(l1, x1);
-        size_t uo2 = this->table().orbital_offset(l2, x2);
-        size_t nl1 = this->table().num_channels(RANK_1);
-        size_t nu = this->table().num_orbitals_in_channel_part(l2, x2);
-        size_t ub = this->table().state_offset(STATE_KIND_20, l12,
-                                               (x1 * 2 + x2) * nl1 + l1);
+        bool x1 = u1 >= table.orbital_offset(l1, 1);
+        bool x2 = u2 >= table.orbital_offset(l2, 1);
+        size_t uo1 = table.orbital_offset(l1, x1);
+        size_t uo2 = table.orbital_offset(l2, x2);
+        size_t nl1 = table.num_channels(RANK_1);
+        size_t nu = table.num_orbitals_in_channel_part(l2, x2);
+        size_t ub = table.state_offset(STATE_KIND_20, l12,
+                                       (x1 * 2 + x2) * nl1 + l1);
         size_t u12 = ub + (u1 - uo1) * nu + (u2 - uo2);
         return OptionalOrbital({l12, u12});
     }
 
     OptionalOrbital combine_21(Orbital lu1, Orbital lu4) const
     {
+        const StateIndexTable &table = this->table();
         size_t l1 = lu1.channel_index();
         size_t u1 = lu1.auxiliary_index();
         size_t l4 = lu4.channel_index();
         size_t u4 = lu4.auxiliary_index();
         size_t l14;
-        if (!try_get(this->table().subtract_channels(l1, l4), &l14)) {
+        if (!try_get(table.subtract_channels(l1, l4), &l14)) {
             return OptionalOrbital();
         }
-        bool x1 = u1 >= this->table().orbital_offset(l1, 1);
-        bool x4 = u4 >= this->table().orbital_offset(l4, 1);
-        size_t uo1 = this->table().orbital_offset(l1, x1);
-        size_t uo4 = this->table().orbital_offset(l4, x4);
-        size_t nl1 = this->table().num_channels(RANK_1);
-        size_t nu = this->table().num_orbitals_in_channel_part(l4, x4);
-        size_t ub = this->table().state_offset(STATE_KIND_21, l14,
-                                               (x1 * 2 + x4) * nl1 + l1);
+        bool x1 = u1 >= table.orbital_offset(l1, 1);
+        bool x4 = u4 >= table.orbital_offset(l4, 1);
+        size_t uo1 = table.orbital_offset(l1, x1);
+        size_t uo4 = table.orbital_offset(l4, x4);
+        size_t nl1 = table.num_channels(RANK_1);
+        size_t nu = table.num_orbitals_in_channel_part(l4, x4);
+        size_t ub = table.state_offset(STATE_KIND_21, l14,
+                                       (x1 * 2 + x4) * nl1 + l1);
         size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
         return OptionalOrbital({l14, u14});
+    }
+
+    template<typename B>
+    auto slice_by_unoccupancy_200(const B &blocks,
+                                  size_t l12,
+                                  IndexRange y12s,
+                                  IndexRange y34s) const ->
+        decltype(blocks[l12].slice({0, 0}, {0, 0}))
+    {
+        const StateIndexTable &table = this->table();
+        size_t nl1 = table.num_channels(RANK_1);
+        IndexRange u12s(
+            table.state_offset(STATE_KIND_20, l12, y12s.start * nl1),
+            table.state_offset(STATE_KIND_20, l12, y12s.stop * nl1)
+        );
+        IndexRange u34s(
+            table.state_offset(STATE_KIND_20, l12, y34s.start * nl1),
+            table.state_offset(STATE_KIND_20, l12, y34s.stop * nl1)
+        );
+        return blocks[l12].slice(u12s, u34s);
     }
 
 };

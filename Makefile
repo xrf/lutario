@@ -7,10 +7,10 @@
 all: bin/main
 objs=$(main_objs)
 
-main_objs=src/main.o src/basis.o src/oper.o src/pairing_model.o
+main_objs=src/main.o src/basis.o src/commutator.o src/oper.o src/pairing_model.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas
 
 # Cleanup
 
