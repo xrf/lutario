@@ -86,7 +86,7 @@ namespace std {
 template<>
 struct hash<pairing_model::Orbital> {
 
-    size_t operator()(const pairing_model::Orbital &channel) const;
+    size_t operator()(const pairing_model::Orbital &orbital) const;
 
 private:
 

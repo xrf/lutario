@@ -6,6 +6,7 @@
 #include <vector>
 #include "sparse_vector.hpp"
 #include "pairing_model.hpp"
+#include "utility.hpp"
 
 namespace pairing_model {
 
@@ -123,10 +124,9 @@ size_t hash<pairing_model::Orbital>::
 operator()(const pairing_model::Orbital &p) const
 {
     // not sure how good this hash function is tbh
-    size_t hn = this->_hash_n(p.n);
-    size_t hs = this->_hash_s(p.s);
-    // a magical hash combining algorithm from Boost
-    return hn ^ (hs + 0x9e3779b9 + (hn << 6) + (hn >> 2));
+    size_t h_n = this->_hash_n(p.n);
+    size_t h_s = this->_hash_s(p.s);
+    return combine_hash(h_n, h_s);
 }
 
 }
