@@ -13,33 +13,7 @@
 #define UNOCC_AI {2, 3}
 #define UNOCC_AA {3, 4}
 
-void term_2220(double alpha,
-               const Oper &a,
-               const Oper &b,
-               Oper &c)
-{
-    const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &c.basis());
-    assert(a.kind() == OPER_KIND_200);
-    assert(b.kind() == OPER_KIND_200);
-    assert(c.kind() == OPER_KIND_200);
-
-    for (size_t l : basis.channels(RANK_2)) {
-        gemm(CblasNoTrans,
-             CblasNoTrans,
-             0.5 * alpha,
-             basis.slice_by_unoccupancy_200(b, l, UNOCC_PP, UNOCC_II),
-             basis.slice_by_unoccupancy_200(a, l, UNOCC_II, UNOCC_PP),
-             1.0,
-             c[l]);
-    }
-}
-
-void term_2221(double alpha,
-               const Oper &a,
-               const Oper &b,
-               Oper &c)
+void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(&basis == &b.basis());
@@ -77,10 +51,27 @@ void term_2221(double alpha,
     }
 }
 
-void term_2222(double alpha,
-               const Oper &a,
-               const Oper &b,
-               Oper &c)
+void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &c)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &c.basis());
+    assert(a.kind() == OPER_KIND_200);
+    assert(b.kind() == OPER_KIND_200);
+    assert(c.kind() == OPER_KIND_200);
+
+    for (size_t l : basis.channels(RANK_2)) {
+        gemm(CblasNoTrans,
+             CblasNoTrans,
+             0.5 * alpha,
+             basis.slice_by_unoccupancy_200(b, l, UNOCC_PP, UNOCC_II),
+             basis.slice_by_unoccupancy_200(a, l, UNOCC_II, UNOCC_PP),
+             1.0,
+             c[l]);
+    }
+}
+
+void term_22aa(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(&basis == &b.basis());
