@@ -75,6 +75,7 @@ public:
                        const Orbital &lu3, const Orbital &lu4)
     {
         assert(this->kind() == OPER_KIND_200);
+        // note: we are assuming l1 + l2 exists!
         Orbital lu12 = *this->basis().combine_20(lu1, lu2);
         Orbital lu34 = *this->basis().combine_20(lu3, lu4);
         size_t l12 = lu12.channel_index();

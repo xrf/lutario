@@ -305,7 +305,7 @@ public:
                                        size_t channel_2) const = 0;
 
     /// Subtract two channels.  The result may not exist.
-    OptionalIndex subtract_channel(size_t channel_1, size_t channel_2) const
+    OptionalIndex subtract_channels(size_t channel_1, size_t channel_2) const
     {
         return this->add_channels(channel_1, this->negate_channel(channel_2));
     }
@@ -714,6 +714,65 @@ public:
         }
         if (nu2_out) {
             *nu2_out = nu2;
+        }
+    }
+
+    IndexRange channels(Rank r) const
+    {
+        const StateIndexTable &table = this->table();
+        size_t nl = table.num_channels(r);
+        return {0, nl};
+    }
+
+    /// The function is expected to be like `({l1, u1}, {l2, u2}) -> void`.
+    template<typename F>
+    void for_u20(size_t l12, IndexRange y12s, F func) const
+    {
+        const StateIndexTable &table = this->table();
+        size_t nl1 = table.num_channels(RANK_1);
+        for (size_t y12 : y12s) {
+            size_t x1 = y12 / 2;
+            size_t x2 = y12 % 2;
+            for (size_t l1 : IndexRange(0, nl1)) {
+                size_t l2;
+                if (!try_get(table.subtract_channels(l12, l1)
+                             .within({0, nl1}), &l2)) {
+                    continue;
+                }
+                size_t nu1 = table.num_orbitals_in_channel_part(l1, x1);
+                size_t nu2 = table.num_orbitals_in_channel_part(l2, x2);
+                for (size_t u1 : IndexRange(0, nu1)) {
+                    for (size_t u2 : IndexRange(0, nu2)) {
+                        func({l1, u1}, {l2, u2});
+                    }
+                }
+            }
+        }
+    }
+
+    /// The function is expected to be like `({l1, u1}, {l4, u4}) -> void`.
+    template<typename F>
+    void for_u21(size_t l14, IndexRange y14s, F func) const
+    {
+        const StateIndexTable &table = this->table();
+        size_t nl1 = table.num_channels(RANK_1);
+        for (size_t y14 : y14s) {
+            size_t x1 = y14 / 2;
+            size_t x4 = y14 % 2;
+            for (size_t l1 : IndexRange(0, nl1)) {
+                size_t l4;
+                if (!try_get(table.subtract_channels(l1, l14)
+                             .within({0, nl1}), &l4)) {
+                    continue;
+                }
+                size_t nu1 = table.num_orbitals_in_channel_part(l1, x1);
+                size_t nu4 = table.num_orbitals_in_channel_part(l4, x4);
+                for (size_t u1 : IndexRange(0, nu1)) {
+                    for (size_t u4 : IndexRange(0, nu4)) {
+                        func({l1, u1}, {l4, u4});
+                    }
+                }
+            }
         }
     }
 
