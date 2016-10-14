@@ -1,13 +1,25 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 
-size_t combine_hash(size_t h1, size_t h2);
-
-inline
-size_t combine_hash(size_t h1, size_t h2)
+template<typename P, typename C>
+std::ostream &write_basis(std::ostream &stream,
+                          const std::vector<std::tuple<P, C, bool>> &self)
 {
-    // a magical hash combining algorithm from Boost
-    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    stream << "({";
+    bool first = true;
+    for (const std::tuple<P, C, bool> &pcx : self) {
+        if (first) {
+            first = false;
+        } else {
+            stream << ", ";
+        }
+        stream << "{" << std::get<0>(pcx)
+               << ", " << std::get<1>(pcx)
+               << ", " << std::get<2>(pcx)
+               << "}";
+    }
+    stream << "})";
+    return stream;
 }
 
 #endif

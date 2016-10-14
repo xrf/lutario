@@ -122,7 +122,7 @@ public:
 
     /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
     /// calls on the rank-`r` operator.
-    template<typename ...Ts>
+    template<typename... Ts>
     double operator()(Ts &&... args) const
     {
         return const_cast<ManyBodyOper &>(*this)(std::forward<Ts>(args)...);
@@ -130,7 +130,7 @@ public:
 
     /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
     /// calls on the rank-`r` operator.
-    template<typename ...Ts>
+    template<typename... Ts>
     double &operator()(Ts &&... args)
     {
         constexpr size_t r = sizeof...(Ts) / 2;

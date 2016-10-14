@@ -3,7 +3,11 @@
 #include <memory>
 #include "basis.hpp"
 #include "oper.hpp"
+
 #include "pairing_model.hpp"
+#include "quantum_dot.hpp"
+
+//#define pairing_model quantum_dot
 
 int main()
 {

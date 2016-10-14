@@ -7,7 +7,7 @@
 all: bin/main
 objs=$(main_objs)
 
-main_objs=src/main.o src/basis.o src/commutator.o src/oper.o src/pairing_model.o
+main_objs=src/main.o src/basis.o src/commutator.o src/oper.o src/pairing_model.o src/quantum_dot.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas

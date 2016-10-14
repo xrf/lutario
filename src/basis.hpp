@@ -3,8 +3,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <iterator>
+#include <map>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 #include "irange.hpp"
 #include "optional.hpp"
@@ -395,7 +395,7 @@ class OrbitalTranslationTable final : public GenericOrbitalTable {
     //   - for all c, _channel_decoder[_channel_encoder[c]] == c
     //
     // C -> L2
-    std::unordered_map<C, size_t> _channel_encoder;
+    std::map<C, size_t> _channel_encoder;
 
     // L1 -> U1
     std::vector<size_t> _orbital_offsets;
@@ -404,7 +404,7 @@ class OrbitalTranslationTable final : public GenericOrbitalTable {
     std::vector<std::vector<P>> _orbital_decoders;
 
     // P -> U1
-    std::unordered_map<P, size_t> _orbital_encoder;
+    std::map<P, size_t> _orbital_encoder;
 
     // Add a channel to the table if it doesn't already exist.
     void _insert_channel(const C &c)

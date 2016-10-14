@@ -1,20 +1,41 @@
 #ifndef PAIRING_MODEL_HPP
 #define PAIRING_MODEL_HPP
 #include <stddef.h>
-#include <functional>
 #include <iosfwd>
+#include <map>
 #include <tuple>
 #include <vector>
-#include "sparse_vector.hpp"
 
 namespace pairing_model {
 
-/// Spin is stored as twice its normal value.  This way we can represent spins
-/// as exact integers without having to resort to floating-point arithmetic.
-typedef int TwiceSpin;
-
 /// Type for the conserved quantum number(s).
-typedef SparseVector<unsigned, TwiceSpin> Channel;
+class Channel {
+
+public:
+
+    explicit Channel(const std::map<unsigned, int> &entries = {});
+
+    /// Get the nonzero entries.
+    const std::map<unsigned, int> &entries() const;
+
+    Channel operator+(const Channel &other) const;
+
+    Channel operator-() const;
+
+    bool operator==(const Channel &other) const;
+
+    bool operator!=(const Channel &other) const;
+
+    bool operator<(const Channel &other) const;
+
+private:
+
+    // Invariant: all entries must have nonzero value.
+    std::map<unsigned, int> _entries;
+
+};
+
+std::ostream &operator<<(std::ostream &, const Channel &);
 
 /// A single-particle state in the pairing model basis.
 struct Orbital {
@@ -23,15 +44,23 @@ struct Orbital {
     unsigned n;
 
     /// Spin quantum number.
-    TwiceSpin s;
+    ///
+    /// It is stored as twice its normal value, so we can represent spins as
+    /// exact integers without having to resort to floating-point arithmetic.
+    int tms;
 
-    /// Construct an Orbital with the given quantum numbers.
-    Orbital(unsigned n, TwiceSpin s);
+    Orbital() = delete;
 
     /// Return the set of conserved quantum numbers.
     Channel channel() const;
 
+    std::tuple<unsigned, int> to_tuple() const;
+
     bool operator==(const Orbital &) const;
+
+    bool operator!=(const Orbital &) const;
+
+    bool operator<(const Orbital &) const;
 
 };
 
@@ -78,23 +107,6 @@ struct Hamiltonian {
 
 /// Write a `Hamiltonian` to a stream.
 std::ostream &operator<<(std::ostream &, const Hamiltonian &);
-
-}
-
-namespace std {
-
-template<>
-struct hash<pairing_model::Orbital> {
-
-    size_t operator()(const pairing_model::Orbital &orbital) const;
-
-private:
-
-    hash<unsigned> _hash_n;
-
-    hash<pairing_model::TwiceSpin> _hash_s;
-
-};
 
 }
 
