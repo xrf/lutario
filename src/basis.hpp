@@ -215,6 +215,12 @@ class Orbital {
 
 public:
 
+    Orbital()
+        : _channel_index()
+        , _auxiliary_index()
+    {
+    }
+
     Orbital(size_t channel_index, size_t auxiliary_index)
         : _channel_index(channel_index)
         , _auxiliary_index(auxiliary_index)
@@ -643,8 +649,8 @@ public:
 
     size_t num_states_in_channel(StateKind k, size_t l) const
     {
-        return this->state_offset(k, l, 0) -
-               this->state_offset(k, l, this->num_parts(k));
+        return this->state_offset(k, l, this->num_parts(k)) -
+               this->state_offset(k, l, 0);
     }
 
     size_t num_states_in_channel_part(StateKind k, size_t l, size_t x) const
@@ -722,6 +728,28 @@ public:
         const StateIndexTable &table = this->table();
         size_t nl = table.num_channels(r);
         return {0, nl};
+    }
+
+    bool is_conserved_1(Orbital lu1, Orbital lu2) const
+    {
+        size_t l1 = lu1.channel_index();
+        size_t l2 = lu2.channel_index();
+        return l1 == l2;
+    }
+
+    bool is_conserved_2(Orbital lu1, Orbital lu2,
+                        Orbital lu3, Orbital lu4) const
+    {
+        Orbital lu12, lu34;
+        if (!try_get(this->combine_20(lu1, lu2), &lu12)) {
+            return false;
+        }
+        if (!try_get(this->combine_20(lu3, lu4), &lu34)) {
+            return false;
+        }
+        size_t l12 = lu12.channel_index();
+        size_t l34 = lu34.channel_index();
+        return l12 == l34;
     }
 
     /// The function is expected to be like `({l1, u1}, {l2, u2}) -> void`.

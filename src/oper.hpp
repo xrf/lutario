@@ -63,11 +63,10 @@ public:
     double &operator()(const Orbital &lu1, const Orbital &lu2)
     {
         assert(this->kind() == OPER_KIND_100);
+        assert(this->basis().is_conserved_1(lu1, lu2));
         size_t l1 = lu1.channel_index();
-        size_t l2 = lu2.channel_index();
         size_t u1 = lu1.auxiliary_index();
         size_t u2 = lu2.auxiliary_index();
-        assert(l1 == l2);
         return (*this)[l1](u1, u2);
     }
 
@@ -75,14 +74,14 @@ public:
                        const Orbital &lu3, const Orbital &lu4)
     {
         assert(this->kind() == OPER_KIND_200);
+        assert(this->basis().is_conserved_2(lu1, lu2, lu3, lu4));
         // note: we are assuming l1 + l2 exists!
+        //       (this holds if is_conserved_2 returns true)
         Orbital lu12 = *this->basis().combine_20(lu1, lu2);
         Orbital lu34 = *this->basis().combine_20(lu3, lu4);
         size_t l12 = lu12.channel_index();
-        size_t l34 = lu34.channel_index();
         size_t u12 = lu12.auxiliary_index();
         size_t u34 = lu34.auxiliary_index();
-        assert(l12 == l34);
         return (*this)[l12](u12, u34);
     }
 

@@ -1,6 +1,7 @@
 bin/
 doc/api/
 etc/
+out_*
 
 # generic
 .#*

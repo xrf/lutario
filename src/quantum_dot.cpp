@@ -1,5 +1,6 @@
 #include <ostream>
 #include <tuple>
+#include "math.hpp"
 #include "quantum_dot.hpp"
 #include "utility.hpp"
 
@@ -64,6 +65,15 @@ std::tuple<unsigned, int, int> Orbital::to_tuple() const
 bool Orbital::operator<(const Orbital &other) const
 {
     return this->to_tuple() < other.to_tuple();
+}
+
+Orbital Orbital::from_index(size_t p)
+{
+    int tms = (int)(p % 2 * 2) - 1;
+    unsigned k = (isqrt((unsigned)(4 * p + 1)) - 1) / 2;
+    int ml = (int)(p - p % 2) - (int)(k * (k + 2));
+    unsigned n = (k - (unsigned)abs(ml)) / 2;
+    return {n, ml, tms};
 }
 
 std::ostream &operator<<(std::ostream &stream, const Orbital &self)

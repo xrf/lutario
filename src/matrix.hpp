@@ -44,10 +44,22 @@ class Matrix {
 
     size_t _stride = 0;
 
+    // assertions to check the sanity of the object
+    void _validate() const
+    {
+        // num_rows * num_cols must not overflow
+        assert(this->num_rows() == 0 ||
+               this->num_cols() < (size_t)(-1) / this->num_rows());
+        // num_rows * stride must not overflow
+        assert(this->num_rows() == 0 ||
+               this->stride() < (size_t)(-1) / this->num_rows());
+    }
+
 public:
 
     Matrix()
     {
+        this->_validate();
     }
 
     Matrix(T *data, size_t num_rows, size_t num_cols)
@@ -56,6 +68,7 @@ public:
         , _num_cols(num_cols)
         , _stride(num_cols)
     {
+        this->_validate();
     }
 
     Matrix(T *data, size_t num_rows, size_t num_cols, size_t stride)
@@ -64,6 +77,7 @@ public:
         , _num_cols(num_cols)
         , _stride(stride)
     {
+        this->_validate();
     }
 
     PtrAllocReq<T> alloc_req(size_t num_rows, size_t num_cols)

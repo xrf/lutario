@@ -56,6 +56,9 @@ struct Orbital {
 
     bool operator<(const Orbital &) const;
 
+    /// Mostly for compatibility with old code.
+    static Orbital from_index(size_t p);
+
 };
 
 /// Write an `Orbital` to a stream.

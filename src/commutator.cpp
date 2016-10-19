@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include "matrix.hpp"
 #include "oper.hpp"
