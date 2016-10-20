@@ -61,6 +61,18 @@ public:
         , _table(this->_basis)
         , _mbasis(StateIndexTable(this->_table))
     {
+        // allocate and initialize the operators to zero
+        AllocReqBatch<double> batch;
+        batch.push(this->_a.alloc_req(this->_mbasis));
+        batch.push(this->_b.alloc_req(this->_mbasis));
+        batch.push(this->_c.alloc_req(this->_mbasis));
+        batch.push(this->_c_old.alloc_req(this->_mbasis));
+        this->_buf = alloc(std::move(batch));
+
+        // load the mock operators (random matrix elements)
+        this->_load_mbo("src/commutator_test_qd_a.txt", this->_a);
+        this->_load_mbo("src/commutator_test_qd_b.txt", this->_b);
+
         std::cout << "Orbitals:\n";
         for (size_t p = 0; p < this->_basis.size(); ++p) {
             const quantum_dot::Orbital &o = std::get<0>(this->_basis.at(p));
@@ -129,27 +141,20 @@ public:
 
     void term_22ai_test()
     {
-        ManyBodyOper a, b, c, c_old;
+        std::string fn = "commutator_test_qd_c_22ai.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
 
-        AllocReqBatch<double> batch;
-        batch.push(a.alloc_req(this->_mbasis));
-        batch.push(b.alloc_req(this->_mbasis));
-        batch.push(c.alloc_req(this->_mbasis));
-        batch.push(c_old.alloc_req(this->_mbasis));
-        std::unique_ptr<double[]> buf = alloc(std::move(batch));
+        term_22ai(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_c.opers[2]);
+        term_22ai(-1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_c.opers[2]);
 
-        this->_load_mbo("src/commutator_test_qd_a.txt", a);
-        this->_load_mbo("src/commutator_test_qd_b.txt", b);
-        this->_load_mbo("src/commutator_test_qd_c_22ai.txt", c_old);
-
-        term_22ai(1.0, a.opers[2], b.opers[2], c.opers[2]);
-        term_22ai(-1.0, b.opers[2], a.opers[2], c.opers[2]);
-
-        this->_save_mbo("out_commutator_test_qd_a.txt", a);
-        this->_save_mbo("out_commutator_test_qd_b.txt", b);
-        this->_save_mbo("out_commutator_test_qd_c.txt", c);
-
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, c, c_old);
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
     }
 
 private:
@@ -161,6 +166,10 @@ private:
         quantum_dot::Channel> _table;
 
     ManyBodyBasis _mbasis;
+
+    ManyBodyOper _a, _b, _c, _c_old;
+
+    std::unique_ptr<double[]> _buf;
 
     Orbital _orbital_from_index(size_t p) const
     {
@@ -318,6 +327,14 @@ private:
                 throw std::runtime_error(s.str());
             }
         }
+    }
+
+    /// Similar to `_load_mbo`, but also re-saves the file to
+    /// normalize the file format.
+    void _load_save_mbo(const char *filename, ManyBodyOper &out) const
+    {
+        this->_load_mbo(filename, out);
+        this->_save_mbo(filename, out);
     }
 
     void _save_mbo(const char *filename, const ManyBodyOper &in) const
