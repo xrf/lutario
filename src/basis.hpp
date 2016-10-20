@@ -239,7 +239,19 @@ public:
         return this->_auxiliary_index;
     }
 
+    std::tuple<size_t, size_t> to_tuple() const
+    {
+        return {this->channel_index(), this->auxiliary_index()};
+    }
+
+    bool operator==(const Orbital &other) const
+    {
+        return this->to_tuple() == other.to_tuple();
+    }
+
 };
+
+std::ostream &operator<<(std::ostream &, const Orbital &);
 
 /// An `Orbital` that may or may not be valid.  This is typically used to
 /// indicate failure in some operation.
@@ -502,11 +514,6 @@ public:
         }
     }
 
-    size_t num_orbitals() const
-    {
-        return this->_orbital_encoder.size();
-    }
-
     size_t orbital_offset(size_t l, size_t x) const override
     {
         switch (x) {
@@ -767,10 +774,12 @@ public:
                              .within({0, nl1}), &l2)) {
                     continue;
                 }
-                size_t nu1 = table.num_orbitals_in_channel_part(l1, x1);
-                size_t nu2 = table.num_orbitals_in_channel_part(l2, x2);
-                for (size_t u1 : IndexRange(0, nu1)) {
-                    for (size_t u2 : IndexRange(0, nu2)) {
+                size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
+                size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
+                size_t nu2a = table.state_offset(STATE_KIND_10, l2, x2);
+                size_t nu2b = table.state_offset(STATE_KIND_10, l2, x2 + 1);
+                for (size_t u1 : IndexRange(nu1a, nu1b)) {
+                    for (size_t u2 : IndexRange(nu2a, nu2b)) {
                         func({l1, u1}, {l2, u2});
                     }
                 }
@@ -793,10 +802,12 @@ public:
                              .within({0, nl1}), &l4)) {
                     continue;
                 }
-                size_t nu1 = table.num_orbitals_in_channel_part(l1, x1);
-                size_t nu4 = table.num_orbitals_in_channel_part(l4, x4);
-                for (size_t u1 : IndexRange(0, nu1)) {
-                    for (size_t u4 : IndexRange(0, nu4)) {
+                size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
+                size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
+                size_t nu4a = table.state_offset(STATE_KIND_10, l4, x4);
+                size_t nu4b = table.state_offset(STATE_KIND_10, l4, x4 + 1);
+                for (size_t u1 : IndexRange(nu1a, nu1b)) {
+                    for (size_t u4 : IndexRange(nu4a, nu4b)) {
                         func({l1, u1}, {l4, u4});
                     }
                 }

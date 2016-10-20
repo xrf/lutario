@@ -41,12 +41,22 @@ void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
     }
     for (size_t l12 : basis.channels(RANK_2)) {
         basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            if (o1.to_tuple() > o2.to_tuple()) {
+                return;
+            }
             basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
-                c(o1, o2, o3, o4) = (
+                if (o3.to_tuple() > o4.to_tuple()) {
+                    return;
+                }
+                double z = (
                     c(o1, o2, o3, o4) -
                     c(o1, o2, o4, o3) +
-                    c(o2, o1, o3, o4) -
-                    c(o2, o1, o4, o3)) / 4.0;
+                    c(o2, o1, o4, o3) -
+                    c(o2, o1, o3, o4)) / 4.0;
+                c(o1, o2, o3, o4) = z;
+                c(o1, o2, o4, o3) = -z;
+                c(o2, o1, o4, o3) = z;
+                c(o2, o1, o3, o4) = -z;
             });
         });
     }

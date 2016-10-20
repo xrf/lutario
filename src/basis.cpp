@@ -1,5 +1,13 @@
 #include "basis.hpp"
 
+std::ostream &operator<<(std::ostream &stream, const Orbital &self)
+{
+    return stream
+        << "{"
+        << self.channel_index() << ", "
+        << self.auxiliary_index() << "}";
+}
+
 StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
 {
     size_t nl1 = table.num_channels(RANK_1);

@@ -1,6 +1,7 @@
 #undef NDEBUG
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -16,10 +17,40 @@
 
 namespace {
 
+struct Location {
+    const char *file;
+    unsigned long line;
+    const char *func;
+};
+
 bool within_tolerance(double abserr, double relerr, double x, double y)
 {
     return fabs(x - y) < abserr + relerr * 0.5 * fabs(x + y);
 }
+
+void overwrite_file(const char *src, const char *dest, const char *tmp_suffix)
+{
+    if (rename(src, dest) != 0) {
+        std::string tmp_fn = dest;
+        tmp_fn += tmp_suffix;
+        if (rename(dest, tmp_fn.c_str()) != 0) {
+            std::ostringstream s;
+            s << "can't rename: " << dest << " -> " << tmp_fn;
+            throw std::runtime_error(s.str());
+        }
+        if (rename(src, dest) != 0) {
+            std::ostringstream s;
+            s << "can't rename: " << src << " -> " << dest;
+            throw std::runtime_error(s.str());
+        }
+        if (remove(tmp_fn.c_str()) != 0) {
+            std::cerr << "[warning] can't remove temporary file: "
+                      << tmp_fn << std::endl;
+        }
+    }
+}
+
+#define D(f, ...) f({__FILE__, __LINE__, __func__}, __VA_ARGS__)
 
 class QDTest {
 
@@ -30,6 +61,70 @@ public:
         , _table(this->_basis)
         , _mbasis(StateIndexTable(this->_table))
     {
+        std::cout << "Orbitals:\n";
+        for (size_t p = 0; p < this->_basis.size(); ++p) {
+            const quantum_dot::Orbital &o = std::get<0>(this->_basis.at(p));
+            Orbital lu = this->_orbital_from_index(p);
+            std::cout << p << "\t" << o << "\t" << lu << "\n";
+        }
+
+        const StateIndexTable &table = this->_mbasis.table();
+        size_t nl1 = table.num_channels(RANK_1);
+        size_t nl2 = table.num_channels(RANK_2);
+        std::cout << "2-particle state table (20):\n";
+        std::cout << "l12" << "\t" << "y1,y2" << "\t"
+                  << "l1" << "\t" << "l2" << "\t" << "[uo1,uo2)" << "\n";
+        for (size_t l12 = 0; l12 < nl2; ++l12) {
+            for (size_t y1 = 0; y1 < 2; ++y1) {
+                for (size_t y2 = 0; y2 < 2; ++y2) {
+                    for (size_t l1 = 0; l1 < nl1; ++l1) {
+                        size_t l2;
+                        if (!try_get(table.subtract_channels(l12, l1)
+                                    .within({0, nl1}), &l2)) {
+                            continue;
+                        }
+                        size_t x = (y1 * 2 + y2) * nl1 + l1;
+                        size_t uoa = table.state_offset(STATE_KIND_20, l12, x);
+                        size_t uob = table.state_offset(STATE_KIND_20, l12,
+                                                        x + 1);
+                        if (uoa == uob) {
+                            continue;
+                        }
+                        std::cout << l12 << "\t" << y1 << "," << y2 << "\t"
+                                  << l1 << "\t" << l2
+                                  << "\t[" << uoa << ", " << uob << ")\n";
+                    }
+                }
+            }
+        }
+        std::cout << "2-particle state table (21):\n";
+        std::cout << "l14" << "\t" << "y1,y4" << "\t"
+                  << "l1" << "\t" << "l4" << "\t" << "[uo1,uo2)" << "\n";
+        for (size_t l12 = 0; l12 < nl2; ++l12) {
+            for (size_t y1 = 0; y1 < 2; ++y1) {
+                for (size_t y2 = 0; y2 < 2; ++y2) {
+                    for (size_t l1 = 0; l1 < nl1; ++l1) {
+                        size_t l2;
+                        if (!try_get(table.subtract_channels(l1, l12)
+                                    .within({0, nl1}), &l2)) {
+                            continue;
+                        }
+                        size_t x = (y1 * 2 + y2) * nl1 + l1;
+                        size_t uoa = table.state_offset(STATE_KIND_21, l12, x);
+                        size_t uob = table.state_offset(STATE_KIND_21, l12,
+                                                        x + 1);
+                        if (uoa == uob) {
+                            continue;
+                        }
+                        std::cout << l12 << "\t" << y1 << "," << y2 << "\t"
+                                  << l1 << "\t" << l2
+                                  << "\t[" << uoa << ", " << uob << ")\n";
+                    }
+                }
+            }
+        }
+
+        std::cout << std::flush;
     }
 
     void term_22ai_test()
@@ -54,7 +149,7 @@ public:
         this->_save_mbo("out_commutator_test_qd_b.txt", b);
         this->_save_mbo("out_commutator_test_qd_c.txt", c);
 
-        this->_assert_eq_mbo(1e-15, 1e-15, c, c_old);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, c, c_old);
     }
 
 private:
@@ -128,13 +223,16 @@ private:
         }
     }
 
-    void _assert_eq_mbo(double relerr, double abserr,
+    void _assert_eq_mbo(const Location &loc,
+                        double relerr, double abserr,
                         const ManyBodyOper &a, const ManyBodyOper &b) const
     {
+        std::cerr.precision(std::numeric_limits<double>::max_digits10);
         double va = a(), vb = b();
         if (!within_tolerance(relerr, abserr, va, vb)) {
              std::cerr
-                 << "error: discrepancy in 0-body matrix element:\n"
+                 << loc.file << ":" << loc.line << ":" << loc.func << ":"
+                 << " *** discrepancy in 0-body matrix element:\n"
                  << "  LHS = " << va << "\n"
                  << "  RHS = " << vb << "\n";
              abort();
@@ -144,7 +242,8 @@ private:
             double va = a(lu1, lu2), vb = b(lu1, lu2);
             if (!within_tolerance(relerr, abserr, va, vb)) {
                 std::cerr
-                    << "error: discrepancy in 1-body matrix element ("
+                    << loc.file << ":" << loc.line << ":" << loc.func << ":"
+                    << " *** discrepancy in 1-body matrix element ("
                     << p1 << ", " << p2 << "):\n"
                     << "  LHS = " << va << "\n"
                     << "  RHS = " << vb << "\n";
@@ -158,7 +257,8 @@ private:
             double va = a(lu1, lu2, lu3, lu4), vb = b(lu1, lu2, lu3, lu4);
             if (!within_tolerance(relerr, abserr, va, vb)) {
                 std::cerr
-                    << "error: discrepancy in 2-body matrix element ("
+                    << loc.file << ":" << loc.line << ":" << loc.func << ":"
+                    << " *** discrepancy in 2-body matrix element ("
                     << p1 << ", " << p2 << ", " << p3 << ", " << p4 << "):\n"
                     << "  LHS = " << va << "\n"
                     << "  RHS = " << vb << "\n";
@@ -173,7 +273,7 @@ private:
         std::fstream file(filename, std::ios_base::in);
         if (!file.good()) {
             std::ostringstream s;
-            s << filename << ": cannot open file for reading";
+            s << "can't open file for reading: " << filename;
             throw std::runtime_error(s.str());
         }
         file.precision(std::numeric_limits<double>::max_digits10);
@@ -222,10 +322,12 @@ private:
 
     void _save_mbo(const char *filename, const ManyBodyOper &in) const
     {
-        std::fstream file(filename, std::ios_base::out);
+        std::string tmp_fn = filename;
+        tmp_fn += ".save.tmp";
+        std::fstream file(tmp_fn, std::ios_base::out);
         if (!file.good()) {
             std::ostringstream s;
-            s << filename << ": cannot open file for writing";
+            s << "can't open temporary file for writing: " << tmp_fn;
             throw std::runtime_error(s.str());
         }
         file.precision(std::numeric_limits<double>::max_digits10);
@@ -253,6 +355,7 @@ private:
                 }
             }
         );
+        overwrite_file(tmp_fn.c_str(), filename, ".save2.tmp");
     }
 
 };
