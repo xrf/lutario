@@ -179,6 +179,7 @@ struct IRange {
         : start(std::move(start))
         , stop(std::move(stop))
     {
+        assert(start <= stop);
     }
 
     /// Returns the beginning iterator.

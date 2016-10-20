@@ -143,12 +143,51 @@ public:
     {
         std::string fn = "commutator_test_qd_c_22ai.txt";
         this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0;
 
         term_22ai(1.0,
                   this->_a.opers[2],
                   this->_b.opers[2],
                   this->_c.opers[2]);
         term_22ai(-1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_c.opers[2]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void term_22ii_test()
+    {
+        std::string fn = "commutator_test_qd_c_22ii.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0;
+
+        term_22ii(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_c.opers[2]);
+        term_22ii(-1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_c.opers[2]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void term_22aa_test()
+    {
+        std::string fn = "commutator_test_qd_c_22aa.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0;
+
+        term_22aa(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_c.opers[2]);
+        term_22aa(-1.0,
                   this->_b.opers[2],
                   this->_a.opers[2],
                   this->_c.opers[2]);
@@ -383,5 +422,7 @@ int main(void)
 {
     QDTest qdtest;
     qdtest.term_22ai_test();
+    qdtest.term_22ii_test();
+    qdtest.term_22aa_test();
     return 0;
 }

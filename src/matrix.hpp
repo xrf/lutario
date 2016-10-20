@@ -2,6 +2,7 @@
 #define MATRIX_HPP
 #include <assert.h>
 #include <stddef.h>
+#include <algorithm>
 #include "blas.hpp"
 #include "alloc.hpp"
 #include "irange.hpp"
@@ -44,7 +45,7 @@ class Matrix {
 
     size_t _stride = 0;
 
-    // assertions to check the sanity of the object
+    // assertions to check invariants:
     void _validate() const
     {
         // num_rows * num_cols must not overflow
@@ -53,6 +54,19 @@ class Matrix {
         // num_rows * stride must not overflow
         assert(this->num_rows() == 0 ||
                this->stride() < (size_t)(-1) / this->num_rows());
+
+        // we don't require data to be a valid pointer; it is needed for the
+        // two-stage initialization via alloc_req
+
+        // we also don't require stride to be greater than or equal to the
+        // num_cols to allow for "creative" representations of matrices
+    }
+
+    size_t _index(size_t row_index, size_t col_index) const
+    {
+        assert(row_index < this->num_rows());
+        assert(col_index <= this->num_cols()); // intentional
+        return row_index * this->stride() + col_index;
     }
 
 public:
@@ -119,18 +133,26 @@ public:
         return this->_stride;
     }
 
+    size_t index(size_t row_index, size_t col_index) const
+    {
+        assert(col_index < this->num_cols());
+        return this->_index(row_index, col_index);
+    }
+
     const T &operator()(size_t row_index, size_t col_index) const
     {
-        // this is indeed safe :P
-        return const_cast<Matrix &>(*this)(row_index, col_index);
+        assert(this->data() != nullptr);
+        assert(row_index < this->num_rows());
+        assert(col_index < this->num_cols());
+        return this->data()[this->index(row_index, col_index)];
     }
 
     T &operator()(size_t row_index, size_t col_index)
     {
-        assert(this->data());
+        assert(this->data() != nullptr);
         assert(row_index < this->num_rows());
         assert(col_index < this->num_cols());
-        return this->data()[row_index * this->stride() + col_index];
+        return this->data()[this->index(row_index, col_index)];
     }
 
     Matrix<const T> slice(const IndexRange &row_index_range,
@@ -144,7 +166,15 @@ public:
     Matrix slice(const IndexRange &row_index_range,
                  const IndexRange &col_index_range)
     {
-        return Matrix(&(*this)(row_index_range.start, col_index_range.start),
+        assert(this->data() != nullptr);
+        assert(row_index_range.stop <= this->num_rows());
+        assert(col_index_range.stop <= this->num_cols());
+        // avoid undefined behavior due to out-of-bounds pointer arithmetic
+        T *data = this->data();
+        if (row_index_range.start != this->num_rows()) {
+            data += this->_index(row_index_range.start, col_index_range.start);
+        }
+        return Matrix(data,
                       row_index_range.size(),
                       col_index_range.size(),
                       this->stride());
@@ -203,12 +233,12 @@ inline void gemm(CBLAS_TRANSPOSE transa,
                 (CBLAS_INT)k_a,
                 alpha,
                 a.data(),
-                (CBLAS_INT)a.stride(),
+                (CBLAS_INT)std::max<size_t>(a.stride(), 1),
                 b.data(),
-                (CBLAS_INT)b.stride(),
+                (CBLAS_INT)std::max<size_t>(b.stride(), 1),
                 beta,
                 c.data(),
-                (CBLAS_INT)c.stride());
+                (CBLAS_INT)std::max<size_t>(c.stride(), 1));
 }
 
 #endif
