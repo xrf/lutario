@@ -15,14 +15,15 @@
 ///     Matrix<double> mat;
 ///     std::unique_ptr<double[]> buf = alloc(mat.alloc_req(100, 100));
 ///
-/// The `buf` variable holds the actual memory buffer.  When `buf` is
-/// destroyed, so is the memory associated with the matrix.  It is the user's
-/// responsibility to make sure that `mat` does not outlive `buf`.
+/// The `buf` variable owns the block of memory belonging to `Matrix`.  When
+/// `buf` is destroyed, so the memory associated with the matrix is freed and
+/// thus `mat` will contain a dangling pointer.  Therefore, it is thus
+/// critical that `mat` does not outlive `buf`.
 ///
-/// It is also possible to use `AllocReqBatch` for allocations.  This allows
-/// multiple `Matrix` and similar objects to be stored in a single contiguous
-/// block of memory.  For example, this example allocates two 100-by-100
-/// matrices into a single array of length 20000:
+/// It is also possible to use `AllocReqBatch` to allocate multiple objects
+/// all at once into a single, contiguous block of memory.  For example, this
+/// code allocates two 100-by-100 matrices into a single array of length
+/// 20000:
 ///
 ///     Matrix<double> mat1, mat2;
 ///     std::unique_ptr<double[]> buf;
@@ -33,6 +34,9 @@
 ///         assert(batch.size() == 20000);
 ///         buf = alloc(std::move(alloc_req_batch));
 ///     }
+///
+/// As before, the lifetime of `mat1` and `mat2` is tied to that of `buf`.
+/// When `buf` is destroyed, `mat1` and `mat2` would hold dangling pointers.
 ///
 template<typename T>
 class Matrix {
@@ -60,6 +64,7 @@ class Matrix {
 
         // we also don't require stride to be greater than or equal to the
         // num_cols to allow for "creative" representations of matrices
+        // (though BLAS wouldn't be happy with this)
     }
 
     size_t _index(size_t row_index, size_t col_index) const

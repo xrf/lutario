@@ -1,18 +1,215 @@
 #include <assert.h>
 #include <stddef.h>
+#include "basis.hpp"
 #include "matrix.hpp"
 #include "oper.hpp"
 #include "commutator.hpp"
 
-#define UNOCC_P {0, 2}
-#define UNOCC_I {0, 1}
-#define UNOCC_A {1, 2}
+/*
 
-#define UNOCC_PP {0, 4}
-#define UNOCC_II {0, 1}
-#define UNOCC_IA {1, 2}
-#define UNOCC_AI {2, 3}
-#define UNOCC_AA {3, 4}
+     11ai                                       22aaii
+      / \                                         / \
+     /   \                                       /   \
+    /     \                                     /     \
+  11i    11a     12ai          21ai          22aii   22aai
+                  / \           / \           / \     / \
+                 /   \         /   \         /   \   /   \
+                /     \       /     \       /     \ /     \
+              12i    12a    21i    21a    22ii   22ai    22aa
+
+*/
+
+void exch_antisymmetrize_2(Oper &a)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(a.kind() == OPER_KIND_200);
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            if (o1.to_tuple() > o2.to_tuple()) {
+                return;
+            }
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                if (o3.to_tuple() > o4.to_tuple()) {
+                    return;
+                }
+                double z = (
+                    a(o1, o2, o3, o4) -
+                    a(o1, o2, o4, o3) +
+                    a(o2, o1, o4, o3) -
+                    a(o2, o1, o3, o4)) / 4.0;
+                a(o1, o2, o3, o4) = z;
+                a(o1, o2, o4, o3) = -z;
+                a(o2, o1, o4, o3) = z;
+                a(o2, o1, o3, o4) = -z;
+            });
+        });
+    }
+}
+
+void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(&basis == &a.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_100);
+    assert(r.kind() == OPER_KIND_000);
+
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, ys, [&](Orbital o1) {
+            r() += alpha * a(o1, o1);
+        });
+    }
+}
+
+void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(&basis == &a.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_200);
+    assert(r.kind() == OPER_KIND_100);
+
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, UNOCC_P, [&](Orbital o1) {
+            basis.for_u10(l1, UNOCC_P, [&](Orbital o2) {
+                for (size_t l3 : basis.channels(RANK_1)) {
+                    basis.for_u10(l3, ys, [&](Orbital o3) {
+                        r(o1, o2) += alpha * a(o1, o3, o2, o3);
+                    });
+                }
+            });
+        });
+    }
+}
+
+void term_11i(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_100);
+    assert(b.kind() == OPER_KIND_100);
+    assert(r.kind() == OPER_KIND_100);
+
+    for (size_t l : basis.channels(RANK_1)) {
+        gemm(CblasNoTrans,
+             CblasNoTrans,
+             -alpha,
+             basis.slice_by_unoccupancy_100(b, l, UNOCC_P, UNOCC_I),
+             basis.slice_by_unoccupancy_100(a, l, UNOCC_I, UNOCC_P),
+             1.0,
+             r[l]);
+    }
+}
+
+void term_11a(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_100);
+    assert(b.kind() == OPER_KIND_100);
+    assert(r.kind() == OPER_KIND_100);
+
+    for (size_t l : basis.channels(RANK_1)) {
+        gemm(CblasNoTrans,
+             CblasNoTrans,
+             alpha,
+             basis.slice_by_unoccupancy_100(a, l, UNOCC_P, UNOCC_A),
+             basis.slice_by_unoccupancy_100(b, l, UNOCC_A, UNOCC_P),
+             1.0,
+             r[l]);
+    }
+}
+
+void term_12i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_100);
+    assert(b.kind() == OPER_KIND_200);
+    assert(r.kind() == OPER_KIND_200);
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                size_t l5 = o4.channel_index();
+                basis.for_u10(l5, UNOCC_I, [&](Orbital o5) {
+                    r(o1, o2, o3, o4) -=
+                        2.0 * alpha * a(o5, o4) * b(o1, o2, o3, o5);
+                });
+            });
+        });
+    }
+}
+
+void term_12a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_100);
+    assert(b.kind() == OPER_KIND_200);
+    assert(r.kind() == OPER_KIND_200);
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                size_t l5 = o2.channel_index();
+                basis.for_u10(l5, UNOCC_A, [&](Orbital o5) {
+                    r(o1, o2, o3, o4) +=
+                        2.0 * alpha * a(o2, o5) * b(o1, o5, o3, o4);
+                });
+            });
+        });
+    }
+}
+
+void term_21i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_200);
+    assert(b.kind() == OPER_KIND_100);
+    assert(r.kind() == OPER_KIND_200);
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                size_t l5 = o2.channel_index();
+                basis.for_u10(l5, UNOCC_I, [&](Orbital o5) {
+                    r(o1, o2, o3, o4) -=
+                        2.0 * alpha * a(o1, o5, o3, o4) * b(o2, o5);
+                });
+            });
+        });
+    }
+}
+
+void term_21a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
+{
+    const ManyBodyBasis &basis = a.basis();
+    assert(&basis == &b.basis());
+    assert(&basis == &r.basis());
+    assert(a.kind() == OPER_KIND_200);
+    assert(b.kind() == OPER_KIND_100);
+    assert(r.kind() == OPER_KIND_200);
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                size_t l5 = o4.channel_index();
+                basis.for_u10(l5, UNOCC_A, [&](Orbital o5) {
+                    r(o1, o2, o3, o4) +=
+                        2.0 * alpha * a(o1, o2, o3, o5) * b(o5, o4);
+                });
+            });
+        });
+    }
+}
 
 void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
@@ -27,39 +224,20 @@ void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
         basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
             basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
                 size_t l1 = o1.channel_index();
-                size_t l3 = o3.channel_index();
+                size_t l4 = o4.channel_index();
                 // in our current system, subtracting two rank-1 channels
                 // always yields a valid rank-2 channel
-                size_t l13 = *basis.table().subtract_channels(l1, l3);
-                basis.for_u21(l13, UNOCC_AI, [&](Orbital o5, Orbital o6) {
-                     c(o1, o2, o3, o4) += 4.0 * alpha *
-                         a(o1, o6, o5, o3) *
-                         b(o5, o2, o4, o6);
+                size_t l14 = *basis.table().subtract_channels(l1, l4);
+                basis.for_u21(l14, UNOCC_AI, [&](Orbital o5, Orbital o6) {
+                    c(o1, o2, o3, o4) += -4.0 * alpha *
+                        a(o1, o6, o5, o4) *
+                        b(o5, o2, o3, o6);
                 });
             });
         });
     }
-    for (size_t l12 : basis.channels(RANK_2)) {
-        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
-            if (o1.to_tuple() > o2.to_tuple()) {
-                return;
-            }
-            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
-                if (o3.to_tuple() > o4.to_tuple()) {
-                    return;
-                }
-                double z = (
-                    c(o1, o2, o3, o4) -
-                    c(o1, o2, o4, o3) +
-                    c(o2, o1, o4, o3) -
-                    c(o2, o1, o3, o4)) / 4.0;
-                c(o1, o2, o3, o4) = z;
-                c(o1, o2, o4, o3) = -z;
-                c(o2, o1, o4, o3) = z;
-                c(o2, o1, o3, o4) = -z;
-            });
-        });
-    }
+
+    exch_antisymmetrize_2(c);
 }
 
 void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &c)

@@ -37,6 +37,16 @@ enum Rank {
 
 static const size_t RANK_COUNT = 3;
 
+#define UNOCC_P {0, 2}
+#define UNOCC_I {0, 1}
+#define UNOCC_A {1, 2}
+
+#define UNOCC_PP {0, 4}
+#define UNOCC_II {0, 1}
+#define UNOCC_IA {1, 2}
+#define UNOCC_AI {2, 3}
+#define UNOCC_AA {3, 4}
+
 /// Determines the number of particles in a state and how their channels are
 /// to be combined.
 enum StateKind {
@@ -759,6 +769,20 @@ public:
         return l12 == l34;
     }
 
+    /// The function is expected to be like `({l1, u1}) -> void`.
+    template<typename F>
+    void for_u10(size_t l1, IndexRange y1s, F func) const
+    {
+        const StateIndexTable &table = this->table();
+        for (size_t x1 : y1s) {
+            size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
+            size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
+            for (size_t u1 : IndexRange(nu1a, nu1b)) {
+                func({l1, u1});
+            }
+        }
+    }
+
     /// The function is expected to be like `({l1, u1}, {l2, u2}) -> void`.
     template<typename F>
     void for_u20(size_t l12, IndexRange y12s, F func) const
@@ -859,6 +883,25 @@ public:
                                        (x1 * 2 + x4) * nl1 + l1);
         size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
         return OptionalOrbital({l14, u14});
+    }
+
+    template<typename B>
+    auto slice_by_unoccupancy_100(const B &blocks,
+                                  size_t l1,
+                                  IndexRange y1s,
+                                  IndexRange y2s) const ->
+        decltype(blocks[l1].slice({0, 0}, {0, 0}))
+    {
+        const StateIndexTable &table = this->table();
+        IndexRange u1s(
+            table.state_offset(STATE_KIND_10, l1, y1s.start),
+            table.state_offset(STATE_KIND_10, l1, y1s.stop)
+        );
+        IndexRange u2s(
+            table.state_offset(STATE_KIND_10, l1, y2s.start),
+            table.state_offset(STATE_KIND_10, l1, y2s.stop)
+        );
+        return blocks[l1].slice(u1s, u2s);
     }
 
     template<typename B>

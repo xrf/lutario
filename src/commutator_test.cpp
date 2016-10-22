@@ -67,6 +67,9 @@ public:
         batch.push(this->_b.alloc_req(this->_mbasis));
         batch.push(this->_c.alloc_req(this->_mbasis));
         batch.push(this->_c_old.alloc_req(this->_mbasis));
+        batch.push(this->_o0.alloc_req(this->_mbasis, OPER_KIND_000));
+        batch.push(this->_o1.alloc_req(this->_mbasis, OPER_KIND_100));
+        batch.push(this->_o2.alloc_req(this->_mbasis, OPER_KIND_200));
         this->_buf = alloc(std::move(batch));
 
         // load the mock operators (random matrix elements)
@@ -139,11 +142,241 @@ public:
         std::cout << std::flush;
     }
 
-    void term_22ai_test()
+    void test()
+    {
+        this->_term_11ai_test();
+        this->_term_11i_11a_test();
+        this->_term_12ai_21ai();
+        this->_term_12i_12a_21i_21a_test();
+        this->_term_22aaii_test();
+        this->_term_22aai_test();
+        this->_term_22aii_test();
+        this->_term_22ai_test();
+        this->_term_22ii_test();
+        this->_term_22aa_test();
+    }
+
+private:
+
+    quantum_dot::Basis _basis;
+
+    OrbitalTranslationTable<
+        quantum_dot::Orbital,
+        quantum_dot::Channel> _table;
+
+    ManyBodyBasis _mbasis;
+
+    ManyBodyOper _a, _b, _c, _c_old;
+    Oper _o0, _o1, _o2;
+
+    std::unique_ptr<double[]> _buf;
+
+    void _term_11ai_test()
+    {
+        std::string fn = "commutator_test_qd_c_11ai.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        this->_o1 = 0.0;
+        term_11a(1.0, this->_a.opers[1], this->_b.opers[1], this->_o1);
+        trace_1(UNOCC_I, 1.0, this->_o1, this->_c.opers[0]);
+
+        this->_o1 = 0.0;
+        term_11a(1.0, this->_b.opers[1], this->_a.opers[1], this->_o1);
+        trace_1(UNOCC_I, -1.0, this->_o1, this->_c.opers[0]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_11i_11a_test()
+    {
+        std::string fn = "commutator_test_qd_c_11i_11a.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        term_11i(1.0,
+                 this->_a.opers[1],
+                 this->_b.opers[1],
+                 this->_c.opers[1]);
+        term_11a(1.0,
+                 this->_a.opers[1],
+                 this->_b.opers[1],
+                 this->_c.opers[1]);
+        term_11i(-1.0,
+                 this->_b.opers[1],
+                 this->_a.opers[1],
+                 this->_c.opers[1]);
+        term_11a(-1.0,
+                 this->_b.opers[1],
+                 this->_a.opers[1],
+                 this->_c.opers[1]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_12ai_21ai()
+    {
+        std::string fn = "commutator_test_qd_c_12ai_21ai.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        this->_o2 = 0.0;
+        term_12a_raw(0.5,
+                     this->_a.opers[1],
+                     this->_b.opers[2],
+                     this->_o2);
+        trace_2(UNOCC_I, 1.0, this->_o2, this->_c.opers[1]);
+        this->_o2 = 0.0;
+        term_21a_raw(0.5,
+                     this->_a.opers[2],
+                     this->_b.opers[1],
+                     this->_o2);
+        trace_2(UNOCC_I, 1.0, this->_o2, this->_c.opers[1]);
+
+        this->_o2 = 0.0;
+        term_12a_raw(0.5,
+                     this->_b.opers[1],
+                     this->_a.opers[2],
+                     this->_o2);
+        trace_2(UNOCC_I, -1.0, this->_o2, this->_c.opers[1]);
+        this->_o2 = 0.0;
+        term_21a_raw(0.5,
+                     this->_b.opers[2],
+                     this->_a.opers[1],
+                     this->_o2);
+        trace_2(UNOCC_I, -1.0, this->_o2, this->_c.opers[1]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_12i_12a_21i_21a_test()
+    {
+        std::string fn = "commutator_test_qd_c_12i_12a_21i_21a.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        term_12i_raw(1.0,
+                     this->_a.opers[1],
+                     this->_b.opers[2],
+                     this->_c.opers[2]);
+        term_12a_raw(1.0,
+                     this->_a.opers[1],
+                     this->_b.opers[2],
+                     this->_c.opers[2]);
+        term_21i_raw(1.0,
+                     this->_a.opers[2],
+                     this->_b.opers[1],
+                     this->_c.opers[2]);
+        term_21a_raw(1.0,
+                     this->_a.opers[2],
+                     this->_b.opers[1],
+                     this->_c.opers[2]);
+        term_12i_raw(-1.0,
+                     this->_b.opers[1],
+                     this->_a.opers[2],
+                     this->_c.opers[2]);
+        term_12a_raw(-1.0,
+                     this->_b.opers[1],
+                     this->_a.opers[2],
+                     this->_c.opers[2]);
+        term_21i_raw(-1.0,
+                     this->_b.opers[2],
+                     this->_a.opers[1],
+                     this->_c.opers[2]);
+        term_21a_raw(-1.0,
+                     this->_b.opers[2],
+                     this->_a.opers[1],
+                     this->_c.opers[2]);
+        exch_antisymmetrize_2(this->_c.opers[2]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_22aaii_test()
+    {
+        std::string fn = "commutator_test_qd_c_22aaii.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        this->_o2 = 0.0;
+        term_22aa(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_o2);
+        this->_o1 = 0.0;
+        trace_2(UNOCC_I, 1.0, this->_o2, this->_o1);
+        trace_1(UNOCC_I, 0.5, this->_o1, this->_c.opers[0]);
+
+        this->_o2 = 0.0;
+        term_22aa(1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_o2);
+        this->_o1 = 0.0;
+        trace_2(UNOCC_I, 1.0, this->_o2, this->_o1);
+        trace_1(UNOCC_I, -0.5, this->_o1, this->_c.opers[0]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_22aai_test()
+    {
+        std::string fn = "commutator_test_qd_c_22aai.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        this->_o2 = 0.0;
+        term_22aa(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_o2);
+        trace_2(UNOCC_I, 1.0, this->_o2, this->_c.opers[1]);
+
+        this->_o2 = 0.0;
+        term_22aa(1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_o2);
+        trace_2(UNOCC_I, -1.0, this->_o2, this->_c.opers[1]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_22aii_test()
+    {
+        std::string fn = "commutator_test_qd_c_22aii.txt";
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
+        this->_c = 0.0;
+
+        this->_o2 = 0.0;
+        term_22ii(1.0,
+                  this->_a.opers[2],
+                  this->_b.opers[2],
+                  this->_o2);
+        trace_2(UNOCC_A, -1.0, this->_o2, this->_c.opers[1]);
+
+        this->_o2 = 0.0;
+        term_22ii(1.0,
+                  this->_b.opers[2],
+                  this->_a.opers[2],
+                  this->_o2);
+        trace_2(UNOCC_A, 1.0, this->_o2, this->_c.opers[1]);
+
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
+    }
+
+    void _term_22ai_test()
     {
         std::string fn = "commutator_test_qd_c_22ai.txt";
         this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
-        this->_c = 0;
+        this->_c = 0.0;
 
         term_22ai(1.0,
                   this->_a.opers[2],
@@ -158,11 +391,11 @@ public:
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
     }
 
-    void term_22ii_test()
+    void _term_22ii_test()
     {
         std::string fn = "commutator_test_qd_c_22ii.txt";
         this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
-        this->_c = 0;
+        this->_c = 0.0;
 
         term_22ii(1.0,
                   this->_a.opers[2],
@@ -177,11 +410,11 @@ public:
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
     }
 
-    void term_22aa_test()
+    void _term_22aa_test()
     {
         std::string fn = "commutator_test_qd_c_22aa.txt";
         this->_load_save_mbo(("src/" + fn).c_str(), this->_c_old);
-        this->_c = 0;
+        this->_c = 0.0;
 
         term_22aa(1.0,
                   this->_a.opers[2],
@@ -195,20 +428,6 @@ public:
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_c_old);
     }
-
-private:
-
-    quantum_dot::Basis _basis;
-
-    const OrbitalTranslationTable<
-        quantum_dot::Orbital,
-        quantum_dot::Channel> _table;
-
-    ManyBodyBasis _mbasis;
-
-    ManyBodyOper _a, _b, _c, _c_old;
-
-    std::unique_ptr<double[]> _buf;
 
     Orbital _orbital_from_index(size_t p) const
     {
@@ -421,8 +640,6 @@ private:
 int main(void)
 {
     QDTest qdtest;
-    qdtest.term_22ai_test();
-    qdtest.term_22ii_test();
-    qdtest.term_22aa_test();
+    qdtest.test();
     return 0;
 }
