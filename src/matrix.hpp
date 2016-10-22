@@ -195,6 +195,21 @@ public:
         return *this;
     }
 
+    Matrix &operator+=(const Matrix &other)
+    {
+        assert(this->num_rows() == other.num_rows());
+        assert(this->num_cols() == other.num_cols());
+        for (size_t i = 0; i < this->num_rows(); ++i) {
+            cblas_daxpy((CBLAS_INT)this->num_cols(),
+                        1.0,
+                        other.data() + other._index(i, 0),
+                        1,
+                        this->data() + this->_index(i, 0),
+                        1);
+        }
+        return *this;
+    }
+
 };
 
 inline void transpose_indices(CBLAS_TRANSPOSE trans, size_t &m, size_t &n)

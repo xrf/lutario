@@ -93,6 +93,17 @@ public:
         return *this;
     }
 
+    Oper &operator+=(const Oper &other)
+    {
+        assert(&this->basis() == &other.basis());
+        assert(this->kind() == other.kind());
+        assert(this->_blocks.size() == other._blocks.size());
+        for (size_t l = 0; l < this->_blocks.size(); ++l) {
+            (*this)[l] += other[l];
+        }
+        return *this;
+    }
+
 };
 
 /// A many-body operator contains three operators in standard form:

@@ -5,45 +5,38 @@
 #include "oper.hpp"
 #include "commutator.hpp"
 
-/*
-
-     11ai                                       22aaii
-      / \                                         / \
-     /   \                                       /   \
-    /     \                                     /     \
-  11i    11a     12ai          21ai          22aii   22aai
-                  / \           / \           / \     / \
-                 /   \         /   \         /   \   /   \
-                /     \       /     \       /     \ /     \
-              12i    12a    21i    21a    22ii   22ai    22aa
-
-*/
-
-void exch_antisymmetrize_2(Oper &a)
+void exch_antisymmetrize(Oper &a)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(a.kind() == OPER_KIND_200);
-
-    for (size_t l12 : basis.channels(RANK_2)) {
-        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
-            if (o1.to_tuple() > o2.to_tuple()) {
-                return;
-            }
-            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
-                if (o3.to_tuple() > o4.to_tuple()) {
+    switch (a.kind()) {
+    case OPER_KIND_000:
+        break;
+    case OPER_KIND_100:
+        break;
+    case OPER_KIND_211:
+        throw std::logic_error("not implemented");
+    case OPER_KIND_200:
+        for (size_t l12 : basis.channels(RANK_2)) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+                if (o1.to_tuple() > o2.to_tuple()) {
                     return;
                 }
-                double z = (
-                    a(o1, o2, o3, o4) -
-                    a(o1, o2, o4, o3) +
-                    a(o2, o1, o4, o3) -
-                    a(o2, o1, o3, o4)) / 4.0;
-                a(o1, o2, o3, o4) = z;
-                a(o1, o2, o4, o3) = -z;
-                a(o2, o1, o4, o3) = z;
-                a(o2, o1, o3, o4) = -z;
+                basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                    if (o3.to_tuple() > o4.to_tuple()) {
+                        return;
+                    }
+                    double z = (
+                        a(o1, o2, o3, o4) -
+                        a(o1, o2, o4, o3) +
+                        a(o2, o1, o4, o3) -
+                        a(o2, o1, o3, o4)) / 4.0;
+                    a(o1, o2, o3, o4) = z;
+                    a(o1, o2, o4, o3) = -z;
+                    a(o2, o1, o4, o3) = z;
+                    a(o2, o1, o3, o4) = -z;
+                });
             });
-        });
+        }
     }
 }
 
@@ -237,7 +230,7 @@ void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
         });
     }
 
-    exch_antisymmetrize_2(c);
+    exch_antisymmetrize(c);
 }
 
 void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &c)
@@ -278,4 +271,95 @@ void term_22aa(double alpha, const Oper &a, const Oper &b, Oper &c)
              1.0,
              c[l]);
     }
+}
+
+void linked_product(ManyBodyOper &tmp,
+                    double alpha,
+                    const ManyBodyOper &a,
+                    const ManyBodyOper &b,
+                    ManyBodyOper &r)
+{
+    /*
+
+         11ai                                       22aaii
+          / \                                         / \
+         /   \                                       /   \
+        /     \                                     /     \
+      11i    11a     12ai          21ai          22aii   22aai
+                      / \           / \           / \     / \
+                     /   \         /   \         /   \   /   \
+                    /     \       /     \       /     \ /     \
+                  12i    12a    21i    21a    22ii   22ai    22aa
+
+    */
+
+    // 11i
+    term_11i(alpha, a.opers[1], b.opers[1], r.opers[1]);
+
+    // 11a
+    tmp.opers[1] = 0.0;
+    term_11a(alpha, a.opers[1], b.opers[1], tmp.opers[1]);
+    r.opers[1] += tmp.opers[1];
+
+    // 11ai
+    trace_1(UNOCC_I, 1.0, tmp.opers[1], r.opers[0]);
+
+    // 12i
+    term_12i_raw(alpha, a.opers[1], b.opers[2], r.opers[2]);
+
+    // 12a
+    tmp.opers[2] = 0.0;
+    term_12a_raw(alpha, a.opers[1], b.opers[2], tmp.opers[2]);
+    r.opers[2] += tmp.opers[2];
+
+    // 12ai
+    trace_2(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
+
+    // 21i
+    term_21i_raw(alpha, a.opers[2], b.opers[1], r.opers[2]);
+
+    // 21a
+    tmp.opers[2] = 0.0;
+    term_21a_raw(alpha, a.opers[2], b.opers[1], tmp.opers[2]);
+    r.opers[2] += tmp.opers[2];
+
+    // 21ai
+    trace_2(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
+
+    // 22ai
+    term_22ai(alpha, a.opers[2], b.opers[2], r.opers[2]);
+
+    // 22ii
+    tmp.opers[2] = 0.0;
+    term_22ii(alpha, a.opers[2], b.opers[2], tmp.opers[2]);
+    r.opers[2] += tmp.opers[2];
+
+    // 22aii
+    trace_2(UNOCC_A, -1.0, tmp.opers[2], r.opers[1]);
+
+    // 22aa
+    tmp.opers[2] = 0.0;
+    term_22aa(alpha, a.opers[2], b.opers[2], tmp.opers[2]);
+    r.opers[2] += tmp.opers[2];
+
+    // 22aai
+    tmp.opers[1] = 0.0;
+    trace_2(UNOCC_I, 1.0, tmp.opers[2], tmp.opers[1]);
+    r.opers[1] += tmp.opers[1];
+
+    // 22aaii
+    trace_1(UNOCC_I, 0.5, tmp.opers[1], r.opers[0]);
+
+    // magically fix everything :D
+    exch_antisymmetrize(r.opers[2]);
+}
+
+void commutator(ManyBodyOper &tmp,
+                double alpha,
+                const ManyBodyOper &a,
+                const ManyBodyOper &b,
+                ManyBodyOper &r)
+{
+    linked_product(tmp, alpha, a, b, r);
+    linked_product(tmp, -alpha, b, a, r);
 }
