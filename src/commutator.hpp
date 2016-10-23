@@ -31,6 +31,8 @@ void term_22aa(double alpha, const Oper &a, const Oper &b, Oper &r_out);
 
 void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &r_out);
 
+/// Compute the linked product of two `ManyBodyOper`.  Temporary space must be
+/// allocated for this operation in `tmp`.
 void linked_product(ManyBodyOper &tmp,
                     double alpha,
                     const ManyBodyOper &a,

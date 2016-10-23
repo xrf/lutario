@@ -43,8 +43,8 @@ void exch_antisymmetrize(Oper &a)
 void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 {
     const ManyBodyBasis &basis = r.basis();
-    assert(&basis == &a.basis());
-    assert(&basis == &r.basis());
+    assert(basis == a.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_000);
 
@@ -58,8 +58,8 @@ void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 {
     const ManyBodyBasis &basis = r.basis();
-    assert(&basis == &a.basis());
-    assert(&basis == &r.basis());
+    assert(basis == a.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(r.kind() == OPER_KIND_100);
 
@@ -79,8 +79,8 @@ void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 void term_11i(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(b.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_100);
@@ -99,8 +99,8 @@ void term_11i(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_11a(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(b.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_100);
@@ -119,8 +119,8 @@ void term_11a(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_12i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(b.kind() == OPER_KIND_200);
     assert(r.kind() == OPER_KIND_200);
@@ -141,8 +141,8 @@ void term_12i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_12a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(b.kind() == OPER_KIND_200);
     assert(r.kind() == OPER_KIND_200);
@@ -163,8 +163,8 @@ void term_12a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_21i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(b.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_200);
@@ -185,8 +185,8 @@ void term_21i_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_21a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &r.basis());
+    assert(basis == b.basis());
+    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(b.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_200);
@@ -207,8 +207,8 @@ void term_21a_raw(double alpha, const Oper &a, const Oper &b, Oper &r)
 void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &c.basis());
+    assert(basis == b.basis());
+    assert(basis == c.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(b.kind() == OPER_KIND_200);
     assert(c.kind() == OPER_KIND_200);
@@ -236,8 +236,8 @@ void term_22ai(double alpha, const Oper &a, const Oper &b, Oper &c)
 void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &c.basis());
+    assert(basis == b.basis());
+    assert(basis == c.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(b.kind() == OPER_KIND_200);
     assert(c.kind() == OPER_KIND_200);
@@ -256,8 +256,8 @@ void term_22ii(double alpha, const Oper &a, const Oper &b, Oper &c)
 void term_22aa(double alpha, const Oper &a, const Oper &b, Oper &c)
 {
     const ManyBodyBasis &basis = a.basis();
-    assert(&basis == &b.basis());
-    assert(&basis == &c.basis());
+    assert(basis == b.basis());
+    assert(basis == c.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(b.kind() == OPER_KIND_200);
     assert(c.kind() == OPER_KIND_200);
@@ -360,6 +360,8 @@ void commutator(ManyBodyOper &tmp,
                 const ManyBodyOper &b,
                 ManyBodyOper &r)
 {
+    // the commutator of two operators consists of only the *linked* diagrams;
+    // the unlinked diagrams always cancel out
     linked_product(tmp, alpha, a, b, r);
     linked_product(tmp, -alpha, b, a, r);
 }

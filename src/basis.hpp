@@ -924,6 +924,18 @@ public:
         return blocks[l12].slice(u12s, u34s);
     }
 
+    /// Check if the objects are equal.
+    ///
+    /// Note that we don't use a "deep equality" comparison, since that would
+    /// be both slow and pointless, since the only reason one should ever
+    /// compare these objects is to assert the user has used a consistent
+    /// basis for each operator.
+    ///
+    bool operator==(const ManyBodyBasis &other) const
+    {
+        return this == &other;
+    }
+
 };
 
 #define ITER_CHANNELS(var, basis, rank)                                      \
