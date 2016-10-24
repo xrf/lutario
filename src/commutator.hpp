@@ -5,11 +5,24 @@
 
 void exch_antisymmetrize(Oper &a_inout);
 
-void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r_inout);
+/// Calculate the trace `R[] += ∑[u1] A[u1, u1]`.
+void trace_1_1(const IndexRange &y1s,
+               double alpha,
+               const Oper &a,
+               Oper &r_inout);
 
-// note: the trace is performed over the *second* pair
+/// Calculate the trace `R[p1, p2] += α ∑[u] A[p1, u1, p2, u1]`.
+void trace_2_1(const IndexRange &y1s,
+               double alpha,
+               const Oper &a,
+               Oper &r_inout);
 
-void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r_inout);
+/// Calculate the trace `R[p1, p2] += α ∑[u1, u2] A[u1, u2, u1, u2]`.
+void trace_2_2(const IndexRange &y1s,
+               const IndexRange &y2s,
+               double alpha,
+               const Oper &a,
+               Oper &r_inout);
 
 void term_11i(double alpha, const Oper &a, const Oper &b, Oper &r_inout);
 
@@ -44,6 +57,8 @@ void commutator(ManyBodyOper &tmp,
                 const ManyBodyOper &a,
                 const ManyBodyOper &b,
                 ManyBodyOper &r_inout);
+
+void normal_order(const ManyBodyOper &a, ManyBodyOper &r_inout);
 
 /// Precondition: `r_out` is allocated.
 void diagonal_part(const ManyBodyOper &a, ManyBodyOper &r_out);

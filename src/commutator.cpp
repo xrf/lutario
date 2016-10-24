@@ -41,11 +41,10 @@ void exch_antisymmetrize(Oper &a)
     }
 }
 
-void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
+void trace_1_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
-    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_100);
     assert(r.kind() == OPER_KIND_000);
 
@@ -56,11 +55,10 @@ void trace_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
     }
 }
 
-void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
+void trace_2_1(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
-    assert(basis == r.basis());
     assert(a.kind() == OPER_KIND_200);
     assert(r.kind() == OPER_KIND_100);
 
@@ -73,6 +71,28 @@ void trace_2(const IndexRange &ys, double alpha, const Oper &a, Oper &r)
                     });
                 }
             });
+        });
+    }
+}
+
+void trace_2_2(const IndexRange &y1s,
+               const IndexRange &y2s,
+               double alpha,
+               const Oper &a,
+               Oper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+    assert(a.kind() == OPER_KIND_200);
+    assert(r.kind() == OPER_KIND_000);
+
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, y1s, [&](Orbital o1) {
+            for (size_t l2 : basis.channels(RANK_1)) {
+                basis.for_u10(l2, y2s, [&](Orbital o2) {
+                    r() += alpha * a(o1, o2, o1, o2);
+                });
+            }
         });
     }
 }
@@ -303,7 +323,7 @@ void linked_product(ManyBodyOper &tmp,
     r.opers[1] += tmp.opers[1];
 
     // 11ai
-    trace_1(UNOCC_I, 1.0, tmp.opers[1], r.opers[0]);
+    trace_1_1(UNOCC_I, 1.0, tmp.opers[1], r.opers[0]);
 
     // 12i
     term_12i_raw(alpha, a.opers[1], b.opers[2], r.opers[2]);
@@ -314,7 +334,7 @@ void linked_product(ManyBodyOper &tmp,
     r.opers[2] += tmp.opers[2];
 
     // 12ai
-    trace_2(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
+    trace_2_1(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
 
     // 21i
     term_21i_raw(alpha, a.opers[2], b.opers[1], r.opers[2]);
@@ -325,7 +345,7 @@ void linked_product(ManyBodyOper &tmp,
     r.opers[2] += tmp.opers[2];
 
     // 21ai
-    trace_2(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
+    trace_2_1(UNOCC_I, 0.5, tmp.opers[2], r.opers[1]);
 
     // 22ai
     term_22ai(alpha, a.opers[2], b.opers[2], r.opers[2]);
@@ -336,7 +356,7 @@ void linked_product(ManyBodyOper &tmp,
     r.opers[2] += tmp.opers[2];
 
     // 22aii
-    trace_2(UNOCC_A, -1.0, tmp.opers[2], r.opers[1]);
+    trace_2_1(UNOCC_A, -1.0, tmp.opers[2], r.opers[1]);
 
     // 22aa
     tmp.opers[2] = 0.0;
@@ -345,11 +365,11 @@ void linked_product(ManyBodyOper &tmp,
 
     // 22aai
     tmp.opers[1] = 0.0;
-    trace_2(UNOCC_I, 1.0, tmp.opers[2], tmp.opers[1]);
+    trace_2_1(UNOCC_I, 1.0, tmp.opers[2], tmp.opers[1]);
     r.opers[1] += tmp.opers[1];
 
     // 22aaii
-    trace_1(UNOCC_I, 0.5, tmp.opers[1], r.opers[0]);
+    trace_1_1(UNOCC_I, 0.5, tmp.opers[1], r.opers[0]);
 
     // magically fix everything :D
     exch_antisymmetrize(r.opers[2]);
@@ -387,6 +407,16 @@ void diagonal_part(const ManyBodyOper &a, ManyBodyOper &r)
     }
 
     exch_antisymmetrize(r.opers[2]);
+}
+
+void normal_order(const ManyBodyOper &a, ManyBodyOper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+    r += a;
+    trace_1_1(UNOCC_I, 1.0, a.opers[1], r.opers[0]);
+    trace_2_2(UNOCC_I, UNOCC_I, 0.5, a.opers[2], r.opers[0]);
+    trace_2_1(UNOCC_I, 1.0, a.opers[2], r.opers[1]);
 }
 
 void wegner_generator(const ManyBodyOper &a, ManyBodyOper &r)

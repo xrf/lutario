@@ -10,7 +10,7 @@ objs=$(main_objs) $(commutator_test_objs)
 check: bin/commutator_test
 	bin/commutator_test
 
-main_objs=src/main.o src/basis.o src/commutator.o src/math.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
+main_objs=src/main.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas

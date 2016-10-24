@@ -84,6 +84,8 @@ public:
         // load the mock operators (random matrix elements)
         this->_load_mbo("src/commutator_test_qd_a.txt", this->_a);
         this->_load_mbo("src/commutator_test_qd_b.txt", this->_b);
+
+        this->save_basis("out_commutator_test_qd_basis.txt");
     }
 
     /// Run the tests.
@@ -100,26 +102,33 @@ public:
         this->_term_22ii_test();
         this->_term_22aa_test();
         this->_commutator_test();
+        this->_normal_order_test();
         this->_wegner_generator_test();
         this->_white_generator_test();
     }
 
-    /// Display detailed information about the basis.  Useful for debugging.
-    void dump_basis()
+    void save_basis(const char *fn)
     {
-        std::cout << "Orbitals:\n";
+        std::fstream file(fn, std::ios_base::out);
+        if (!file.good()) {
+            std::ostringstream s;
+            s << "can't open file for writing: " << fn;
+            throw std::runtime_error(s.str());
+        }
+
+        file << "Orbitals:\n";
         for (size_t p = 0; p < this->_basis.size(); ++p) {
             const quantum_dot::Orbital &o = std::get<0>(this->_basis.at(p));
             Orbital lu = this->_orbital_from_index(p);
-            std::cout << p << "\t" << o << "\t" << lu << "\n";
+            file << p << "\t" << o << "\t" << lu << "\n";
         }
 
         const StateIndexTable &table = this->_mbasis.table();
         size_t nl1 = table.num_channels(RANK_1);
         size_t nl2 = table.num_channels(RANK_2);
-        std::cout << "2-particle state table (20):\n";
-        std::cout << "l12" << "\t" << "y1,y2" << "\t"
-                  << "l1" << "\t" << "l2" << "\t" << "[uo1,uo2)" << "\n";
+        file << "2-particle state table (20):\n";
+        file << "l12" << "\t" << "y1,y2" << "\t"
+             << "l1" << "\t" << "l2" << "\t" << "[uo1,uo2)" << "\n";
         for (size_t l12 = 0; l12 < nl2; ++l12) {
             for (size_t y1 = 0; y1 < 2; ++y1) {
                 for (size_t y2 = 0; y2 < 2; ++y2) {
@@ -136,16 +145,16 @@ public:
                         if (uoa == uob) {
                             continue;
                         }
-                        std::cout << l12 << "\t" << y1 << "," << y2 << "\t"
-                                  << l1 << "\t" << l2
-                                  << "\t[" << uoa << ", " << uob << ")\n";
+                        file << l12 << "\t" << y1 << "," << y2 << "\t"
+                             << l1 << "\t" << l2
+                             << "\t[" << uoa << ", " << uob << ")\n";
                     }
                 }
             }
         }
-        std::cout << "2-particle state table (21):\n";
-        std::cout << "l14" << "\t" << "y1,y4" << "\t"
-                  << "l1" << "\t" << "l4" << "\t" << "[uo1,uo2)" << "\n";
+        file << "2-particle state table (21):\n";
+        file << "l14" << "\t" << "y1,y4" << "\t"
+             << "l1" << "\t" << "l4" << "\t" << "[uo1,uo2)" << "\n";
         for (size_t l12 = 0; l12 < nl2; ++l12) {
             for (size_t y1 = 0; y1 < 2; ++y1) {
                 for (size_t y2 = 0; y2 < 2; ++y2) {
@@ -162,15 +171,15 @@ public:
                         if (uoa == uob) {
                             continue;
                         }
-                        std::cout << l12 << "\t" << y1 << "," << y2 << "\t"
-                                  << l1 << "\t" << l2
-                                  << "\t[" << uoa << ", " << uob << ")\n";
+                        file << l12 << "\t" << y1 << "," << y2 << "\t"
+                             << l1 << "\t" << l2
+                             << "\t[" << uoa << ", " << uob << ")\n";
                     }
                 }
             }
         }
 
-        std::cout << std::flush;
+        file.flush();
     }
 
 private:
@@ -193,11 +202,11 @@ private:
 
         this->_d.opers[1] = 0.0;
         term_11a(1.0, this->_a.opers[1], this->_b.opers[1], this->_d.opers[1]);
-        trace_1(UNOCC_I, 1.0, this->_d.opers[1], this->_c.opers[0]);
+        trace_1_1(UNOCC_I, 1.0, this->_d.opers[1], this->_c.opers[0]);
 
         this->_d.opers[1] = 0.0;
         term_11a(1.0, this->_b.opers[1], this->_a.opers[1], this->_d.opers[1]);
-        trace_1(UNOCC_I, -1.0, this->_d.opers[1], this->_c.opers[0]);
+        trace_1_1(UNOCC_I, -1.0, this->_d.opers[1], this->_c.opers[0]);
 
         std::string fn = "commutator_test_qd_c_11ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -241,26 +250,26 @@ private:
                      this->_a.opers[1],
                      this->_b.opers[2],
                      this->_d.opers[2]);
-        trace_2(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
         this->_d.opers[2] = 0.0;
         term_21a_raw(0.5,
                      this->_a.opers[2],
                      this->_b.opers[1],
                      this->_d.opers[2]);
-        trace_2(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
 
         this->_d.opers[2] = 0.0;
         term_12a_raw(0.5,
                      this->_b.opers[1],
                      this->_a.opers[2],
                      this->_d.opers[2]);
-        trace_2(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
         this->_d.opers[2] = 0.0;
         term_21a_raw(0.5,
                      this->_b.opers[2],
                      this->_a.opers[1],
                      this->_d.opers[2]);
-        trace_2(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
 
         std::string fn = "commutator_test_qd_c_12ai_21ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -322,8 +331,8 @@ private:
                   this->_b.opers[2],
                   this->_d.opers[2]);
         this->_d.opers[1] = 0.0;
-        trace_2(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
-        trace_1(UNOCC_I, 0.5, this->_d.opers[1], this->_c.opers[0]);
+        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
+        trace_1_1(UNOCC_I, 0.5, this->_d.opers[1], this->_c.opers[0]);
 
         this->_d.opers[2] = 0.0;
         term_22aa(1.0,
@@ -331,8 +340,8 @@ private:
                   this->_a.opers[2],
                   this->_d.opers[2]);
         this->_d.opers[1] = 0.0;
-        trace_2(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
-        trace_1(UNOCC_I, -0.5, this->_d.opers[1], this->_c.opers[0]);
+        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
+        trace_1_1(UNOCC_I, -0.5, this->_d.opers[1], this->_c.opers[0]);
 
         std::string fn = "commutator_test_qd_c_22aaii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -349,14 +358,14 @@ private:
                   this->_a.opers[2],
                   this->_b.opers[2],
                   this->_d.opers[2]);
-        trace_2(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
 
         this->_d.opers[2] = 0.0;
         term_22aa(1.0,
                   this->_b.opers[2],
                   this->_a.opers[2],
                   this->_d.opers[2]);
-        trace_2(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
 
         std::string fn = "commutator_test_qd_c_22aai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -373,14 +382,14 @@ private:
                   this->_a.opers[2],
                   this->_b.opers[2],
                   this->_d.opers[2]);
-        trace_2(UNOCC_A, -1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_A, -1.0, this->_d.opers[2], this->_c.opers[1]);
 
         this->_d.opers[2] = 0.0;
         term_22ii(1.0,
                   this->_b.opers[2],
                   this->_a.opers[2],
                   this->_d.opers[2]);
-        trace_2(UNOCC_A, 1.0, this->_d.opers[2], this->_c.opers[1]);
+        trace_2_1(UNOCC_A, 1.0, this->_d.opers[2], this->_c.opers[1]);
 
         std::string fn = "commutator_test_qd_c_22aii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -457,6 +466,17 @@ private:
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
     }
 
+    void _normal_order_test()
+    {
+        this->_c = 0.0;
+        normal_order(this->_b, this->_c);
+
+        std::string fn = "commutator_test_qd_no.txt";
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+    }
+
     void _wegner_generator_test()
     {
         this->_e = 0.0;
@@ -474,7 +494,6 @@ private:
     void _white_generator_test()
     {
         this->_c = 0.0;
-
         white_generator(this->_b, this->_c);
 
         std::string fn = "commutator_test_qd_wh.txt";
@@ -700,6 +719,8 @@ private:
                 }
             }
         );
+        file.flush();
+        file.close();
         overwrite_file(tmp_fn.c_str(), filename, ".save2.tmp");
     }
 
