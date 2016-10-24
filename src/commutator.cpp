@@ -451,7 +451,7 @@ void white_generator(const ManyBodyOper &a, ManyBodyOper &r)
     for (size_t l12 : basis.channels(RANK_2)) {
         basis.for_u20(l12, UNOCC_II, [&](Orbital o1, Orbital o2) {
             basis.for_u20(l12, UNOCC_AA, [&](Orbital o3, Orbital o4) {
-                double z = 4.0 * a(o1, o2, o3, o4) / (
+                double z = a(o1, o2, o3, o4) / (
                     + a(o1, o1)
                     + a(o2, o2)
                     - a(o3, o3)
