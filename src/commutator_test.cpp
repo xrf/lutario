@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include <iomanip>
 #include <ios>
 #include <iostream>
 #include <limits>
@@ -58,6 +59,8 @@ void overwrite_file(const char *src, const char *dest, const char *tmp_suffix)
     }
 }
 
+/// Macro to automatically capture information about the current file, line,
+/// and function and pass them to the given function.
 #define D(f, ...) f({__FILE__, __LINE__, __func__}, __VA_ARGS__)
 
 class QDTest {
@@ -81,7 +84,29 @@ public:
         // load the mock operators (random matrix elements)
         this->_load_mbo("src/commutator_test_qd_a.txt", this->_a);
         this->_load_mbo("src/commutator_test_qd_b.txt", this->_b);
+    }
 
+    /// Run the tests.
+    void test()
+    {
+        this->_term_11ai_test();
+        this->_term_11i_11a_test();
+        this->_term_12ai_21ai();
+        this->_term_12i_12a_21i_21a_test();
+        this->_term_22aaii_test();
+        this->_term_22aai_test();
+        this->_term_22aii_test();
+        this->_term_22ai_test();
+        this->_term_22ii_test();
+        this->_term_22aa_test();
+        this->_commutator_test();
+        this->_wegner_generator_test();
+        this->_white_generator_test();
+    }
+
+    /// Display detailed information about the basis.  Useful for debugging.
+    void dump_basis()
+    {
         std::cout << "Orbitals:\n";
         for (size_t p = 0; p < this->_basis.size(); ++p) {
             const quantum_dot::Orbital &o = std::get<0>(this->_basis.at(p));
@@ -101,7 +126,7 @@ public:
                     for (size_t l1 = 0; l1 < nl1; ++l1) {
                         size_t l2;
                         if (!try_get(table.subtract_channels(l12, l1)
-                                    .within({0, nl1}), &l2)) {
+                                     .within({0, nl1}), &l2)) {
                             continue;
                         }
                         size_t x = (y1 * 2 + y2) * nl1 + l1;
@@ -127,7 +152,7 @@ public:
                     for (size_t l1 = 0; l1 < nl1; ++l1) {
                         size_t l2;
                         if (!try_get(table.subtract_channels(l1, l12)
-                                    .within({0, nl1}), &l2)) {
+                                     .within({0, nl1}), &l2)) {
                             continue;
                         }
                         size_t x = (y1 * 2 + y2) * nl1 + l1;
@@ -146,22 +171,6 @@ public:
         }
 
         std::cout << std::flush;
-    }
-
-    void test()
-    {
-        this->_term_11ai_test();
-        this->_term_11i_11a_test();
-        this->_term_12ai_21ai();
-        this->_term_12i_12a_21i_21a_test();
-        this->_term_22aaii_test();
-        this->_term_22aai_test();
-        this->_term_22aii_test();
-        this->_term_22ai_test();
-        this->_term_22ii_test();
-        this->_term_22aa_test();
-        this->_commutator_test();
-        this->_wegner_generator_test();
     }
 
 private:
@@ -451,15 +460,26 @@ private:
     void _wegner_generator_test()
     {
         this->_e = 0.0;
-        diagonal_part(1.2, this->_b, this->_e);
+        diagonal_part(this->_b, this->_e);
 
-        // todo: check nontrivial factor like 0.42
         this->_d = 0.0;
-        commutator(this->_c, 1.2, this->_e, this->_b, this->_d);
+        commutator(this->_c, 1.0, this->_e, this->_b, this->_d);
 
         this->_c = 0.0;
-        wegner_generator(1.44, this->_b, this->_c);
+        wegner_generator(this->_b, this->_c);
 
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+    }
+
+    void _white_generator_test()
+    {
+        this->_c = 0.0;
+
+        white_generator(this->_b, this->_c);
+
+        std::string fn = "commutator_test_qd_wh.txt";
+        this->_save_mbo(("out_" + fn).c_str(), this->_c);
+        this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
     }
 
@@ -529,11 +549,14 @@ private:
                         const ManyBodyOper &a, const ManyBodyOper &b) const
     {
         std::cerr.precision(std::numeric_limits<double>::max_digits10);
+        double max_diff = 0.0;
         double va = a(), vb = b();
+        max_diff = std::max(fabs(va - vb), max_diff);
         if (!within_tolerance(relerr, abserr, va, vb)) {
              std::cerr
-                 << loc.file << ":" << loc.line << ":" << loc.func << ":"
-                 << " *** discrepancy in ():\n"
+                 << "[ERROR] "
+                 << loc.file << ":" << loc.line << ":" << loc.func << ": "
+                 << "discrepancy in 0-body element:\n"
                  << "  LHS = " << va << "\n"
                  << "  RHS = " << vb << "\n";
              fail();
@@ -541,10 +564,12 @@ private:
         this->_for_oper_1([&](size_t p1, size_t p2,
                               Orbital lu1, Orbital lu2) {
             double va = a(lu1, lu2), vb = b(lu1, lu2);
+            max_diff = std::max(fabs(va - vb), max_diff);
             if (!within_tolerance(relerr, abserr, va, vb)) {
                 std::cerr
-                    << loc.file << ":" << loc.line << ":" << loc.func << ":"
-                    << " *** discrepancy in ("
+                    << "[ERROR] "
+                    << loc.file << ":" << loc.line << ":" << loc.func << ": "
+                    << "discrepancy in ("
                     << p1 << ", " << p2 << "):\n"
                     << "  LHS = " << va << "\n"
                     << "  RHS = " << vb << "\n";
@@ -556,16 +581,27 @@ private:
                               Orbital lu1, Orbital lu2,
                               Orbital lu3, Orbital lu4) {
             double va = a(lu1, lu2, lu3, lu4), vb = b(lu1, lu2, lu3, lu4);
+            max_diff = std::max(fabs(va - vb), max_diff);
             if (!within_tolerance(relerr, abserr, va, vb)) {
                 std::cerr
-                    << loc.file << ":" << loc.line << ":" << loc.func << ":"
-                    << " *** discrepancy in ("
+                    << "[ERROR] "
+                    << loc.file << ":" << loc.line << ":" << loc.func << ": "
+                    << "discrepancy in ("
                     << p1 << ", " << p2 << ", " << p3 << ", " << p4 << "):\n"
                     << "  LHS = " << va << "\n"
                     << "  RHS = " << vb << "\n";
                 fail();
             }
         });
+        std::ostringstream s;
+        s << "[note] "
+          << loc.file << ":" << loc.line << ":" << loc.func << ": "
+          << "max_discrepancy = "
+          << std::scientific
+          << std::setprecision(2)
+          << max_diff
+          << "\n";
+        std::cout << s.str();
     }
 
     /// Note: the output operator must be already preallocated.

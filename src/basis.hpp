@@ -945,14 +945,4 @@ public:
 
 };
 
-#define ITER_CHANNELS(var, basis, rank)                                      \
-    size_t var = 0;                                                          \
-    var < basis.num_channels(rank);                                          \
-    ++var
-
-#define ITER_AUXILIARY(var, channel_index, part_begin, part_end, basis, rank) \
-    size_t var = basis.auxiliary_index_offset(rank, channel_index, part_begin); \
-    var < basis.auxiliary_index_offset(rank, channel_index, part_end);  \
-    ++var
-
 #endif

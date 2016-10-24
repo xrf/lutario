@@ -95,11 +95,19 @@ public:
 
     Oper &operator+=(const Oper &other)
     {
-        assert(&this->basis() == &other.basis());
+        assert(this->basis() == other.basis());
         assert(this->kind() == other.kind());
         assert(this->_blocks.size() == other._blocks.size());
         for (size_t l = 0; l < this->_blocks.size(); ++l) {
             (*this)[l] += other[l];
+        }
+        return *this;
+    }
+
+    Oper &operator*=(double alpha)
+    {
+        for (Matrix<double> &block : this->_blocks) {
+            block *= alpha;
         }
         return *this;
     }
@@ -154,6 +162,23 @@ public:
     {
         for (Oper &oper : this->opers) {
             oper = value;
+        }
+        return *this;
+    }
+
+    ManyBodyOper &operator+=(const ManyBodyOper &other)
+    {
+        assert(this->basis() == other.basis());
+        for (size_t l = 0; l < 3; ++l) {
+            this->opers[l] += other.opers[l];
+        }
+        return *this;
+    }
+
+    ManyBodyOper &operator*=(double value)
+    {
+        for (Oper &oper : this->opers) {
+            oper *= value;
         }
         return *this;
     }

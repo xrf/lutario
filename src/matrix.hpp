@@ -210,6 +210,17 @@ public:
         return *this;
     }
 
+    Matrix &operator*=(double alpha)
+    {
+        for (size_t i = 0; i < this->num_rows(); ++i) {
+            cblas_dscal((CBLAS_INT)this->num_cols(),
+                        alpha,
+                        this->data() + this->_index(i, 0),
+                        1);
+        }
+        return *this;
+    }
+
 };
 
 inline void transpose_indices(CBLAS_TRANSPOSE trans, size_t &m, size_t &n)
