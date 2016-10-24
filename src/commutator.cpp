@@ -365,3 +365,67 @@ void commutator(ManyBodyOper &tmp,
     linked_product(tmp, alpha, a, b, r);
     linked_product(tmp, -alpha, b, a, r);
 }
+
+void diagonal_part(double alpha,
+                   const ManyBodyOper &a,
+                   ManyBodyOper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, UNOCC_P, [&](Orbital o1) {
+            r(o1, o1) += alpha * a(o1, o1);
+        });
+    }
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            r(o1, o2, o1, o2) += alpha * 2.0 * a(o1, o2, o1, o2);
+        });
+    }
+
+    exch_antisymmetrize(r.opers[2]);
+}
+
+void wegner_generator(double alpha,
+                      const ManyBodyOper &a,
+                      ManyBodyOper &r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, UNOCC_P, [&](Orbital o1) {
+            basis.for_u10(l1, UNOCC_P, [&](Orbital o2) {
+                bool x1 = basis.get_unocc(o1);
+                bool x2 = basis.get_unocc(o2);
+                r(o1, o2) += alpha * a(o1, o2) * (
+                    a(o1, o1) - a(o2, o2) +
+                    (x2 - x1) * a(o1, o2, o1, o2));
+            });
+        });
+    }
+
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                bool x1 = basis.get_unocc(o1);
+                bool x3 = basis.get_unocc(o3);
+                r(o1, o2, o3, o4) +=
+                    alpha * (
+                        a(o1, o2, o3, o4) * (
+                            2.0 * (a(o1, o1) - a(o3, o3)) +
+                            4.0 * (x3 - x1) * a(o1, o3, o1, o3) +
+                            (2.0 * x1 - 1.0) * a(o1, o2, o1, o2) -
+                            (2.0 * x3 - 1.0) * a(o3, o4, o3, o4)) +
+                        (o1 == o3 ? 4.0 * a(o2, o4) * (
+                            a(o1, o2, o1, o2) -
+                            a(o3, o4, o3, o4)
+                        ) : 0.0));
+            });
+        });
+    }
+
+    exch_antisymmetrize(r.opers[2]);
+}

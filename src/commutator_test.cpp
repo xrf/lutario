@@ -75,6 +75,7 @@ public:
         batch.push(this->_b.alloc_req(this->_mbasis));
         batch.push(this->_c.alloc_req(this->_mbasis));
         batch.push(this->_d.alloc_req(this->_mbasis));
+        batch.push(this->_e.alloc_req(this->_mbasis));
         this->_buf = alloc(std::move(batch));
 
         // load the mock operators (random matrix elements)
@@ -160,6 +161,7 @@ public:
         this->_term_22ii_test();
         this->_term_22aa_test();
         this->_commutator_test();
+        this->_wegner_generator_test();
     }
 
 private:
@@ -172,7 +174,7 @@ private:
 
     ManyBodyBasis _mbasis;
 
-    ManyBodyOper _a, _b, _c, _d;
+    ManyBodyOper _a, _b, _c, _d, _e;
 
     std::unique_ptr<double[]> _buf;
 
@@ -443,6 +445,21 @@ private:
         std::string fn = "commutator_test_qd_c.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
+        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+    }
+
+    void _wegner_generator_test()
+    {
+        this->_e = 0.0;
+        diagonal_part(1.2, this->_b, this->_e);
+
+        // todo: check nontrivial factor like 0.42
+        this->_d = 0.0;
+        commutator(this->_c, 1.2, this->_e, this->_b, this->_d);
+
+        this->_c = 0.0;
+        wegner_generator(1.44, this->_b, this->_c);
+
         D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
     }
 

@@ -839,6 +839,13 @@ public:
         }
     }
 
+    bool get_unocc(Orbital lu1) const
+    {
+        size_t l1 = lu1.channel_index();
+        size_t u1 = lu1.auxiliary_index();
+        return u1 >= this->table().orbital_offset(l1, 1);
+    }
+
     OptionalOrbital combine_20(Orbital lu1, Orbital lu2) const
     {
         const StateIndexTable &table = this->table();
@@ -850,8 +857,8 @@ public:
         if (!try_get(table.add_channels(l1, l2), &l12)) {
             return OptionalOrbital();
         }
-        bool x1 = u1 >= table.orbital_offset(l1, 1);
-        bool x2 = u2 >= table.orbital_offset(l2, 1);
+        bool x1 = this->get_unocc(lu1);
+        bool x2 = this->get_unocc(lu2);
         size_t uo1 = table.orbital_offset(l1, x1);
         size_t uo2 = table.orbital_offset(l2, x2);
         size_t nl1 = table.num_channels(RANK_1);
@@ -873,8 +880,8 @@ public:
         if (!try_get(table.subtract_channels(l1, l4), &l14)) {
             return OptionalOrbital();
         }
-        bool x1 = u1 >= table.orbital_offset(l1, 1);
-        bool x4 = u4 >= table.orbital_offset(l4, 1);
+        bool x1 = this->get_unocc(lu1);
+        bool x4 = this->get_unocc(lu4);
         size_t uo1 = table.orbital_offset(l1, x1);
         size_t uo4 = table.orbital_offset(l4, x4);
         size_t nl1 = table.num_channels(RANK_1);
