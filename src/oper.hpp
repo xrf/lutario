@@ -6,31 +6,39 @@
 
 class Oper {
 
+    double *_data = nullptr;
+
     const ManyBodyBasis *_basis = nullptr;
 
-    std::vector<Matrix<double>> _blocks;
-
-    OperKind _kind;
+    OperKind _kind = OPER_KIND_000;
 
 public:
 
-    AllocReqBatch<double> alloc_req(const ManyBodyBasis &, OperKind);
+    Oper()
+        : _data()
+        , _basis()
+        , _kind()
+    {
+    }
+
+    Oper(double *data, const ManyBodyBasis &basis, OperKind kind)
+        : _data(data)
+        , _basis(&basis)
+        , _kind(kind)
+    {
+    }
+
+    PtrAllocReq<double> alloc_req(const ManyBodyBasis &, OperKind);
+
+    double *data() const
+    {
+        return this->_data;
+    }
 
     const ManyBodyBasis &basis() const
     {
+        assert(this->_basis != nullptr);
         return *this->_basis;
-    }
-
-    const Matrix<double> &operator[](size_t l) const
-    {
-        assert(l < this->_blocks.size());
-        return this->_blocks[l];
-    }
-
-    Matrix<double> &operator[](size_t l)
-    {
-        assert(l < this->_blocks.size());
-        return this->_blocks[l];
     }
 
     OperKind kind() const
@@ -38,29 +46,33 @@ public:
         return this->_kind;
     }
 
-    double operator()() const
+    size_t size() const
     {
-        return const_cast<Oper &>(*this)();
+        return this->basis().oper_size(this->kind());
     }
 
-    double operator()(const Orbital &p1, const Orbital &p2) const
+    size_t num_blocks() const
     {
-        return const_cast<Oper &>(*this)(p1, p2);
+        Rank r = oper_kind_to_rank(this->kind());
+        return this->basis().num_channels(r);
     }
 
-    double operator()(const Orbital &p1, const Orbital &p2,
-                      const Orbital &p3, const Orbital &p4) const
+    Matrix<double> operator[](size_t l) const
     {
-        return const_cast<Oper &>(*this)(p1, p2, p3, p4);
+        assert(l < this->num_blocks());
+        size_t i = this->basis().block_offset(this->kind(), l);
+        size_t nu1, nu2;
+        this->basis().block_size(this->kind(), l, &nu1, &nu2);
+        return {this->data() + i, nu1, nu2};
     }
 
-    double &operator()()
+    double &operator()() const
     {
         assert(this->kind() == OPER_KIND_000);
         return (*this)[0](0, 0);
     }
 
-    double &operator()(const Orbital &lu1, const Orbital &lu2)
+    double &operator()(const Orbital &lu1, const Orbital &lu2) const
     {
         assert(this->kind() == OPER_KIND_100);
         assert(this->basis().is_conserved_1(lu1, lu2));
@@ -71,7 +83,7 @@ public:
     }
 
     double &operator()(const Orbital &lu1, const Orbital &lu2,
-                       const Orbital &lu3, const Orbital &lu4)
+                       const Orbital &lu3, const Orbital &lu4) const
     {
         assert(this->kind() == OPER_KIND_200);
         assert(this->basis().is_conserved_2(lu1, lu2, lu3, lu4));
@@ -85,29 +97,29 @@ public:
         return (*this)[l12](u12, u34);
     }
 
-    Oper &operator=(double value)
+    const Oper &operator=(double value) const
     {
-        for (Matrix<double> &block : this->_blocks) {
-            block = value;
+        for (size_t l = 0; l < this->num_blocks(); ++l) {
+            (*this)[l] = value;
         }
         return *this;
     }
 
-    Oper &operator+=(const Oper &other)
+    const Oper &operator+=(const Oper &other) const
     {
         assert(this->basis() == other.basis());
         assert(this->kind() == other.kind());
-        assert(this->_blocks.size() == other._blocks.size());
-        for (size_t l = 0; l < this->_blocks.size(); ++l) {
+        assert(this->num_blocks() == other.num_blocks());
+        for (size_t l = 0; l < this->num_blocks(); ++l) {
             (*this)[l] += other[l];
         }
         return *this;
     }
 
-    Oper &operator*=(double alpha)
+    const Oper &operator*=(double alpha) const
     {
-        for (Matrix<double> &block : this->_blocks) {
-            block *= alpha;
+        for (size_t l = 0; l < this->num_blocks(); ++l) {
+            (*this)[l] *= alpha;
         }
         return *this;
     }
@@ -125,60 +137,88 @@ public:
 ///
 class ManyBodyOper {
 
-    const ManyBodyBasis *_basis = nullptr;
+    double *_data;
+
+    const ManyBodyBasis *_basis;
 
 public:
 
-    Oper opers[3];
+    ManyBodyOper()
+        : _data()
+        , _basis()
+    {
+    }
 
-    AllocReqBatch<double> alloc_req(const ManyBodyBasis &);
+    ManyBodyOper(double *data, const ManyBodyBasis &basis)
+        : _data(data)
+        , _basis(&basis)
+    {
+    }
+
+    PtrAllocReq<double> alloc_req(const ManyBodyBasis &);
+
+    double *data() const
+    {
+        return this->_data;
+    }
 
     const ManyBodyBasis &basis() const
     {
+        assert(this->_basis != nullptr);
         return *this->_basis;
     }
 
-    /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
-    /// calls on the rank-`r` operator.
-    template<typename... Ts>
-    double operator()(Ts &&... args) const
+    size_t size() const
     {
-        return const_cast<ManyBodyOper &>(*this)(std::forward<Ts>(args)...);
+        return this->basis().many_body_oper_size();
     }
 
-    /// Forward any `operator()` calls with `2 * r` arguments to `operator()`
-    /// calls on the rank-`r` operator.
-    template<typename... Ts>
-    double &operator()(Ts &&... args)
+    Oper oper(size_t rank) const
     {
-        constexpr size_t r = sizeof...(Ts) / 2;
-        static_assert(sizeof...(Ts) % 2 == 0,
-                      "must call operator() with even number of arguments");
-        static_assert(r < 3, "too many arguments to call of operator()");
-        return this->opers[r](std::forward<Ts>(args)...);
+        assert(rank < RANK_COUNT);
+        Rank r = (Rank)rank;
+        size_t i = this->basis().oper_offset(r);
+        OperKind kk = standard_oper_kind(r);
+        return {this->data() + i, this->basis(), kk};
     }
 
-    ManyBodyOper &operator=(double value)
+    double &operator()() const
     {
-        for (Oper &oper : this->opers) {
-            oper = value;
+        return this->oper(RANK_0)();
+    }
+
+    double &operator()(const Orbital &lu1, const Orbital &lu2) const
+    {
+        return this->oper(RANK_1)(lu1, lu2);
+    }
+
+    double &operator()(const Orbital &lu1, const Orbital &lu2,
+                       const Orbital &lu3, const Orbital &lu4) const
+    {
+        return this->oper(RANK_2)(lu1, lu2, lu3, lu4);
+    }
+
+    const ManyBodyOper &operator=(double value) const
+    {
+        for (size_t r = 0; r < RANK_COUNT; ++r) {
+            this->oper(r) = value;
         }
         return *this;
     }
 
-    ManyBodyOper &operator+=(const ManyBodyOper &other)
+    const ManyBodyOper &operator+=(const ManyBodyOper &other) const
     {
         assert(this->basis() == other.basis());
-        for (size_t l = 0; l < 3; ++l) {
-            this->opers[l] += other.opers[l];
+        for (size_t r = 0; r < RANK_COUNT; ++r) {
+            this->oper(r) += other.oper(r);
         }
         return *this;
     }
 
-    ManyBodyOper &operator*=(double value)
+    const ManyBodyOper &operator*=(double value) const
     {
-        for (Oper &oper : this->opers) {
-            oper *= value;
+        for (size_t r = 0; r < RANK_COUNT; ++r) {
+            this->oper(r) *= value;
         }
         return *this;
     }

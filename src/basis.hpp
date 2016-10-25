@@ -579,34 +579,14 @@ public:
 
 };
 
-class StateIndexTable {
-
-    // Since L1 is a subset of L2, this table suffices for all our purposes.
-    //
-    // (L2, L1) -> L2
-    std::vector<OptionalIndex> _addition_table;
-
-    // Negation table
-    //
-    // L2 -> L2
-    std::vector<size_t> _negation_table;
-
-    // StateKind -> L -> U
-    std::vector<size_t> _state_offsets[STATE_KIND_COUNT];
-
-    size_t _num_channels_1;
-
-    // Adds a rank-2 channel to a rank-1 channel.
-    OptionalIndex _add_channels(size_t l1, size_t l2) const
-    {
-        assert(l1 < this->num_channels(RANK_2));
-        assert(l2 < this->num_channels(RANK_1));
-        return this->_addition_table[l1 * this->num_channels(RANK_1) + l2];
-    }
+/// Defines the layout of many-body operator matrices in memory.  The
+/// `ManyBodyBasis` contains information about the many-body states, the
+/// channel arithmetics, as well as the offsets of diagonal blocks in memory.
+class ManyBodyBasis {
 
 public:
 
-    explicit StateIndexTable(const GenericOrbitalTable &table);
+    explicit ManyBodyBasis(const GenericOrbitalTable &table);
 
     size_t num_channels(Rank rank) const
     {
@@ -696,25 +676,26 @@ public:
         return this->add_channels(l1, this->negate_channel(l2));
     }
 
-};
-
-/// Defines the layout of many-body operator matrices in memory.  The
-/// `ManyBodyBasis` contains information about the many-body states, the
-/// channel arithmetics, as well as the offsets of diagonal blocks in memory.
-class ManyBodyBasis {
-
-    StateIndexTable _table;
-
-public:
-
-    ManyBodyBasis(StateIndexTable table)
-        : _table(std::move(table))
+    size_t many_body_oper_size() const
     {
+        return this->oper_offset(RANK_COUNT);
     }
 
-    const StateIndexTable &table() const
+    size_t oper_offset(size_t rank) const
     {
-        return this->_table;
+        return this->_oper_offsets[rank];
+    }
+
+    size_t oper_size(OperKind oper_kind) const
+    {
+        Rank r = oper_kind_to_rank(oper_kind);
+        size_t nl = this->num_channels(r);
+        return this->block_offset(oper_kind, nl);
+    }
+
+    size_t block_offset(OperKind oper_kind, size_t channel_index) const
+    {
+        return this->_block_offsets[oper_kind][channel_index];
     }
 
     size_t block_stride(OperKind oper_kind, size_t channel_index) const
@@ -730,8 +711,8 @@ public:
     {
         StateKind k1, k2;
         split_oper_kind(kk, &k1, &k2);
-        size_t nu1 = this->table().num_states_in_channel(k1, l);
-        size_t nu2 = this->table().num_states_in_channel(k2, l);
+        size_t nu1 = this->num_states_in_channel(k1, l);
+        size_t nu2 = this->num_states_in_channel(k2, l);
         if (nu1_out) {
             *nu1_out = nu1;
         }
@@ -742,8 +723,7 @@ public:
 
     IndexRange channels(Rank r) const
     {
-        const StateIndexTable &table = this->table();
-        size_t nl = table.num_channels(r);
+        size_t nl = this->num_channels(r);
         return {0, nl};
     }
 
@@ -773,10 +753,9 @@ public:
     template<typename F>
     void for_u10(size_t l1, IndexRange y1s, F func) const
     {
-        const StateIndexTable &table = this->table();
         for (size_t x1 : y1s) {
-            size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
-            size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
+            size_t nu1a = this->state_offset(STATE_KIND_10, l1, x1);
+            size_t nu1b = this->state_offset(STATE_KIND_10, l1, x1 + 1);
             for (size_t u1 : IndexRange(nu1a, nu1b)) {
                 func({l1, u1});
             }
@@ -787,21 +766,20 @@ public:
     template<typename F>
     void for_u20(size_t l12, IndexRange y12s, F func) const
     {
-        const StateIndexTable &table = this->table();
-        size_t nl1 = table.num_channels(RANK_1);
+        size_t nl1 = this->num_channels(RANK_1);
         for (size_t y12 : y12s) {
             size_t x1 = y12 / 2;
             size_t x2 = y12 % 2;
             for (size_t l1 : IndexRange(0, nl1)) {
                 size_t l2;
-                if (!try_get(table.subtract_channels(l12, l1)
+                if (!try_get(this->subtract_channels(l12, l1)
                              .within({0, nl1}), &l2)) {
                     continue;
                 }
-                size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
-                size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
-                size_t nu2a = table.state_offset(STATE_KIND_10, l2, x2);
-                size_t nu2b = table.state_offset(STATE_KIND_10, l2, x2 + 1);
+                size_t nu1a = this->state_offset(STATE_KIND_10, l1, x1);
+                size_t nu1b = this->state_offset(STATE_KIND_10, l1, x1 + 1);
+                size_t nu2a = this->state_offset(STATE_KIND_10, l2, x2);
+                size_t nu2b = this->state_offset(STATE_KIND_10, l2, x2 + 1);
                 for (size_t u1 : IndexRange(nu1a, nu1b)) {
                     for (size_t u2 : IndexRange(nu2a, nu2b)) {
                         func({l1, u1}, {l2, u2});
@@ -815,21 +793,20 @@ public:
     template<typename F>
     void for_u21(size_t l14, IndexRange y14s, F func) const
     {
-        const StateIndexTable &table = this->table();
-        size_t nl1 = table.num_channels(RANK_1);
+        size_t nl1 = this->num_channels(RANK_1);
         for (size_t y14 : y14s) {
             size_t x1 = y14 / 2;
             size_t x4 = y14 % 2;
             for (size_t l1 : IndexRange(0, nl1)) {
                 size_t l4;
-                if (!try_get(table.subtract_channels(l1, l14)
+                if (!try_get(this->subtract_channels(l1, l14)
                              .within({0, nl1}), &l4)) {
                     continue;
                 }
-                size_t nu1a = table.state_offset(STATE_KIND_10, l1, x1);
-                size_t nu1b = table.state_offset(STATE_KIND_10, l1, x1 + 1);
-                size_t nu4a = table.state_offset(STATE_KIND_10, l4, x4);
-                size_t nu4b = table.state_offset(STATE_KIND_10, l4, x4 + 1);
+                size_t nu1a = this->state_offset(STATE_KIND_10, l1, x1);
+                size_t nu1b = this->state_offset(STATE_KIND_10, l1, x1 + 1);
+                size_t nu4a = this->state_offset(STATE_KIND_10, l4, x4);
+                size_t nu4b = this->state_offset(STATE_KIND_10, l4, x4 + 1);
                 for (size_t u1 : IndexRange(nu1a, nu1b)) {
                     for (size_t u4 : IndexRange(nu4a, nu4b)) {
                         func({l1, u1}, {l4, u4});
@@ -843,27 +820,26 @@ public:
     {
         size_t l1 = lu1.channel_index();
         size_t u1 = lu1.auxiliary_index();
-        return u1 >= this->table().orbital_offset(l1, 1);
+        return u1 >= this->orbital_offset(l1, 1);
     }
 
     OptionalOrbital combine_20(Orbital lu1, Orbital lu2) const
     {
-        const StateIndexTable &table = this->table();
         size_t l1 = lu1.channel_index();
         size_t u1 = lu1.auxiliary_index();
         size_t l2 = lu2.channel_index();
         size_t u2 = lu2.auxiliary_index();
         size_t l12;
-        if (!try_get(table.add_channels(l1, l2), &l12)) {
+        if (!try_get(this->add_channels(l1, l2), &l12)) {
             return OptionalOrbital();
         }
         bool x1 = this->get_unocc(lu1);
         bool x2 = this->get_unocc(lu2);
-        size_t uo1 = table.orbital_offset(l1, x1);
-        size_t uo2 = table.orbital_offset(l2, x2);
-        size_t nl1 = table.num_channels(RANK_1);
-        size_t nu = table.num_orbitals_in_channel_part(l2, x2);
-        size_t ub = table.state_offset(STATE_KIND_20, l12,
+        size_t uo1 = this->orbital_offset(l1, x1);
+        size_t uo2 = this->orbital_offset(l2, x2);
+        size_t nl1 = this->num_channels(RANK_1);
+        size_t nu = this->num_orbitals_in_channel_part(l2, x2);
+        size_t ub = this->state_offset(STATE_KIND_20, l12,
                                        (x1 * 2 + x2) * nl1 + l1);
         size_t u12 = ub + (u1 - uo1) * nu + (u2 - uo2);
         return OptionalOrbital({l12, u12});
@@ -871,22 +847,21 @@ public:
 
     OptionalOrbital combine_21(Orbital lu1, Orbital lu4) const
     {
-        const StateIndexTable &table = this->table();
         size_t l1 = lu1.channel_index();
         size_t u1 = lu1.auxiliary_index();
         size_t l4 = lu4.channel_index();
         size_t u4 = lu4.auxiliary_index();
         size_t l14;
-        if (!try_get(table.subtract_channels(l1, l4), &l14)) {
+        if (!try_get(this->subtract_channels(l1, l4), &l14)) {
             return OptionalOrbital();
         }
         bool x1 = this->get_unocc(lu1);
         bool x4 = this->get_unocc(lu4);
-        size_t uo1 = table.orbital_offset(l1, x1);
-        size_t uo4 = table.orbital_offset(l4, x4);
-        size_t nl1 = table.num_channels(RANK_1);
-        size_t nu = table.num_orbitals_in_channel_part(l4, x4);
-        size_t ub = table.state_offset(STATE_KIND_21, l14,
+        size_t uo1 = this->orbital_offset(l1, x1);
+        size_t uo4 = this->orbital_offset(l4, x4);
+        size_t nl1 = this->num_channels(RANK_1);
+        size_t nu = this->num_orbitals_in_channel_part(l4, x4);
+        size_t ub = this->state_offset(STATE_KIND_21, l14,
                                        (x1 * 2 + x4) * nl1 + l1);
         size_t u14 = ub + (u1 - uo1) * nu + (u4 - uo4);
         return OptionalOrbital({l14, u14});
@@ -899,14 +874,13 @@ public:
                                   IndexRange y2s) const ->
         decltype(blocks[l1].slice({0, 0}, {0, 0}))
     {
-        const StateIndexTable &table = this->table();
         IndexRange u1s(
-            table.state_offset(STATE_KIND_10, l1, y1s.start),
-            table.state_offset(STATE_KIND_10, l1, y1s.stop)
+            this->state_offset(STATE_KIND_10, l1, y1s.start),
+            this->state_offset(STATE_KIND_10, l1, y1s.stop)
         );
         IndexRange u2s(
-            table.state_offset(STATE_KIND_10, l1, y2s.start),
-            table.state_offset(STATE_KIND_10, l1, y2s.stop)
+            this->state_offset(STATE_KIND_10, l1, y2s.start),
+            this->state_offset(STATE_KIND_10, l1, y2s.stop)
         );
         return blocks[l1].slice(u1s, u2s);
     }
@@ -918,15 +892,14 @@ public:
                                   IndexRange y34s) const ->
         decltype(blocks[l12].slice({0, 0}, {0, 0}))
     {
-        const StateIndexTable &table = this->table();
-        size_t nl1 = table.num_channels(RANK_1);
+        size_t nl1 = this->num_channels(RANK_1);
         IndexRange u12s(
-            table.state_offset(STATE_KIND_20, l12, y12s.start * nl1),
-            table.state_offset(STATE_KIND_20, l12, y12s.stop * nl1)
+            this->state_offset(STATE_KIND_20, l12, y12s.start * nl1),
+            this->state_offset(STATE_KIND_20, l12, y12s.stop * nl1)
         );
         IndexRange u34s(
-            table.state_offset(STATE_KIND_20, l12, y34s.start * nl1),
-            table.state_offset(STATE_KIND_20, l12, y34s.stop * nl1)
+            this->state_offset(STATE_KIND_20, l12, y34s.start * nl1),
+            this->state_offset(STATE_KIND_20, l12, y34s.stop * nl1)
         );
         return blocks[l12].slice(u12s, u34s);
     }
@@ -941,6 +914,35 @@ public:
     bool operator==(const ManyBodyBasis &other) const
     {
         return this == &other;
+    }
+
+private:
+
+    size_t _oper_offsets[RANK_COUNT + 1];
+
+    std::vector<size_t> _block_offsets[OPER_KIND_COUNT + 1];
+
+    // Since L1 is a subset of L2, this table suffices for all our purposes.
+    //
+    // (L2, L1) -> L2
+    std::vector<OptionalIndex> _addition_table;
+
+    // Negation table
+    //
+    // L2 -> L2
+    std::vector<size_t> _negation_table;
+
+    // StateKind -> L -> U
+    std::vector<size_t> _state_offsets[STATE_KIND_COUNT];
+
+    size_t _num_channels_1;
+
+    // Adds a rank-2 channel to a rank-1 channel.
+    OptionalIndex _add_channels(size_t l1, size_t l2) const
+    {
+        assert(l1 < this->num_channels(RANK_2));
+        assert(l2 < this->num_channels(RANK_1));
+        return this->_addition_table[l1 * this->num_channels(RANK_1) + l2];
     }
 
 };

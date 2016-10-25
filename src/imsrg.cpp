@@ -1,5 +1,15 @@
 #include "imsrg.hpp"
 
+namespace {
+
+void callback(void *ctx, double x, const double *y, double *dy)
+{
+    const Imsrg &self = *(const Imsrg *)ctx;
+    // TODO
+}
+
+}
+
 Imsrg::Imsrg(const ManyBodyOper &hamiltonian, GeneratorFunction generator)
     : _generator(std::move(generator))
     , _hamiltonian(hamiltonian)
@@ -18,5 +28,5 @@ const ManyBodyOper &Imsrg::hamiltonian() const
 
 double Imsrg::ground_state_energy() const
 {
-    return this->hamiltonian().opers[0]();
+    return this->hamiltonian().oper(0)();
 }

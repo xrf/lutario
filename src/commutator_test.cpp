@@ -70,7 +70,7 @@ public:
     QDTest()
         : _basis(quantum_dot::get_basis(2, 1))
         , _table(this->_basis)
-        , _mbasis(StateIndexTable(this->_table))
+        , _mbasis(this->_table)
     {
         // allocate and initialize the operators to zero
         AllocReqBatch<double> batch;
@@ -123,9 +123,9 @@ public:
             file << p << "\t" << o << "\t" << lu << "\n";
         }
 
-        const StateIndexTable &table = this->_mbasis.table();
-        size_t nl1 = table.num_channels(RANK_1);
-        size_t nl2 = table.num_channels(RANK_2);
+        const ManyBodyBasis &basis = this->_mbasis;
+        size_t nl1 = basis.num_channels(RANK_1);
+        size_t nl2 = basis.num_channels(RANK_2);
         file << "2-particle state table (20):\n";
         file << "l12" << "\t" << "y1,y2" << "\t"
              << "l1" << "\t" << "l2" << "\t" << "[uo1,uo2)" << "\n";
@@ -134,13 +134,13 @@ public:
                 for (size_t y2 = 0; y2 < 2; ++y2) {
                     for (size_t l1 = 0; l1 < nl1; ++l1) {
                         size_t l2;
-                        if (!try_get(table.subtract_channels(l12, l1)
+                        if (!try_get(basis.subtract_channels(l12, l1)
                                      .within({0, nl1}), &l2)) {
                             continue;
                         }
                         size_t x = (y1 * 2 + y2) * nl1 + l1;
-                        size_t uoa = table.state_offset(STATE_KIND_20, l12, x);
-                        size_t uob = table.state_offset(STATE_KIND_20, l12,
+                        size_t uoa = basis.state_offset(STATE_KIND_20, l12, x);
+                        size_t uob = basis.state_offset(STATE_KIND_20, l12,
                                                         x + 1);
                         if (uoa == uob) {
                             continue;
@@ -160,13 +160,13 @@ public:
                 for (size_t y2 = 0; y2 < 2; ++y2) {
                     for (size_t l1 = 0; l1 < nl1; ++l1) {
                         size_t l2;
-                        if (!try_get(table.subtract_channels(l1, l12)
+                        if (!try_get(basis.subtract_channels(l1, l12)
                                      .within({0, nl1}), &l2)) {
                             continue;
                         }
                         size_t x = (y1 * 2 + y2) * nl1 + l1;
-                        size_t uoa = table.state_offset(STATE_KIND_21, l12, x);
-                        size_t uob = table.state_offset(STATE_KIND_21, l12,
+                        size_t uoa = basis.state_offset(STATE_KIND_21, l12, x);
+                        size_t uob = basis.state_offset(STATE_KIND_21, l12,
                                                         x + 1);
                         if (uoa == uob) {
                             continue;
@@ -200,13 +200,13 @@ private:
     {
         this->_c = 0.0;
 
-        this->_d.opers[1] = 0.0;
-        term_11a(1.0, this->_a.opers[1], this->_b.opers[1], this->_d.opers[1]);
-        trace_1_1(UNOCC_I, 1.0, this->_d.opers[1], this->_c.opers[0]);
+        this->_d.oper(1) = 0.0;
+        term_11a(1.0, this->_a.oper(1), this->_b.oper(1), this->_d.oper(1));
+        trace_1_1(UNOCC_I, 1.0, this->_d.oper(1), this->_c.oper(0));
 
-        this->_d.opers[1] = 0.0;
-        term_11a(1.0, this->_b.opers[1], this->_a.opers[1], this->_d.opers[1]);
-        trace_1_1(UNOCC_I, -1.0, this->_d.opers[1], this->_c.opers[0]);
+        this->_d.oper(1) = 0.0;
+        term_11a(1.0, this->_b.oper(1), this->_a.oper(1), this->_d.oper(1));
+        trace_1_1(UNOCC_I, -1.0, this->_d.oper(1), this->_c.oper(0));
 
         std::string fn = "commutator_test_qd_c_11ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -219,21 +219,21 @@ private:
         this->_c = 0.0;
 
         term_11i(1.0,
-                 this->_a.opers[1],
-                 this->_b.opers[1],
-                 this->_c.opers[1]);
+                 this->_a.oper(1),
+                 this->_b.oper(1),
+                 this->_c.oper(1));
         term_11a(1.0,
-                 this->_a.opers[1],
-                 this->_b.opers[1],
-                 this->_c.opers[1]);
+                 this->_a.oper(1),
+                 this->_b.oper(1),
+                 this->_c.oper(1));
         term_11i(-1.0,
-                 this->_b.opers[1],
-                 this->_a.opers[1],
-                 this->_c.opers[1]);
+                 this->_b.oper(1),
+                 this->_a.oper(1),
+                 this->_c.oper(1));
         term_11a(-1.0,
-                 this->_b.opers[1],
-                 this->_a.opers[1],
-                 this->_c.opers[1]);
+                 this->_b.oper(1),
+                 this->_a.oper(1),
+                 this->_c.oper(1));
 
         std::string fn = "commutator_test_qd_c_11i_11a.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -245,31 +245,31 @@ private:
     {
         this->_c = 0.0;
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_12a_raw(0.5,
-                     this->_a.opers[1],
-                     this->_b.opers[2],
-                     this->_d.opers[2]);
-        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
-        this->_d.opers[2] = 0.0;
+                     this->_a.oper(1),
+                     this->_b.oper(2),
+                     this->_d.oper(2));
+        trace_2_1(UNOCC_I, 1.0, this->_d.oper(2), this->_c.oper(1));
+        this->_d.oper(2) = 0.0;
         term_21a_raw(0.5,
-                     this->_a.opers[2],
-                     this->_b.opers[1],
-                     this->_d.opers[2]);
-        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
+                     this->_a.oper(2),
+                     this->_b.oper(1),
+                     this->_d.oper(2));
+        trace_2_1(UNOCC_I, 1.0, this->_d.oper(2), this->_c.oper(1));
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_12a_raw(0.5,
-                     this->_b.opers[1],
-                     this->_a.opers[2],
-                     this->_d.opers[2]);
-        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
-        this->_d.opers[2] = 0.0;
+                     this->_b.oper(1),
+                     this->_a.oper(2),
+                     this->_d.oper(2));
+        trace_2_1(UNOCC_I, -1.0, this->_d.oper(2), this->_c.oper(1));
+        this->_d.oper(2) = 0.0;
         term_21a_raw(0.5,
-                     this->_b.opers[2],
-                     this->_a.opers[1],
-                     this->_d.opers[2]);
-        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
+                     this->_b.oper(2),
+                     this->_a.oper(1),
+                     this->_d.oper(2));
+        trace_2_1(UNOCC_I, -1.0, this->_d.oper(2), this->_c.oper(1));
 
         std::string fn = "commutator_test_qd_c_12ai_21ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -282,38 +282,38 @@ private:
         this->_c = 0.0;
 
         term_12i_raw(1.0,
-                     this->_a.opers[1],
-                     this->_b.opers[2],
-                     this->_c.opers[2]);
+                     this->_a.oper(1),
+                     this->_b.oper(2),
+                     this->_c.oper(2));
         term_12a_raw(1.0,
-                     this->_a.opers[1],
-                     this->_b.opers[2],
-                     this->_c.opers[2]);
+                     this->_a.oper(1),
+                     this->_b.oper(2),
+                     this->_c.oper(2));
         term_21i_raw(1.0,
-                     this->_a.opers[2],
-                     this->_b.opers[1],
-                     this->_c.opers[2]);
+                     this->_a.oper(2),
+                     this->_b.oper(1),
+                     this->_c.oper(2));
         term_21a_raw(1.0,
-                     this->_a.opers[2],
-                     this->_b.opers[1],
-                     this->_c.opers[2]);
+                     this->_a.oper(2),
+                     this->_b.oper(1),
+                     this->_c.oper(2));
         term_12i_raw(-1.0,
-                     this->_b.opers[1],
-                     this->_a.opers[2],
-                     this->_c.opers[2]);
+                     this->_b.oper(1),
+                     this->_a.oper(2),
+                     this->_c.oper(2));
         term_12a_raw(-1.0,
-                     this->_b.opers[1],
-                     this->_a.opers[2],
-                     this->_c.opers[2]);
+                     this->_b.oper(1),
+                     this->_a.oper(2),
+                     this->_c.oper(2));
         term_21i_raw(-1.0,
-                     this->_b.opers[2],
-                     this->_a.opers[1],
-                     this->_c.opers[2]);
+                     this->_b.oper(2),
+                     this->_a.oper(1),
+                     this->_c.oper(2));
         term_21a_raw(-1.0,
-                     this->_b.opers[2],
-                     this->_a.opers[1],
-                     this->_c.opers[2]);
-        exch_antisymmetrize(this->_c.opers[2]);
+                     this->_b.oper(2),
+                     this->_a.oper(1),
+                     this->_c.oper(2));
+        exch_antisymmetrize(this->_c.oper(2));
 
         std::string fn = "commutator_test_qd_c_12i_12a_21i_21a.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -325,23 +325,23 @@ private:
     {
         this->_c = 0.0;
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22aa(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_d.opers[2]);
-        this->_d.opers[1] = 0.0;
-        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
-        trace_1_1(UNOCC_I, 0.5, this->_d.opers[1], this->_c.opers[0]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_d.oper(2));
+        this->_d.oper(1) = 0.0;
+        trace_2_1(UNOCC_I, 1.0, this->_d.oper(2), this->_d.oper(1));
+        trace_1_1(UNOCC_I, 0.5, this->_d.oper(1), this->_c.oper(0));
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22aa(1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_d.opers[2]);
-        this->_d.opers[1] = 0.0;
-        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_d.opers[1]);
-        trace_1_1(UNOCC_I, -0.5, this->_d.opers[1], this->_c.opers[0]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_d.oper(2));
+        this->_d.oper(1) = 0.0;
+        trace_2_1(UNOCC_I, 1.0, this->_d.oper(2), this->_d.oper(1));
+        trace_1_1(UNOCC_I, -0.5, this->_d.oper(1), this->_c.oper(0));
 
         std::string fn = "commutator_test_qd_c_22aaii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -353,19 +353,19 @@ private:
     {
         this->_c = 0.0;
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22aa(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_d.opers[2]);
-        trace_2_1(UNOCC_I, 1.0, this->_d.opers[2], this->_c.opers[1]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_d.oper(2));
+        trace_2_1(UNOCC_I, 1.0, this->_d.oper(2), this->_c.oper(1));
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22aa(1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_d.opers[2]);
-        trace_2_1(UNOCC_I, -1.0, this->_d.opers[2], this->_c.opers[1]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_d.oper(2));
+        trace_2_1(UNOCC_I, -1.0, this->_d.oper(2), this->_c.oper(1));
 
         std::string fn = "commutator_test_qd_c_22aai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -377,19 +377,19 @@ private:
     {
         this->_c = 0.0;
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22ii(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_d.opers[2]);
-        trace_2_1(UNOCC_A, -1.0, this->_d.opers[2], this->_c.opers[1]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_d.oper(2));
+        trace_2_1(UNOCC_A, -1.0, this->_d.oper(2), this->_c.oper(1));
 
-        this->_d.opers[2] = 0.0;
+        this->_d.oper(2) = 0.0;
         term_22ii(1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_d.opers[2]);
-        trace_2_1(UNOCC_A, 1.0, this->_d.opers[2], this->_c.opers[1]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_d.oper(2));
+        trace_2_1(UNOCC_A, 1.0, this->_d.oper(2), this->_c.oper(1));
 
         std::string fn = "commutator_test_qd_c_22aii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -402,13 +402,13 @@ private:
         this->_c = 0.0;
 
         term_22ai(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_c.opers[2]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_c.oper(2));
         term_22ai(-1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_c.opers[2]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_c.oper(2));
 
         std::string fn = "commutator_test_qd_c_22ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -421,13 +421,13 @@ private:
         this->_c = 0.0;
 
         term_22ii(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_c.opers[2]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_c.oper(2));
         term_22ii(-1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_c.opers[2]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_c.oper(2));
 
         std::string fn = "commutator_test_qd_c_22ii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -440,13 +440,13 @@ private:
         this->_c = 0.0;
 
         term_22aa(1.0,
-                  this->_a.opers[2],
-                  this->_b.opers[2],
-                  this->_c.opers[2]);
+                  this->_a.oper(2),
+                  this->_b.oper(2),
+                  this->_c.oper(2));
         term_22aa(-1.0,
-                  this->_b.opers[2],
-                  this->_a.opers[2],
-                  this->_c.opers[2]);
+                  this->_b.oper(2),
+                  this->_a.oper(2),
+                  this->_c.oper(2));
 
         std::string fn = "commutator_test_qd_c_22aa.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
@@ -565,7 +565,7 @@ private:
 
     void _assert_eq_mbo(const Location &loc,
                         double relerr, double abserr,
-                        const ManyBodyOper &a, const ManyBodyOper &b) const
+                        const ManyBodyOper a, const ManyBodyOper b) const
     {
         std::cerr.precision(std::numeric_limits<double>::max_digits10);
         double max_diff = 0.0;
@@ -624,7 +624,7 @@ private:
     }
 
     /// Note: the output operator must be already preallocated.
-    void _load_mbo(const char *filename, ManyBodyOper &out) const
+    void _load_mbo(const char *filename, ManyBodyOper out) const
     {
         std::fstream file(filename, std::ios_base::in);
         if (!file.good()) {
@@ -678,13 +678,13 @@ private:
 
     /// Similar to `_load_mbo`, but also re-saves the file to
     /// normalize the file format.
-    void _load_save_mbo(const char *filename, ManyBodyOper &out) const
+    void _load_save_mbo(const char *filename, ManyBodyOper out) const
     {
         this->_load_mbo(filename, out);
         this->_save_mbo(filename, out);
     }
 
-    void _save_mbo(const char *filename, const ManyBodyOper &in) const
+    void _save_mbo(const char *filename, const ManyBodyOper in) const
     {
         std::string tmp_fn = filename;
         tmp_fn += ".save.tmp";

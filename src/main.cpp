@@ -19,7 +19,7 @@ int main()
     std::cout << basis << std::endl;
 
     OrbitalTranslationTable<Orbital, Channel> trans(basis);
-    ManyBodyBasis mbasis{StateIndexTable(trans)};
+    ManyBodyBasis mbasis{trans};
 
     ManyBodyOper h, eta;
     std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(mbasis));

@@ -102,7 +102,7 @@ public:
     PtrAllocReq<T> alloc_req(size_t num_rows, size_t num_cols)
     {
         *this = Matrix(nullptr, num_rows, num_cols);
-        return PtrAllocReq<T>(&this->_data, num_rows * num_cols);
+        return {&this->_data, this->size()};
     }
 
     operator Matrix<const T>() const
@@ -113,12 +113,7 @@ public:
                                this->stride());
     }
 
-    const T *data() const
-    {
-        return this->_data;
-    }
-
-    T *data()
+    T *data() const
     {
         return this->_data;
     }
@@ -138,38 +133,27 @@ public:
         return this->_stride;
     }
 
+    size_t size() const
+    {
+        return this->num_rows() * this->stride();
+    }
+
     size_t index(size_t row_index, size_t col_index) const
     {
         assert(col_index < this->num_cols());
         return this->_index(row_index, col_index);
     }
 
-    const T &operator()(size_t row_index, size_t col_index) const
+    T &operator()(size_t row_index, size_t col_index) const
     {
         assert(this->data() != nullptr);
         assert(row_index < this->num_rows());
         assert(col_index < this->num_cols());
         return this->data()[this->index(row_index, col_index)];
-    }
-
-    T &operator()(size_t row_index, size_t col_index)
-    {
-        assert(this->data() != nullptr);
-        assert(row_index < this->num_rows());
-        assert(col_index < this->num_cols());
-        return this->data()[this->index(row_index, col_index)];
-    }
-
-    Matrix<const T> slice(const IndexRange &row_index_range,
-                          const IndexRange &col_index_range) const
-    {
-        // this is fine :)
-        return const_cast<Matrix *>(this)->slice(row_index_range,
-                                                 col_index_range);
     }
 
     Matrix slice(const IndexRange &row_index_range,
-                 const IndexRange &col_index_range)
+                 const IndexRange &col_index_range) const
     {
         assert(this->data() != nullptr);
         assert(row_index_range.stop <= this->num_rows());
@@ -185,7 +169,7 @@ public:
                       this->stride());
     }
 
-    Matrix &operator=(double value)
+    const Matrix &operator=(double value) const
     {
         for (size_t i = 0; i < this->num_rows(); ++i) {
             for (size_t j = 0; j < this->num_cols(); ++j) {
@@ -195,7 +179,7 @@ public:
         return *this;
     }
 
-    Matrix &operator+=(const Matrix &other)
+    const Matrix &operator+=(const Matrix &other) const
     {
         assert(this->num_rows() == other.num_rows());
         assert(this->num_cols() == other.num_cols());
@@ -210,7 +194,7 @@ public:
         return *this;
     }
 
-    Matrix &operator*=(double alpha)
+    const Matrix &operator*=(double alpha) const
     {
         for (size_t i = 0; i < this->num_rows(); ++i) {
             cblas_dscal((CBLAS_INT)this->num_cols(),

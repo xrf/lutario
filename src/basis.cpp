@@ -8,7 +8,7 @@ std::ostream &operator<<(std::ostream &stream, const Orbital &self)
         << self.auxiliary_index() << "}";
 }
 
-StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
+ManyBodyBasis::ManyBodyBasis(const GenericOrbitalTable &table)
 {
     size_t nl1 = table.num_channels(RANK_1);
     size_t nl2 = table.num_channels(RANK_2);
@@ -71,4 +71,28 @@ StateIndexTable::StateIndexTable(const GenericOrbitalTable &table)
         }
         this->_state_offsets[STATE_KIND_21].emplace_back(u);
     }
+
+    for (size_t ikk = 0; ikk < OPER_KIND_COUNT; ++ikk) {
+        OperKind kk = (OperKind)ikk;
+        Rank r = oper_kind_to_rank(kk);
+        size_t nl = this->num_channels(r);
+        size_t i = 0;
+        for (size_t l = 0; l < nl; ++l) {
+            this->_block_offsets[kk].emplace_back(i);
+            size_t nu1, nu2;
+            this->block_size(kk, l, &nu1, &nu2);
+            i += nu1 * nu2;
+        }
+        this->_block_offsets[kk].emplace_back(i);
+    }
+
+    size_t i = 0;
+    Rank r;
+    for (r = RANK_0; r < RANK_COUNT; r = (Rank)(r + 1)) {
+        OperKind kk = standard_oper_kind(r);
+        this->_oper_offsets[r] = i;
+        size_t nl = this->num_channels(r);
+        i += this->block_offset(kk, nl);
+    }
+    this->_oper_offsets[r] = i;
 }

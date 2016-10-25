@@ -1,5 +1,6 @@
 #ifndef IRANGE_HPP
 #define IRANGE_HPP
+#include <assert.h>
 #include <iterator>
 #include <type_traits>
 #include <utility>
