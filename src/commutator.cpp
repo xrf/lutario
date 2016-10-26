@@ -41,7 +41,7 @@ void exch_antisymmetrize(Oper a)
     }
 }
 
-void trace_1_1(const IndexRange &ys, double alpha, const Oper a, Oper r)
+void trace_1_1(const IndexRange &ys, double alpha, const Oper &a, Oper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
@@ -55,7 +55,7 @@ void trace_1_1(const IndexRange &ys, double alpha, const Oper a, Oper r)
     }
 }
 
-void trace_2_1(const IndexRange &ys, double alpha, const Oper a, Oper r)
+void trace_2_1(const IndexRange &ys, double alpha, const Oper &a, Oper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
@@ -78,7 +78,7 @@ void trace_2_1(const IndexRange &ys, double alpha, const Oper a, Oper r)
 void trace_2_2(const IndexRange &y1s,
                const IndexRange &y2s,
                double alpha,
-               const Oper a,
+               const Oper &a,
                Oper r)
 {
     const ManyBodyBasis &basis = r.basis();
@@ -97,7 +97,7 @@ void trace_2_2(const IndexRange &y1s,
     }
 }
 
-void term_11i(double alpha, const Oper a, const Oper b, Oper r)
+void term_11i(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -117,7 +117,7 @@ void term_11i(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_11a(double alpha, const Oper a, const Oper b, Oper r)
+void term_11a(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -137,7 +137,7 @@ void term_11a(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_12i_raw(double alpha, const Oper a, const Oper b, Oper r)
+void term_12i_raw(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -159,7 +159,7 @@ void term_12i_raw(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_12a_raw(double alpha, const Oper a, const Oper b, Oper r)
+void term_12a_raw(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -181,7 +181,7 @@ void term_12a_raw(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_21i_raw(double alpha, const Oper a, const Oper b, Oper r)
+void term_21i_raw(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -203,7 +203,7 @@ void term_21i_raw(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_21a_raw(double alpha, const Oper a, const Oper b, Oper r)
+void term_21a_raw(double alpha, const Oper &a, const Oper &b, Oper r)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -225,7 +225,7 @@ void term_21a_raw(double alpha, const Oper a, const Oper b, Oper r)
     }
 }
 
-void term_22ai(double alpha, const Oper a, const Oper b, Oper c)
+void term_22ai(double alpha, const Oper &a, const Oper &b, Oper c)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -254,7 +254,7 @@ void term_22ai(double alpha, const Oper a, const Oper b, Oper c)
     exch_antisymmetrize(c);
 }
 
-void term_22ii(double alpha, const Oper a, const Oper b, Oper c)
+void term_22ii(double alpha, const Oper &a, const Oper &b, Oper c)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -274,7 +274,7 @@ void term_22ii(double alpha, const Oper a, const Oper b, Oper c)
     }
 }
 
-void term_22aa(double alpha, const Oper a, const Oper b, Oper c)
+void term_22aa(double alpha, const Oper &a, const Oper &b, Oper c)
 {
     const ManyBodyBasis &basis = a.basis();
     assert(basis == b.basis());
@@ -296,8 +296,8 @@ void term_22aa(double alpha, const Oper a, const Oper b, Oper c)
 
 void linked_product(ManyBodyOper tmp,
                     double alpha,
-                    const ManyBodyOper a,
-                    const ManyBodyOper b,
+                    const ManyBodyOper &a,
+                    const ManyBodyOper &b,
                     ManyBodyOper r)
 {
     /*
@@ -377,8 +377,8 @@ void linked_product(ManyBodyOper tmp,
 
 void commutator(ManyBodyOper tmp,
                 double alpha,
-                const ManyBodyOper a,
-                const ManyBodyOper b,
+                const ManyBodyOper &a,
+                const ManyBodyOper &b,
                 ManyBodyOper r)
 {
     // the commutator of two operators consists of only the *linked* diagrams;
@@ -387,7 +387,7 @@ void commutator(ManyBodyOper tmp,
     linked_product(tmp, -alpha, b, a, r);
 }
 
-void diagonal_part(const ManyBodyOper a, ManyBodyOper r)
+void diagonal_part(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
@@ -409,7 +409,7 @@ void diagonal_part(const ManyBodyOper a, ManyBodyOper r)
     exch_antisymmetrize(r.oper(2));
 }
 
-void normal_order(const ManyBodyOper a, ManyBodyOper r)
+void normal_order(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
@@ -419,7 +419,7 @@ void normal_order(const ManyBodyOper a, ManyBodyOper r)
     trace_2_1(UNOCC_I, 1.0, a.oper(2), r.oper(1));
 }
 
-void wegner_generator(const ManyBodyOper a, ManyBodyOper r)
+void wegner_generator(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
@@ -460,7 +460,7 @@ void wegner_generator(const ManyBodyOper a, ManyBodyOper r)
     exch_antisymmetrize(r.oper(2));
 }
 
-void white_generator(const ManyBodyOper a, ManyBodyOper r)
+void white_generator(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());

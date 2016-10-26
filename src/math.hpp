@@ -1,5 +1,17 @@
 #ifndef MATH_HPP
 #define MATH_HPP
+#include <math.h>
+
+struct Tolerance {
+
+    double abserr, relerr;
+
+    bool check(double x, double y) const
+    {
+        return fabs(x - y) < this->abserr + this->relerr * 0.5 * fabs(x + y);
+    }
+
+};
 
 unsigned isqrt(unsigned x);
 

@@ -97,7 +97,7 @@ public:
         return (*this)[l12](u12, u34);
     }
 
-    const Oper &operator=(double value) const
+    Oper &operator=(double value)
     {
         for (size_t l = 0; l < this->num_blocks(); ++l) {
             (*this)[l] = value;
@@ -105,7 +105,7 @@ public:
         return *this;
     }
 
-    const Oper &operator+=(const Oper &other) const
+    Oper &operator+=(const Oper &other)
     {
         assert(this->basis() == other.basis());
         assert(this->kind() == other.kind());
@@ -116,7 +116,7 @@ public:
         return *this;
     }
 
-    const Oper &operator*=(double alpha) const
+    Oper &operator*=(double alpha)
     {
         for (size_t l = 0; l < this->num_blocks(); ++l) {
             (*this)[l] *= alpha;
@@ -198,7 +198,7 @@ public:
         return this->oper(RANK_2)(lu1, lu2, lu3, lu4);
     }
 
-    const ManyBodyOper &operator=(double value) const
+    ManyBodyOper &operator=(double value)
     {
         for (size_t r = 0; r < RANK_COUNT; ++r) {
             this->oper(r) = value;
@@ -206,7 +206,7 @@ public:
         return *this;
     }
 
-    const ManyBodyOper &operator+=(const ManyBodyOper &other) const
+    ManyBodyOper &operator+=(const ManyBodyOper &other)
     {
         assert(this->basis() == other.basis());
         for (size_t r = 0; r < RANK_COUNT; ++r) {
@@ -215,7 +215,7 @@ public:
         return *this;
     }
 
-    const ManyBodyOper &operator*=(double value) const
+    ManyBodyOper &operator*=(double value)
     {
         for (size_t r = 0; r < RANK_COUNT; ++r) {
             this->oper(r) *= value;

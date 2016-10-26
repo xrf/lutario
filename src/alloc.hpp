@@ -83,11 +83,11 @@ std::unique_ptr<T[]> alloc(GenericAllocReq<T> &&req)
 /// single block of memory owned by a `unique_ptr`:
 ///
 ///     MyString x, y;
-///     AllocReqBatch a;
-///     a.push(x.alloc_req("hello"));
-///     a.push(y.alloc_req("world"));
+///     AllocReqBatch<char> batch;
+///     batch.push(x.alloc_req("hello"));
+///     batch.push(y.alloc_req("world"));
 ///     // until now, neither x and y have been allocated
-///     std::unique_ptr<char> buf = alloc(a);
+///     std::unique_ptr<char> buf = alloc(std::move(batch));
 ///     // now, both x and y have been allocated
 ///     // the lifetime of x and y is tied to that of buf
 ///

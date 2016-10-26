@@ -13,6 +13,7 @@
 #include "alloc.hpp"
 #include "basis.hpp"
 #include "commutator.hpp"
+#include "math.hpp"
 #include "oper.hpp"
 #include "quantum_dot.hpp"
 #include "str.hpp"
@@ -31,11 +32,6 @@ struct Location {
     unsigned long line;
     const char *func;
 };
-
-bool within_tolerance(double abserr, double relerr, double x, double y)
-{
-    return fabs(x - y) < abserr + relerr * 0.5 * fabs(x + y);
-}
 
 void overwrite_file(const char *src, const char *dest, const char *tmp_suffix)
 {
@@ -211,7 +207,7 @@ private:
         std::string fn = "commutator_test_qd_c_11ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_11i_11a_test()
@@ -238,7 +234,7 @@ private:
         std::string fn = "commutator_test_qd_c_11i_11a.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_12ai_21ai()
@@ -274,7 +270,7 @@ private:
         std::string fn = "commutator_test_qd_c_12ai_21ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_12i_12a_21i_21a_test()
@@ -318,7 +314,7 @@ private:
         std::string fn = "commutator_test_qd_c_12i_12a_21i_21a.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22aaii_test()
@@ -346,7 +342,7 @@ private:
         std::string fn = "commutator_test_qd_c_22aaii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22aai_test()
@@ -370,7 +366,7 @@ private:
         std::string fn = "commutator_test_qd_c_22aai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22aii_test()
@@ -394,7 +390,7 @@ private:
         std::string fn = "commutator_test_qd_c_22aii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22ai_test()
@@ -413,7 +409,7 @@ private:
         std::string fn = "commutator_test_qd_c_22ai.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22ii_test()
@@ -432,7 +428,7 @@ private:
         std::string fn = "commutator_test_qd_c_22ii.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _term_22aa_test()
@@ -451,7 +447,7 @@ private:
         std::string fn = "commutator_test_qd_c_22aa.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _commutator_test()
@@ -463,7 +459,7 @@ private:
         std::string fn = "commutator_test_qd_c.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _normal_order_test()
@@ -474,7 +470,7 @@ private:
         std::string fn = "commutator_test_qd_no.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _wegner_generator_test()
@@ -488,7 +484,7 @@ private:
         this->_c = 0.0;
         wegner_generator(this->_b, this->_c);
 
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     void _white_generator_test()
@@ -499,7 +495,7 @@ private:
         std::string fn = "commutator_test_qd_wh.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);
         this->_load_save_mbo(("src/" + fn).c_str(), this->_d);
-        D(this->_assert_eq_mbo, 1e-13, 1e-13, this->_c, this->_d);
+        D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
     Orbital _orbital_from_index(size_t p) const
@@ -563,15 +559,14 @@ private:
         }
     }
 
-    void _assert_eq_mbo(const Location &loc,
-                        double relerr, double abserr,
-                        const ManyBodyOper a, const ManyBodyOper b) const
+    void _assert_eq_mbo(const Location &loc, const Tolerance &tolerance,
+                        const ManyBodyOper &a, const ManyBodyOper &b) const
     {
         std::cerr.precision(std::numeric_limits<double>::max_digits10);
         double max_diff = 0.0;
         double va = a(), vb = b();
         max_diff = std::max(fabs(va - vb), max_diff);
-        if (!within_tolerance(relerr, abserr, va, vb)) {
+        if (!tolerance.check(va, vb)) {
              std::cerr
                  << "[ERROR] "
                  << loc.file << ":" << loc.line << ":" << loc.func << ": "
@@ -584,7 +579,7 @@ private:
                               Orbital lu1, Orbital lu2) {
             double va = a(lu1, lu2), vb = b(lu1, lu2);
             max_diff = std::max(fabs(va - vb), max_diff);
-            if (!within_tolerance(relerr, abserr, va, vb)) {
+            if (!tolerance.check(va, vb)) {
                 std::cerr
                     << "[ERROR] "
                     << loc.file << ":" << loc.line << ":" << loc.func << ": "
@@ -601,7 +596,7 @@ private:
                               Orbital lu3, Orbital lu4) {
             double va = a(lu1, lu2, lu3, lu4), vb = b(lu1, lu2, lu3, lu4);
             max_diff = std::max(fabs(va - vb), max_diff);
-            if (!within_tolerance(relerr, abserr, va, vb)) {
+            if (!tolerance.check(va, vb)) {
                 std::cerr
                     << "[ERROR] "
                     << loc.file << ":" << loc.line << ":" << loc.func << ": "
@@ -684,7 +679,7 @@ private:
         this->_save_mbo(filename, out);
     }
 
-    void _save_mbo(const char *filename, const ManyBodyOper in) const
+    void _save_mbo(const char *filename, const ManyBodyOper &in) const
     {
         std::string tmp_fn = filename;
         tmp_fn += ".save.tmp";

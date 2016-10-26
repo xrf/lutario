@@ -13,10 +13,10 @@ check: bin/alloc_test bin/commutator_test bin/irange_test bin/matrix_test
 	bin/irange_test
 	bin/matrix_test
 
-main_objs=src/main.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
+main_objs=src/main.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/ode.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas -lsgode
 
 alloc_test_objs=src/alloc_test.o
 bin/alloc_test: $(alloc_test_objs)

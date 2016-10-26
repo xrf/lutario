@@ -1,30 +1,33 @@
 #ifndef IMSRG_HPP
 #define IMSRG_HPP
 #include <functional>
-#include <utility>
+#include <memory>
+#include "ode.hpp"
 #include "oper.hpp"
 
-typedef std::function<void (const ManyBodyOper &, ManyBodyOper &)> GeneratorFunction;
+typedef std::function<void (const ManyBodyOper, ManyBodyOper)> GeneratorFunction;
 
 class Imsrg {
 
 public:
 
-    Imsrg(const ManyBodyOper &Hamiltonian, GeneratorFunction generator);
-
-    const GeneratorFunction &generator() const;
+    Imsrg(ManyBodyOper hamiltonian, GeneratorFunction generator);
 
     const ManyBodyOper &hamiltonian() const;
 
-    double ground_state_energy() const;
+    const GeneratorFunction &generator() const;
 
-    void step();
+    void deriv(double flow, const double *hamil, double *deriv_out);
+
+    Ode ode();
 
 private:
 
+    ManyBodyOper _hamiltonian, _eta, _tmp;
+
     GeneratorFunction _generator;
 
-    ManyBodyOper _hamiltonian;
+    std::unique_ptr<double []> _buf;
 
 };
 
