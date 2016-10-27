@@ -19,18 +19,19 @@ int main()
     using pairing_model::Channel;
     using pairing_model::Hamiltonian;
 
-    Basis basis = pairing_model::get_basis(3, 3);
-    std::cout << basis << std::endl;
+    Basis basis_states = pairing_model::get_basis(4, 2);
 
     double g = 1.0;
     Hamiltonian hamil = {g};
     std::cout << "g = " << g << std::endl;
 
-    OrbitalTranslationTable<Orbital, Channel> trans(basis);
-    ManyBodyBasis mbasis{trans};
+    OrbitalTranslationTable<Orbital, Channel> table(basis_states);
+    ManyBodyBasis basis{table};
 
     ManyBodyOper h;
-    std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(mbasis));
+    std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(basis));
+
+    fill_many_body_oper(table, basis, hamil, h);
 
     Imsrg imsrg = {h, &wegner_generator};
     ShampineGordon sg = {imsrg.ode()};
@@ -38,8 +39,14 @@ int main()
     double s = 0.0;
     while (true) {
         s += 1.0;
-        sg.step(s, {1e-8, 1e-8});
+        ShampineGordon::Status status = sg.step(s, {1e-8, 1e-8});
+        if (status != ShampineGordon::Status::Ok) {
+            std::cout << status << std::endl;
+            return EXIT_FAILURE;
+        }
         double e_new = h.oper(RANK_0)();
+        std::cout << "(s, E) = (" << s << ", " << e_new << ")\n";
+        std::cout.flush();
         if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
             break;
         }

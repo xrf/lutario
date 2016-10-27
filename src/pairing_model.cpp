@@ -137,6 +137,16 @@ Hamiltonian::Hamiltonian(double g)
 {
 }
 
+double Hamiltonian::zero_body() const
+{
+    return this->zero_body_conserv();
+}
+
+double Hamiltonian::zero_body_conserv() const
+{
+    return 0.0;
+}
+
 double Hamiltonian::one_body(Orbital p1, Orbital p2) const
 {
     if (p1.channel() != p2.channel()) {
@@ -148,7 +158,7 @@ double Hamiltonian::one_body(Orbital p1, Orbital p2) const
 double Hamiltonian::one_body_conserv(Orbital p1, Orbital p2) const
 {
     assert(p1.channel() == p2.channel());
-    return p1.n - 1;
+    return p1.n;
 }
 
 double Hamiltonian::two_body(Orbital p1, Orbital p2,
@@ -164,7 +174,7 @@ double Hamiltonian::two_body_conserv(Orbital p1, Orbital p2,
                                      Orbital p3, Orbital p4) const
 {
     assert(p1.channel() + p2.channel() == p3.channel() + p4.channel());
-    if (p1.channel() != Channel()) {
+    if (p1.channel() + p2.channel() != Channel()) {
         return 0.0;
     }
     double sign;

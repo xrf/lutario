@@ -2,6 +2,7 @@
 #define ODE_HPP
 #include <stddef.h>
 #include <functional>
+#include <iosfwd>
 #include <memory>
 #include <sg_ode.h>
 #include "math.hpp"
@@ -26,6 +27,8 @@ struct Ode {
     void *deriv_ctx() const;
 
 };
+
+std::ostream &operator<<(std::ostream &, const Ode &);
 
 class ShampineGordon {
 
@@ -83,5 +86,7 @@ private:
     static size_t _work_size(size_t num_equations);
 
 };
+
+std::ostream &operator<<(std::ostream &, ShampineGordon::Status);
 
 #endif

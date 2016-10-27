@@ -84,6 +84,10 @@ struct Hamiltonian {
     /// Construct a Hamiltonian with the given two-body interaction strength.
     Hamiltonian(double g);
 
+    double zero_body() const;
+
+    double zero_body_conserv() const;
+
     /// Calculate the one-body matrix element.
     double one_body(Orbital p1, Orbital p2) const;
 

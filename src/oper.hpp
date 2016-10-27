@@ -225,4 +225,35 @@ public:
 
 };
 
+template<typename O, typename C, typename F>
+void fill_many_body_oper(const OrbitalTranslationTable<O, C> &table,
+                         const ManyBodyBasis &basis,
+                         const F &f,
+                         ManyBodyOper out)
+{
+    out() = f.zero_body_conserv();
+    for (size_t l1 : basis.channels(RANK_1)) {
+        basis.for_u10(l1, UNOCC_P, [&](Orbital o1) {
+            basis.for_u10(l1, UNOCC_P, [&](Orbital o2) {
+                out(o1, o2) = f.one_body_conserv(
+                    table.decode_orbital(o1),
+                    table.decode_orbital(o2)
+                );
+            });
+        });
+    }
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_PP, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_PP, [&](Orbital o3, Orbital o4) {
+                out(o1, o2, o3, o4) = f.two_body_conserv(
+                    table.decode_orbital(o1),
+                    table.decode_orbital(o2),
+                    table.decode_orbital(o3),
+                    table.decode_orbital(o4)
+                );
+            });
+        });
+    }
+}
+
 #endif

@@ -572,8 +572,10 @@ public:
         return OptionalIndex(it->second);
     }
 
-    const P &decode_orbital(size_t l, size_t u) const
+    const P &decode_orbital(Orbital lu) const
     {
+        size_t l = lu.channel_index();
+        size_t u = lu.auxiliary_index();
         return this->_orbital_decoders.at(l).at(u);
     }
 

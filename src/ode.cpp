@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <functional>
+#include <ostream>
 #include <memory>
 #include <sg_ode.h>
 #include "math.hpp"
@@ -24,6 +25,21 @@ void Ode::deriv_fn(void *ctx, double x, const double *y, double *dy_out)
 void *Ode::deriv_ctx() const
 {
     return const_cast<DerivFn *>(&this->deriv);
+}
+
+std::ostream &operator<<(std::ostream &stream, const Ode &self)
+{
+    stream << "Ode{"
+           << self.size << ", "
+           << self.x << ", {";
+    for (size_t i = 0; i < self.size; ++i) {
+        if (i != 0) {
+            stream << ", ";
+        }
+        stream << self.y[i];
+    }
+    stream << "}, <function>}";
+    return stream;
 }
 
 ShampineGordon::ShampineGordon(Ode ode)
@@ -67,4 +83,18 @@ ShampineGordon::Status ShampineGordon::step(
 
 size_t ShampineGordon::_work_size(size_t num_equations) {
     return 100 + 21 * num_equations;
+}
+
+std::ostream &operator<<(std::ostream &stream, ShampineGordon::Status self)
+{
+    switch (self) {
+    case ShampineGordon::Status::Ok:
+        return stream << "ShampineGordon::Status::Ok";
+    case ShampineGordon::Status::ToleranceTooSmall:
+        return stream << "ShampineGordon::Status::ToleranceTooSmall";
+    case ShampineGordon::Status::TooManySteps:
+        return stream << "ShampineGordon::Status::TooManySteps";
+    case ShampineGordon::Status::TooStiff:
+        return stream << "ShampineGordon::Status::TooStiff";
+    }
 }
