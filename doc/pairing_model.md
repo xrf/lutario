@@ -17,7 +17,7 @@ Hamiltonian:
 
 where the one-body operator `U` is given by:
 
-    U = ∑[n s] (n − 1) a†[n s] a[n s]
+    U = ∑[n s] n a†[n s] a[n s]
 
 and the two-body operator `V` is given by:
 
