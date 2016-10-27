@@ -81,7 +81,8 @@ ShampineGordon::Status ShampineGordon::step(
     return (Status)r;
 }
 
-size_t ShampineGordon::_work_size(size_t num_equations) {
+size_t ShampineGordon::_work_size(size_t num_equations)
+{
     return 100 + 21 * num_equations;
 }
 

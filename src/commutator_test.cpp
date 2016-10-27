@@ -567,13 +567,13 @@ private:
         double va = a(), vb = b();
         max_diff = std::max(fabs(va - vb), max_diff);
         if (!tolerance.check(va, vb)) {
-             std::cerr
-                 << "[ERROR] "
-                 << loc.file << ":" << loc.line << ":" << loc.func << ": "
-                 << "discrepancy in 0-body element:\n"
-                 << "  LHS = " << va << "\n"
-                 << "  RHS = " << vb << "\n";
-             fail();
+            std::cerr
+                << "[ERROR] "
+                << loc.file << ":" << loc.line << ":" << loc.func << ": "
+                << "discrepancy in 0-body element:\n"
+                << "  LHS = " << va << "\n"
+                << "  RHS = " << vb << "\n";
+            fail();
         }
         this->_for_oper_1([&](size_t p1, size_t p2,
                               Orbital lu1, Orbital lu2) {
@@ -692,10 +692,10 @@ private:
         file.precision(std::numeric_limits<double>::max_digits10);
         double value = in();
         if (!(value == 0.0)) {
-             file << value << "\n";
+            file << value << "\n";
         }
         this->_for_oper_1([&](size_t p1, size_t p2,
-                              Orbital lu1, Orbital lu2) {
+        Orbital lu1, Orbital lu2) {
             double value = in(lu1, lu2);
             if (!(value == 0.0)) {
                 file << p1 << " " << p2 << " "
@@ -706,14 +706,13 @@ private:
                               size_t p3, size_t p4,
                               Orbital lu1, Orbital lu2,
                               Orbital lu3, Orbital lu4) {
-                double value = in(lu1, lu2, lu3, lu4);
-                if (!(value == 0.0)) {
-                    file << p1 << " " << p2 << " "
-                         << p3 << " " << p4 << " "
-                         << value << "\n";
-                }
+            double value = in(lu1, lu2, lu3, lu4);
+            if (!(value == 0.0)) {
+                file << p1 << " " << p2 << " "
+                     << p3 << " " << p4 << " "
+                     << value << "\n";
             }
-        );
+        });
         file.flush();
         file.close();
         overwrite_file(tmp_fn.c_str(), filename, ".save2.tmp");
