@@ -28,15 +28,20 @@ int main()
     OrbitalTranslationTable<Orbital, Channel> table(basis_states);
     ManyBodyBasis basis{table};
 
-    ManyBodyOper h;
+    ManyBodyOper h, hn;
     std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(basis));
+    std::unique_ptr<double[]> hn_buf = alloc(hn.alloc_req(basis));
 
     fill_many_body_oper(table, basis, hamil, h);
 
-    Imsrg imsrg = {h, &wegner_generator};
+    normal_order(h, hn);
+
+    Imsrg imsrg = {hn, &wegner_generator};
     ShampineGordon sg = {imsrg.ode()};
-    double e = h.oper(RANK_0)();
+    double e = hn.oper(RANK_0)();
     double s = 0.0;
+    std::cout << "(s, E) = (" << s << ", " << e << ")\n";
+    std::cout.flush();
     while (true) {
         s += 1.0;
         ShampineGordon::Status status = sg.step(s, {1e-8, 1e-8});
@@ -44,7 +49,7 @@ int main()
             std::cout << status << std::endl;
             return EXIT_FAILURE;
         }
-        double e_new = h.oper(RANK_0)();
+        double e_new = hn.oper(RANK_0)();
         std::cout << "(s, E) = (" << s << ", " << e_new << ")\n";
         std::cout.flush();
         if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
