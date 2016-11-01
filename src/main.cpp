@@ -40,6 +40,7 @@ int main()
     ShampineGordon sg = {imsrg.ode()};
     double e = hn.oper(RANK_0)();
     double s = 0.0;
+    std::cout.precision(8);
     std::cout << "(s, E) = (" << s << ", " << e << ")\n";
     std::cout.flush();
     while (true) {
