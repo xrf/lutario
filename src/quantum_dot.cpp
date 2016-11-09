@@ -20,7 +20,7 @@ Channel::Channel(int ml, int tms)
 
 std::tuple<int, int> Channel::to_tuple() const
 {
-    return {this->ml, this->tms};
+    return std::make_tuple(this->ml, this->tms);
 }
 
 Channel Channel::operator-() const
@@ -59,7 +59,7 @@ Channel Orbital::channel() const
 
 std::tuple<unsigned, int, int> Orbital::to_tuple() const
 {
-    return {this->n, this->ml, this->tms};
+    return std::make_tuple(this->n, this->ml, this->tms);
 }
 
 bool Orbital::operator<(const Orbital &other) const

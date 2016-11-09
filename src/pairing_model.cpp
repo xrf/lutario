@@ -86,7 +86,7 @@ Channel Orbital::channel() const
 
 std::tuple<unsigned, int> Orbital::to_tuple() const
 {
-    return {this->n, this->tms};
+    return std::make_tuple(this->n, this->tms);
 }
 
 bool Orbital::operator==(const Orbital &other) const

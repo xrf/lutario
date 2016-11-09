@@ -251,7 +251,7 @@ public:
 
     std::tuple<size_t, size_t> to_tuple() const
     {
-        return {this->channel_index(), this->auxiliary_index()};
+        return std::make_tuple(this->channel_index(), this->auxiliary_index());
     }
 
     bool operator==(const Orbital &other) const

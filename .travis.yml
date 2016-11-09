@@ -1,0 +1,34 @@
+language: c++
+sudo: false
+env:
+  global:
+  - CPPFLAGS=-Wall -Wextra -Wconversion -pedantic -g -O2
+  - CFLAGS=-std=c99
+  - CXXFLAGS=-std=c++11
+  - C_INCLUDE_PATH=$HOME/.local/include
+  - CPLUS_INCLUDE_PATH=$HOME/.local/include
+  - LIBRARY_PATH=$HOME/.local/lib
+  - LD_LIBRARY_PATH=$HOME/.local/lib
+addons:
+  apt:
+    packages:
+    - libblas-dev
+    - g++-5
+    sources:
+    - ubuntu-toolchain-r-test
+matrix:
+  fast_finish: true
+  include:
+  - env:
+      CC=gcc-5
+      CXX=g++-5
+      CPPFLAGS="$CPPFLAGS -Wno-return-type" # avoid spurious warnings
+    language: none
+  - compiler: clang
+install:
+- git clone https://github.com/xrf/sg-ode sg-ode
+- ( cd sg-ode && make PREFIX=$HOME/.local install )
+script:
+- make
+- make check
+- bin/main
