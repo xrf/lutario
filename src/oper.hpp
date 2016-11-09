@@ -256,4 +256,6 @@ void fill_many_body_oper(const OrbitalTranslationTable<O, C> &table,
     }
 }
 
+double hermitivity(const ManyBodyOper &q);
+
 #endif

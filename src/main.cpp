@@ -51,7 +51,9 @@ int main()
             return EXIT_FAILURE;
         }
         double e_new = hn.oper(RANK_0)();
-        std::cout << "(s, E) = (" << s << ", " << e_new << ")\n";
+        double herm = hermitivity(hn);
+        std::cout << "(s, E) = (" << s << ", " << e_new
+                  << "); |H - H†| = " << herm << "\n";
         std::cout.flush();
         if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
             break;
