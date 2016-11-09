@@ -19,9 +19,9 @@ int main()
     using pairing_model::Channel;
     using pairing_model::Hamiltonian;
 
-    Basis basis_states = pairing_model::get_basis(4, 2);
+    Basis basis_states = pairing_model::get_basis(1, 1);
 
-    double g = 1.0;
+    double g = 0.5;
     Hamiltonian hamil = {g};
     std::cout << "g = " << g << std::endl;
 
