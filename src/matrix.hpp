@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <algorithm>
+#include <ostream>
 #include "blas.hpp"
 #include "alloc.hpp"
 #include "irange.hpp"
@@ -206,6 +207,29 @@ public:
     }
 
 };
+
+template<typename T>
+std::ostream &operator<<(std::ostream &stream, const Matrix<T> &self)
+{
+    stream << "{\"num_cols\": " << self.num_cols()
+           << ", \"num_rows\": " << self.num_rows()
+           << ", \"data\": {";
+    bool first = true;
+    for (size_t i = 0; i < self.num_rows(); ++i) {
+        for (size_t j = 0; j < self.num_cols(); ++j) {
+            if (!first) {
+                stream << ", ";
+            }
+            T value = self(i, j);
+            if ((bool)value) {
+                stream << "\"(" << i << ", " << j << ")\": " << value;
+                first = false;
+            }
+        }
+    }
+    stream << "}}";
+    return stream;
+}
 
 inline void transpose_indices(CBLAS_TRANSPOSE trans, size_t &m, size_t &n)
 {

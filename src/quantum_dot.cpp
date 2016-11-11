@@ -46,9 +46,9 @@ bool Channel::operator<(const Channel &other) const
 
 std::ostream &operator<<(std::ostream &stream, const Channel &self)
 {
-    stream << "quantum_dot::Channel("
-           << self.ml << ", "
-           << self.tms << ")";
+    stream << "{\"ml\": " << self.ml
+           << ", \"ms\": " << (self.tms / 2.0)
+           << "}";
     return stream;
 }
 
@@ -78,10 +78,10 @@ Orbital Orbital::from_index(size_t p)
 
 std::ostream &operator<<(std::ostream &stream, const Orbital &self)
 {
-    stream << "quantum_dot::Orbital("
-           << self.n << ", "
-           << self.ml << ", "
-           << self.tms << ")";
+    stream << "{\"n\": " << self.n
+           << ", \"ml\": " << self.ml
+           << ", \"ms\": " << (self.tms / 2.0)
+           << "}";
     return stream;
 }
 
@@ -105,7 +105,6 @@ Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
 
 std::ostream &operator<<(std::ostream &stream, const Basis &self)
 {
-    stream << "quantum_dot::Basis";
     write_basis(stream, self);
     return stream;
 }

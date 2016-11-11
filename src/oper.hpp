@@ -1,5 +1,6 @@
 #ifndef OPER_HPP
 #define OPER_HPP
+#include <iosfwd>
 #include <vector>
 #include "matrix.hpp"
 #include "basis.hpp"
@@ -126,6 +127,8 @@ public:
 
 };
 
+std::ostream &operator<<(std::ostream &, const Oper &);
+
 /// A many-body operator contains three operators in standard form:
 ///
 ///   - Zero-body operator (constant term) in 000 form.  This is always has a
@@ -224,6 +227,8 @@ public:
     }
 
 };
+
+std::ostream &operator<<(std::ostream &, const ManyBodyOper &);
 
 template<typename O, typename C, typename F>
 void fill_many_body_oper(const OrbitalTranslationTable<O, C> &table,

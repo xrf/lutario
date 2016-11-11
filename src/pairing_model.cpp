@@ -65,7 +65,7 @@ bool Channel::operator<(const Channel &other) const
 
 std::ostream &operator<<(std::ostream &stream, const Channel &vec)
 {
-    stream << "pairing_model::Channel({";
+    stream << "{";
     bool first = true;
     for (const auto &kv : vec.entries()) {
         if (first) {
@@ -73,9 +73,9 @@ std::ostream &operator<<(std::ostream &stream, const Channel &vec)
         } else {
             stream << ", ";
         }
-        stream << "{" << kv.first << ", " << kv.second << "}";
+        stream << "\"" << kv.first << "\": " << kv.second;
     }
-    stream << "})";
+    stream << "}";
     return stream;
 }
 
@@ -106,7 +106,9 @@ bool Orbital::operator<(const Orbital &other) const
 
 std::ostream &operator<<(std::ostream &stream, const Orbital &self)
 {
-    stream << "pairing_model::Orbital(" << self.n << ", " << self.tms << ")";
+    stream << "{\"n\": " << self.n
+           << ", \"ms\": " << self.tms / 2.0
+           << "}";
     return stream;
 }
 
@@ -127,7 +129,6 @@ Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells)
 
 std::ostream &operator<<(std::ostream &stream, const Basis &self)
 {
-    stream << "pairing_model::Basis";
     write_basis(stream, self);
     return stream;
 }
@@ -188,7 +189,7 @@ double Hamiltonian::two_body_conserv(Orbital p1, Orbital p2,
 
 std::ostream &operator<<(std::ostream &stream, const Hamiltonian &self)
 {
-    stream << "pairing_model::Hamiltonian(" << self.g << ")";
+    stream << "{\"g\": " << self.g << "}";
     return stream;
 }
 

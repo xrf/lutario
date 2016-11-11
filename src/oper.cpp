@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <ostream>
 #include "alloc.hpp"
 #include "basis.hpp"
 #include "math.hpp"
@@ -11,10 +12,36 @@ PtrAllocReq<double> Oper::alloc_req(const ManyBodyBasis &basis, OperKind kk)
     return {&this->_data, this->size()};
 }
 
+std::ostream &operator<<(std::ostream &stream, const Oper &self)
+{
+    stream << "{";
+    for (size_t l = 0; l < self.num_blocks(); ++l) {
+        if (l != 0) {
+            stream << ", ";
+        }
+        stream << "\"block_" << l << "\": " << self[l];
+    }
+    stream << "}";
+    return stream;
+}
+
 PtrAllocReq<double> ManyBodyOper::alloc_req(const ManyBodyBasis &basis)
 {
     *this = ManyBodyOper(nullptr, basis);
     return {&this->_data, this->size()};
+}
+
+std::ostream &operator<<(std::ostream &stream, const ManyBodyOper &self)
+{
+    stream << "{";
+    for (size_t r = 0; r < RANK_COUNT; ++r) {
+        if (r != 0) {
+            stream << ", ";
+        }
+        stream << "\"rank_" << r << "\": " << self.oper(r);
+    }
+    stream << "}";
+    return stream;
 }
 
 double hermitivity(const ManyBodyOper &q)

@@ -14,6 +14,8 @@
 
 int main()
 {
+    std::cout.precision(8);
+
     using pairing_model::Basis;
     using pairing_model::Orbital;
     using pairing_model::Channel;
@@ -23,7 +25,7 @@ int main()
 
     double g = 0.5;
     Hamiltonian hamil = {g};
-    std::cout << "g = " << g << std::endl;
+    std::cout << hamil << std::endl;
 
     OrbitalTranslationTable<Orbital, Channel> table(basis_states);
     ManyBodyBasis basis{table};
@@ -40,9 +42,7 @@ int main()
     ShampineGordon sg = {imsrg.ode()};
     double e = hn.oper(RANK_0)();
     double s = 0.0;
-    std::cout.precision(8);
-    std::cout << "(s, E) = (" << s << ", " << e << ")\n";
-    std::cout.flush();
+    std::cout << "{\"s\": " << s << ", \"E\": " << e << "}" << std::endl;
     while (true) {
         s += 1.0;
         ShampineGordon::Status status = sg.step(s, {1e-8, 1e-8});
@@ -52,9 +52,9 @@ int main()
         }
         double e_new = hn.oper(RANK_0)();
         double herm = hermitivity(hn);
-        std::cout << "(s, E) = (" << s << ", " << e_new
-                  << "); |H - H†| = " << herm << "\n";
-        std::cout.flush();
+        std::cout << "{\"s\": " << s
+                  << ", \"E\": " << e_new
+                  << ", \"|H - H†|\": " << herm << "}" << std::endl;
         if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
             break;
         }
