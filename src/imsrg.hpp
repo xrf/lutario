@@ -31,4 +31,6 @@ private:
 
 };
 
+bool run_imsrg(const ManyBodyOper &h);
+
 #endif

@@ -263,4 +263,8 @@ void fill_many_body_oper(const OrbitalTranslationTable<O, C> &table,
 
 double hermitivity(const ManyBodyOper &q);
 
+double exch_antisymmetry(const Oper &q);
+
+double exch_antisymmetry(const ManyBodyOper &q);
+
 #endif

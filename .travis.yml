@@ -31,4 +31,4 @@ install:
 script:
 - make
 - make check
-- bin/main
+- bin/main 2 2 1

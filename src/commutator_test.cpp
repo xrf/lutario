@@ -100,7 +100,7 @@ public:
         this->_commutator_test();
         this->_normal_order_test();
         this->_wegner_generator_test();
-        this->_white_generator_test();
+        this->_white_generator_en_test();
     }
 
     void save_basis(const char *fn)
@@ -487,10 +487,10 @@ private:
         D(this->_assert_eq_mbo, {1e-13, 1e-13}, this->_c, this->_d);
     }
 
-    void _white_generator_test()
+    void _white_generator_en_test()
     {
         this->_c = 0.0;
-        white_generator(this->_b, this->_c);
+        white_generator_en(this->_b, this->_c);
 
         std::string fn = "commutator_test_qd_wh.txt";
         this->_save_mbo(("out_" + fn).c_str(), this->_c);

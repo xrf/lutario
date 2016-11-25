@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <functional>
+#include <iostream>
 #include <utility>
 #include "alloc.hpp"
 #include "commutator.hpp"
@@ -48,4 +49,48 @@ Ode Imsrg::ode()
         this->hamiltonian().data(),
         std::bind(&Imsrg::deriv, this, _1, _2, _3)
     };
+}
+
+bool run_imsrg(const ManyBodyOper &h)
+{
+    const ManyBodyBasis &basis = h.basis();
+    ManyBodyOper hn;
+    std::unique_ptr<double[]> hn_buf = alloc(hn.alloc_req(basis));
+
+    std::cout << "{\"|H - H†|\": " << hermitivity(h)
+              << ", \"ATSY(H)\": " << exch_antisymmetry(h)
+              << "}" << std::endl;
+
+    normal_order(h, hn);
+
+    Imsrg imsrg = {hn, &white_generator_mp};
+    ShampineGordon sg = {imsrg.ode()};
+    double e = hn.oper(RANK_0)();
+    double s = 0.0;
+    std::cout << "{\"s\": " << s
+              << ", \"E\": " << e
+              << ", \"|H - H†|\": " << hermitivity(hn)
+              << ", \"ATSY(H)\": " << exch_antisymmetry(hn)
+              << "}" << std::endl;
+    while (true) {
+        s += 1.0;
+        ShampineGordon::Status status = sg.step(s, {1e-8, 1e-8});
+        if (status != ShampineGordon::Status::Ok) {
+            std::cout << status << std::endl;
+            return false;
+        }
+        double e_new = hn.oper(RANK_0)();
+        double herm = hermitivity(hn);
+        double atsy = exch_antisymmetry(hn);
+        std::cout << "{\"s\": " << s
+                  << ", \"E\": " << e_new
+                  << ", \"|H - H†|\": " << herm
+                  << ", \"ATSY(H)\": " << atsy
+                  << "}" << std::endl;
+        if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
+            break;
+        }
+        e = e_new;
+    }
+    return true;
 }

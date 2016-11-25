@@ -22,4 +22,10 @@ inline double conj(double x)
     return x;
 }
 
+/// Calculate `|x|^2`.
+inline double normsq(double x)
+{
+    return x * x;
+}
+
 #endif

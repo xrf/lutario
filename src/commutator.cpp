@@ -458,30 +458,34 @@ void wegner_generator(const ManyBodyOper &a, ManyBodyOper r)
     exch_antisymmetrize(r.oper(2));
 }
 
-void white_generator(const ManyBodyOper &a, ManyBodyOper r)
+static void white_generator_1(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
-
-    r = 0.0;
-
     for (size_t l1 : basis.channels(RANK_1)) {
         basis.for_u10(l1, UNOCC_I, [&](Orbital o1) {
             basis.for_u10(l1, UNOCC_A, [&](Orbital o2) {
-                double z = a(o1, o2) / (
+                double d = (
                     + a(o1, o1)
                     - a(o2, o2)
                     + a(o1, o2, o1, o2));
+                assert(d != 0.0);
+                double z = a(o1, o2) / d;
                 r(o1, o2) = z;
                 r(o2, o1) = -conj(z);
             });
         });
     }
+}
 
+static void white_generator_en_2(const ManyBodyOper &a, ManyBodyOper r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
     for (size_t l12 : basis.channels(RANK_2)) {
         basis.for_u20(l12, UNOCC_II, [&](Orbital o1, Orbital o2) {
             basis.for_u20(l12, UNOCC_AA, [&](Orbital o3, Orbital o4) {
-                double z = a(o1, o2, o3, o4) / (
+                double d = (
                     + a(o1, o1)
                     + a(o2, o2)
                     - a(o3, o3)
@@ -492,9 +496,50 @@ void white_generator(const ManyBodyOper &a, ManyBodyOper r)
                     + a(o2, o4, o2, o4)
                     - a(o1, o2, o1, o2)
                     - a(o3, o4, o3, o4));
+                assert(d != 0.0);
+                double z = a(o1, o2, o3, o4) / d;
                 r(o1, o2, o3, o4) = z;
                 r(o3, o4, o1, o2) = -conj(z);
             });
         });
     }
+}
+
+static void white_generator_mp_2(const ManyBodyOper &a, ManyBodyOper r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+    for (size_t l12 : basis.channels(RANK_2)) {
+        basis.for_u20(l12, UNOCC_II, [&](Orbital o1, Orbital o2) {
+            basis.for_u20(l12, UNOCC_AA, [&](Orbital o3, Orbital o4) {
+                double d = (
+                    + a(o1, o1)
+                    + a(o2, o2)
+                    - a(o3, o3)
+                    - a(o4, o4));
+                assert(d != 0.0);
+                double z = a(o1, o2, o3, o4) / d;
+                r(o1, o2, o3, o4) = z;
+                r(o3, o4, o1, o2) = -conj(z);
+            });
+        });
+    }
+}
+
+void white_generator_en(const ManyBodyOper &a, ManyBodyOper r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+    r = 0.0;
+    white_generator_1(a, r);
+    white_generator_en_2(a, r);
+}
+
+void white_generator_mp(const ManyBodyOper &a, ManyBodyOper r)
+{
+    const ManyBodyBasis &basis = r.basis();
+    assert(basis == a.basis());
+    r = 0.0;
+    white_generator_1(a, r);
+    white_generator_mp_2(a, r);
 }

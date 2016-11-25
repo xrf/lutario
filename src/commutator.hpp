@@ -68,6 +68,9 @@ void diagonal_part(const ManyBodyOper &a, ManyBodyOper r_out);
 void wegner_generator(const ManyBodyOper &a, ManyBodyOper r_out);
 
 /// Precondition: `r_out` is allocated.
-void white_generator(const ManyBodyOper &a, ManyBodyOper r_out);
+void white_generator_en(const ManyBodyOper &a, ManyBodyOper r_out);
+
+/// Precondition: `r_out` is allocated.
+void white_generator_mp(const ManyBodyOper &a, ManyBodyOper r_out);
 
 #endif

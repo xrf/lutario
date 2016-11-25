@@ -1,15 +1,13 @@
-#include <stddef.h>
+#include <stdlib.h>
 #include <iostream>
 #include <memory>
 #include "basis.hpp"
-#include "commutator.hpp"
 #include "imsrg.hpp"
 #include "oper.hpp"
-#include "ode.hpp"
 
 #include "pairing_model.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
     std::cout.precision(8);
 
@@ -18,45 +16,28 @@ int main()
     using pairing_model::Channel;
     using pairing_model::Hamiltonian;
 
-    Basis basis_states = pairing_model::get_basis(2, 2);
+    if (argc != 4) {
+        fprintf(stderr, "usage: main <num_occ> <num_unocc> <g>\n");
+        fflush(stderr);
+        return EXIT_FAILURE;
+    }
+    Basis basis_states = pairing_model::get_basis((unsigned)atoi(argv[1]),
+                                                  (unsigned)atoi(argv[2]));
 
-    double g = 1.0;
+    double g = atof(argv[3]);
     Hamiltonian hamil = {g};
     std::cout << hamil << std::endl;
 
     OrbitalTranslationTable<Orbital, Channel> table(basis_states);
     ManyBodyBasis basis{table};
 
-    ManyBodyOper h, hn;
+    ManyBodyOper h;
     std::unique_ptr<double[]> h_buf = alloc(h.alloc_req(basis));
-    std::unique_ptr<double[]> hn_buf = alloc(hn.alloc_req(basis));
 
     fill_many_body_oper(table, basis, hamil, h);
 
-    normal_order(h, hn);
-
-    Imsrg imsrg = {hn, &wegner_generator};
-    ShampineGordon sg = {imsrg.ode()};
-    double e = hn.oper(RANK_0)();
-    double s = 0.0;
-    std::cout << "{\"s\": " << s << ", \"E\": " << e << "}" << std::endl;
-    while (true) {
-        s += 1.0;
-        ShampineGordon::Status status = sg.step(s, {1e-8, 1e-8});
-        if (status != ShampineGordon::Status::Ok) {
-            std::cout << status << std::endl;
-            return EXIT_FAILURE;
-        }
-        double e_new = hn.oper(RANK_0)();
-        double herm = hermitivity(hn);
-        std::cout << "{\"s\": " << s
-                  << ", \"E\": " << e_new
-                  << ", \"|H - H†|\": " << herm << "}" << std::endl;
-        if (Tolerance{1e-8, 1e-8}.check(e_new, e)) {
-            break;
-        }
-        e = e_new;
+    if (run_imsrg(h) == false) {
+        return EXIT_FAILURE;
     }
-
     return 0;
 }
