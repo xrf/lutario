@@ -581,6 +581,21 @@ public:
 
 };
 
+template<typename P, typename C>
+bool encode_orbital(const OrbitalTranslationTable<P, C> &table,
+                    const P &p,
+                    Orbital *lu_out)
+{
+    size_t l, u;
+    bool ok =
+        try_get(table.encode_channel(p.channel()), &l) &&
+        try_get(table.encode_orbital(p), &u);
+    if (ok && lu_out) {
+       *lu_out = {l, u};
+    }
+    return ok;
+}
+
 /// Defines the layout of many-body operator matrices in memory.  The
 /// `ManyBodyBasis` contains information about the many-body states, the
 /// channel arithmetics, as well as the offsets of diagonal blocks in memory.

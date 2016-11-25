@@ -4,8 +4,8 @@
 # List of programs to be built
 
 .PHONY: all check
-all: bin/main
-objs=$(main_objs) $(alloc_test) $(commutator_test_objs) $(irange_test) $(matrix_test)
+all: bin/main bin/main_qd
+objs=$(main_objs) $(main_qd_objs) $(alloc_test) $(commutator_test_objs) $(irange_test) $(matrix_test)
 
 check: bin/alloc_test bin/commutator_test bin/irange_test bin/matrix_test
 	bin/alloc_test
@@ -13,17 +13,22 @@ check: bin/alloc_test bin/commutator_test bin/irange_test bin/matrix_test
 	bin/irange_test
 	bin/matrix_test
 
-main_objs=src/main.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/ode.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
+main_objs=src/main.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/ode.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o src/utility.o
 bin/main: $(main_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_objs) -lblas -lsgode
+
+main_qd_objs=src/main_qd.o src/basis.o src/commutator.o src/imsrg.o src/math.o src/ode.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o src/utility.o
+bin/main_qd: $(main_qd_objs)
+	mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(main_qd_objs) -lblas -lsgode
 
 alloc_test_objs=src/alloc_test.o
 bin/alloc_test: $(alloc_test_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(alloc_test_objs)
 
-commutator_test_objs=src/commutator_test.o src/basis.o src/commutator.o src/math.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o
+commutator_test_objs=src/commutator_test.o src/basis.o src/commutator.o src/math.o src/oper.o src/pairing_model.o src/quantum_dot.o src/str.o src/utility.o
 bin/commutator_test: $(commutator_test_objs)
 	mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(commutator_test_objs) -lblas

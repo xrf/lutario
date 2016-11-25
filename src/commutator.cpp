@@ -411,8 +411,6 @@ void diagonal_part(const ManyBodyOper &a, ManyBodyOper r)
 
 void normal_order(const ManyBodyOper &a, ManyBodyOper r)
 {
-    const ManyBodyBasis &basis = r.basis();
-    assert(basis == a.basis());
     r += a;
     trace_1_1(UNOCC_I, 1.0, a.oper(1), r.oper(0));
     trace_2_2(UNOCC_I, UNOCC_I, 0.5, a.oper(2), r.oper(0));
@@ -464,6 +462,8 @@ void white_generator(const ManyBodyOper &a, ManyBodyOper r)
 {
     const ManyBodyBasis &basis = r.basis();
     assert(basis == a.basis());
+
+    r = 0.0;
 
     for (size_t l1 : basis.channels(RANK_1)) {
         basis.for_u10(l1, UNOCC_I, [&](Orbital o1) {

@@ -1,5 +1,18 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
+#include <memory>
+#include <ostream>
+#include <tuple>
+#include <vector>
+
+/// A function object that closes a `FILE *`.
+struct FileDeleter
+{
+    void operator()(FILE *stream) const;
+};
+
+/// Represents a `FILE *` with a deleter attached.
+typedef std::unique_ptr<FILE, FileDeleter> File;
 
 template<typename P, typename C>
 void write_basis(std::ostream &stream,

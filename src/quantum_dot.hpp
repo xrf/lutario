@@ -3,6 +3,8 @@
 #include <iosfwd>
 #include <tuple>
 #include <vector>
+#include "basis.hpp"
+#include "oper.hpp"
 
 namespace quantum_dot {
 
@@ -72,6 +74,31 @@ Basis get_basis(unsigned num_occupied_shells, unsigned num_unoccupied_shells);
 
 /// Write a `Basis` to a stream.
 std::ostream &operator<<(std::ostream &, const Basis &);
+
+// The "Simple" matrix element table format
+// https://github.com/xrf/clh2-openfci/blob/master/clh2of-simple-format.md
+struct Entry {
+    uint8_t n1;
+    int8_t ml1;
+    uint8_t n2;
+    int8_t ml2;
+    uint8_t n3;
+    int8_t ml3;
+    uint8_t n4;
+    int8_t ml4;
+    double value;
+};
+
+void init_harm_osc(
+    const OrbitalTranslationTable<Orbital, Channel> &table,
+    double omega,
+    Oper op_out);
+
+void load_interaction_file(
+    const OrbitalTranslationTable<Orbital, Channel> &table,
+    double omega,
+    const char *filename,
+    Oper op_out);
 
 }
 

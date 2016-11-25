@@ -1,5 +1,7 @@
+#include <math.h>
 #include <ostream>
 #include <tuple>
+#include "commutator.hpp"
 #include "math.hpp"
 #include "quantum_dot.hpp"
 #include "utility.hpp"
@@ -107,6 +109,74 @@ std::ostream &operator<<(std::ostream &stream, const Basis &self)
 {
     write_basis(stream, self);
     return stream;
+}
+
+void init_harm_osc(
+    const OrbitalTranslationTable<Orbital, Channel> &table,
+    double omega,
+    Oper op_out)
+{
+    for (unsigned k = 0; ; ++k) {
+         for (int ml = -(int)k; ml <= (int)k; ml += 2) {
+            unsigned n = (k - (unsigned)abs(ml)) / 2;
+            for (int tms = -1; tms <= 1; tms += 2) {
+                ::Orbital lu;
+                if (!encode_orbital(table, {n, ml, tms}, &lu)) {
+                    return;
+                }
+                op_out(lu, lu) = omega * (k + 1);
+            }
+        }
+    }
+}
+
+void load_interaction_file(
+    const OrbitalTranslationTable<Orbital, Channel> &table,
+    double omega,
+    const char *filename,
+    Oper op_out)
+{
+    File file{fopen(filename, "rb")};
+    size_t num_entries = BUFSIZ / sizeof(Entry);
+    std::vector<Entry> entries(num_entries);
+    Entry *entries_data = entries.data();
+    double sqrt_omega = sqrt(omega);
+    size_t num_read;
+    do {
+        num_read = fread(entries_data, sizeof(*entries_data),
+                         num_entries, file.get());
+        for (size_t i = 0; i < num_read; ++i) {
+            const Entry &entry = entries_data[i];
+            double value = 2 * entry.value * sqrt_omega;
+            for (int tms1 = -1; tms1 <= 1; tms1 += 2) {
+                ::Orbital lu1, lu2, lu3, lu4;
+                if (!encode_orbital(table, {entry.n1, entry.ml1, tms1},
+                                    &lu1)) {
+                    goto done;
+                }
+                if (!encode_orbital(table, {entry.n3, entry.ml3, tms1},
+                                    &lu3)) {
+                    goto done;
+                }
+                for (int tms2 = -1; tms2 <= 1; tms2 += 2) {
+                    if (!encode_orbital(table, {entry.n2, entry.ml2, tms2},
+                                        &lu2)) {
+                        goto done;
+                    }
+                    if (!encode_orbital(table, {entry.n4, entry.ml4, tms2},
+                                        &lu4)) {
+                        goto done;
+                    }
+                    op_out(lu1, lu2, lu3, lu4) = value;
+                    op_out(lu2, lu1, lu4, lu3) = value;
+                    op_out(lu3, lu4, lu1, lu2) = value;
+                    op_out(lu4, lu3, lu2, lu1) = value;
+                }
+            }
+        }
+    } while (num_read == num_entries);
+done:
+    exch_antisymmetrize(op_out);
 }
 
 }

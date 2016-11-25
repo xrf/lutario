@@ -2,6 +2,7 @@ bin/
 doc/api/
 etc/
 out_*
+*.dat
 
 # generic
 .#*
