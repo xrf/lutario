@@ -1,0 +1,7 @@
+CC=gcc
+CXX=g++
+CPPFLAGS=-Wall -g -O2 -DNDEBUG
+CFLAGS=-std=c99
+CXXFLAGS=-std=c++11
+BLAS_LIBS=-lblas
+ODE_LIBS=-lsgode
