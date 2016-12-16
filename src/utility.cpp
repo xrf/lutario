@@ -3,5 +3,7 @@
 
 void FileDeleter::operator()(FILE *stream) const
 {
-    fclose(stream);
+    if (stream != NULL) {
+        fclose(stream);
+    }
 }

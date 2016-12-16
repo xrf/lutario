@@ -1,5 +1,7 @@
 #include <math.h>
 #include <ostream>
+#include <sstream>
+#include <stdexcept>
 #include <tuple>
 #include "commutator.hpp"
 #include "math.hpp"
@@ -137,6 +139,11 @@ void load_interaction_file(
     Oper op_out)
 {
     File file{fopen(filename, "rb")};
+    if (!file) {
+        std::ostringstream s;
+        s << "can't open file: " << filename;
+        throw std::runtime_error(s.str());
+    }
     size_t num_entries = BUFSIZ / sizeof(Entry);
     std::vector<Entry> entries(num_entries);
     Entry *entries_data = entries.data();

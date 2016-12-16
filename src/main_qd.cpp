@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     using quantum_dot::Channel;
 
     if (argc != 4) {
-        fprintf(stderr, "usage: main_qd <num_occ> <num_unocc> <g>\n");
+        fprintf(stderr, "usage: main_qd <num_occ> <num_unocc> <omega>\n");
         fflush(stderr);
         return EXIT_FAILURE;
     }
