@@ -1,8 +1,9 @@
+#undef NDEBUG
 #include <ios>
 #include <fstream>
 #include "irange.hpp"
 
-int main(void)
+int main()
 {
     std::ofstream file{"out_irange_test.txt", std::ios_base::in};
     for (int i : IRange<int>(0, 10)) {

@@ -1,3 +1,4 @@
+#define NDEBUG
 #include <iostream>
 #include "alloc.hpp"
 #include "matrix.hpp"

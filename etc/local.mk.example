@@ -3,5 +3,5 @@ CXX=g++
 CPPFLAGS=-Wall -g -O2 -DNDEBUG
 CFLAGS=-std=c99
 CXXFLAGS=-std=c++11
-BLAS_LIBS=-lblas
+CBLAS_LIBS=-lopenblas
 ODE_LIBS=-lsgode
