@@ -8,3 +8,7 @@ extern crate netlib_src;
 pub mod matrix;
 pub mod parity;
 pub mod utils;
+
+pub use matrix::*;
+pub use parity::*;
+pub use utils::*;
