@@ -1,10 +1,66 @@
-use std::{cmp, fmt, mem, ptr, slice};
+use std::{fmt, mem, ptr, slice};
+use std::cmp::{min, max};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Range};
 use blas;
-use blas::c::{Layout, Transpose};
-use num::{Complex, Zero};
-use utils::{Offset, cast, try_cast};
+use blas::c::{Part, Transpose};
+use lapack;
+use num::{Complex, Num, Zero};
+use utils::{Offset, RangeInclusive, cast, try_cast};
+
+pub mod lamch {
+    //! Defines and re-exports some floating-point constants following the
+    //! LAPACK convention.  Basically, this module contains anything you would
+    //! otherwise obtain using `lamch`.
+
+    pub mod f32 {
+        pub use std::f32::RADIX as BASE;
+        pub use std::f32::MANTISSA_DIGITS as T;
+        pub use std::f32::EPSILON as PREC;
+        pub use std::f32::MIN_POSITIVE as RMIN;
+        pub use std::f32::MAX as RMAX;
+        pub use std::f32::MIN_EXP as EMIN;
+        pub use std::f32::MAX_EXP as EMAX;
+
+        /// Relative machine epsilon according to the LAPACK convention.
+        /// Equal to half of `std::*::EPSILON`.
+        pub const EPS: f32 = PREC / (BASE as f32);
+
+        /// Whether proper rounding (`true`) or chopping (`false`) occurs in
+        /// addition.
+        pub const RND: bool = true;
+
+        /// Safe minimum such that `1.0 / SFMIN` does not overflow.
+        pub const SFMIN: f32 =
+        // workaround because Rust doesn't support if-else in const-expressions
+            (1.0 / RMAX >= RMIN) as i32 as f32 * (1.0 / RMAX * (1.0 + EPS)) +
+            (1.0 / RMAX < RMIN) as i32 as f32 * RMIN;
+    }
+
+    pub mod f64 {
+        pub use std::f64::RADIX as BASE;
+        pub use std::f64::MANTISSA_DIGITS as T;
+        pub use std::f64::EPSILON as PREC;
+        pub use std::f64::MIN_POSITIVE as RMIN;
+        pub use std::f64::MAX as RMAX;
+        pub use std::f64::MIN_EXP as EMIN;
+        pub use std::f64::MAX_EXP as EMAX;
+
+        /// Relative machine epsilon according to the LAPACK convention.
+        /// Equal to half of `std::*::EPSILON`.
+        pub const EPS: f64 = PREC / (BASE as f64);
+
+        /// Whether proper rounding (`true`) or chopping (`false`) occurs in
+        /// addition.
+        pub const RND: bool = true;
+
+        /// Safe minimum such that `1.0 / SFMIN` does not overflow.
+        pub const SFMIN: f64 =
+        // workaround because Rust doesn't support if-else in const-expressions
+            (1.0 / RMAX >= RMIN) as i32 as f64 * (1.0 / RMAX * (1.0 + EPS)) +
+            (1.0 / RMAX < RMIN) as i32 as f64 * RMIN;
+    }
+}
 
 pub trait AsMat {
     type Elem;
@@ -30,11 +86,11 @@ pub trait AsMat {
         (self.shape().nrows(), self.shape().ncols())
     }
 
-    fn transpose_dims(&self, trans: Transpose) -> (usize, usize) {
-        if trans == Transpose::None {
-            self.dims()
-        } else {
+    fn transpose_dims_if(&self, condition: bool) -> (usize, usize) {
+        if condition {
             (self.ncols(), self.nrows())
+        } else {
+            self.dims()
         }
     }
 
@@ -128,6 +184,12 @@ pub trait IntoMat<'a>: Sized + AsMat
                                         Mat<'a, Self::Elem>) {
         Mat::split_at_col(self.into_mat(), j)
     }
+
+    /// Unsafe because the slice includes padding elements as well.
+    unsafe fn to_slice(self) -> &'a [Self::Elem] {
+        let m = self.into_mat();
+        slice::from_raw_parts(m.as_ptr(), m.raw_len())
+    }
 }
 
 impl<'a, T: AsMat> IntoMat<'a> for &'a T {
@@ -188,6 +250,12 @@ pub trait IntoMatMut<'a>: IntoMat<'a>
     fn split_at_col_mut(self, j: usize) -> (MatMut<'a, Self::Elem>,
                                             MatMut<'a, Self::Elem>) {
         MatMut::split_at_col_mut(self.into_mat_mut(), j)
+    }
+
+    /// Unsafe because the slice includes padding elements as well.
+    unsafe fn to_slice_mut(self) -> &'a mut [Self::Elem] {
+        let mut m = self.into_mat_mut();
+        slice::from_raw_parts_mut(m.as_mut_ptr(), m.raw_len())
     }
 }
 
@@ -362,17 +430,17 @@ impl<'a, T> Mat<'a, T> {
     fn slice(self, is: Range<usize>, js: Range<usize>) -> Self {
         unsafe {
             let shape = self.shape()
-                .modify_nrows_unchecked(cmp::min(is.end, self.nrows())
-                                      - cmp::min(is.start, self.nrows()))
-                .modify_ncols_unchecked(cmp::min(js.end, self.ncols())
-                                      - cmp::min(js.start, self.ncols()));
+                .modify_nrows_unchecked(min(is.end, self.nrows())
+                                      - min(is.start, self.nrows()))
+                .modify_ncols_unchecked(min(js.end, self.ncols())
+                                      - min(js.start, self.ncols()));
             let ptr = self.offset_unchecked(is.start, js.start);
             Self::from_raw(ptr, shape)
         }
     }
 
     fn split_at_row(self, i: usize) -> (Self, Self) {
-        let i = cmp::min(i, self.nrows());
+        let i = min(i, self.nrows());
         unsafe {
             let ptr = self.offset_unchecked(i, 0);
             (
@@ -389,7 +457,7 @@ impl<'a, T> Mat<'a, T> {
     }
 
     fn split_at_col(self, j: usize) -> (Self, Self) {
-        let j = cmp::min(j, self.ncols());
+        let j = min(j, self.ncols());
         unsafe {
             let ptr = self.offset_unchecked(0, j);
             (
@@ -473,17 +541,17 @@ impl<'a, T> MatMut<'a, T> {
     fn slice_mut(mut self, is: Range<usize>, js: Range<usize>) -> Self {
         unsafe {
             let shape = self.shape()
-                .modify_nrows_unchecked(cmp::min(is.end, self.nrows())
-                                      - cmp::min(is.start, self.nrows()))
-                .modify_ncols_unchecked(cmp::min(js.end, self.ncols())
-                                      - cmp::min(js.start, self.ncols()));
+                .modify_nrows_unchecked(min(is.end, self.nrows())
+                                      - min(is.start, self.nrows()))
+                .modify_ncols_unchecked(min(js.end, self.ncols())
+                                      - min(js.start, self.ncols()));
             let ptr = self.offset_unchecked_mut(is.start, js.start);
             Self::from_raw(ptr, shape)
         }
     }
 
     fn split_at_row_mut(mut self, i: usize) -> (Self, Self) {
-        let i = cmp::min(i, self.nrows());
+        let i = min(i, self.nrows());
         unsafe {
             let ptr = self.offset_unchecked_mut(i, 0);
             (
@@ -500,7 +568,7 @@ impl<'a, T> MatMut<'a, T> {
     }
 
     fn split_at_col_mut(mut self, j: usize) -> (Self, Self) {
-        let j = cmp::min(j, self.ncols());
+        let j = min(j, self.ncols());
         unsafe {
             let ptr = self.offset_unchecked_mut(0, j);
             (
@@ -782,21 +850,53 @@ impl<T> AsMatMut for Matrix<T> {
     }
 }
 
-pub trait Blas: Copy {
-    unsafe fn unsafe_gemm(layout: Layout,
-                          transa: Transpose,
-                          transb: Transpose,
-                          m: i32,
-                          n: i32,
-                          k: i32,
-                          alpha: Self,
-                          a: &[Self],
-                          lda: i32,
-                          b: &[Self],
-                          ldb: i32,
-                          beta: Self,
-                          c: &mut [Self],
-                          ldc: i32);
+pub trait NormSqr {
+    type Real: PartialOrd;
+
+    fn norm_sqr(&self) -> Self::Real;
+}
+
+impl NormSqr for f32 {
+    type Real = Self;
+
+    fn norm_sqr(&self) -> Self::Real {
+        f32::abs(*self)
+    }
+}
+
+impl NormSqr for f64 {
+    type Real = Self;
+
+    fn norm_sqr(&self) -> Self::Real {
+        f64::abs(*self)
+    }
+}
+
+impl<T: Num + PartialOrd + Clone> NormSqr for Complex<T> {
+    type Real = T;
+
+    fn norm_sqr(&self) -> Self::Real {
+        Complex::norm_sqr(self)
+    }
+}
+
+pub trait Gemm: Copy {
+    unsafe fn unsafe_gemm(
+        layout: blas::c::Layout,
+        transa: Transpose,
+        transb: Transpose,
+        m: i32,
+        n: i32,
+        k: i32,
+        alpha: Self,
+        a: &[Self],
+        lda: i32,
+        b: &[Self],
+        ldb: i32,
+        beta: Self,
+        c: &mut [Self],
+        ldc: i32,
+    );
 
     /// A thin wrapper over `unsafe_gemm` that panics if the buffers are too
     /// small or if the sizes don't match.  We omit `Layout` because it can be
@@ -807,9 +907,9 @@ pub trait Blas: Copy {
             a: Mat<Self>,
             b: Mat<Self>,
             beta: Self,
-            mut c: MatMut<Self>) {
-        let (ma, ka) = a.transpose_dims(transa);
-        let (kb, nb) = b.transpose_dims(transb);
+            c: MatMut<Self>) {
+        let (ma, ka) = a.transpose_dims_if(transa != Transpose::None);
+        let (kb, nb) = b.transpose_dims_if(transb != Transpose::None);
         let (mc, nc) = c.dims();
         assert_eq!(ma, mc);
         assert_eq!(nb, nc);
@@ -820,27 +920,27 @@ pub trait Blas: Copy {
         // FIXME: handle integer overflow for very large matrices
         unsafe {
             Self::unsafe_gemm(
-                Layout::RowMajor,
+                blas::c::Layout::RowMajor,
                 transa,
                 transb,
                 cast(ma),
                 cast(nb),
                 cast(ka),
                 alpha,
-                slice::from_raw_parts(a.as_ptr(), a.raw_len()),
+                a.to_slice(),
                 lda,
-                slice::from_raw_parts(b.as_ptr(), b.raw_len()),
+                b.to_slice(),
                 ldb,
                 beta,
-                slice::from_raw_parts_mut(c.as_mut_ptr(), c.raw_len()),
+                c.to_slice_mut(),
                 ldc,
             );
         }
     }
 }
 
-impl Blas for f32 {
-    unsafe fn unsafe_gemm(layout: Layout,
+impl Gemm for f32 {
+    unsafe fn unsafe_gemm(layout: blas::c::Layout,
                           transa: Transpose,
                           transb: Transpose,
                           m: i32,
@@ -855,12 +955,12 @@ impl Blas for f32 {
                           c: &mut [Self],
                           ldc: i32) {
         blas::c::sgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc);
+                       alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
-impl Blas for f64 {
-    unsafe fn unsafe_gemm(layout: Layout,
+impl Gemm for f64 {
+    unsafe fn unsafe_gemm(layout: blas::c::Layout,
                           transa: Transpose,
                           transb: Transpose,
                           m: i32,
@@ -875,12 +975,12 @@ impl Blas for f64 {
                           c: &mut [Self],
                           ldc: i32) {
         blas::c::dgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc);
+                       alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
-impl Blas for Complex<f32> {
-    unsafe fn unsafe_gemm(layout: Layout,
+impl Gemm for Complex<f32> {
+    unsafe fn unsafe_gemm(layout: blas::c::Layout,
                           transa: Transpose,
                           transb: Transpose,
                           m: i32,
@@ -895,12 +995,12 @@ impl Blas for Complex<f32> {
                           c: &mut [Self],
                           ldc: i32) {
         blas::c::cgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc);
+                       alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
-impl Blas for Complex<f64> {
-    unsafe fn unsafe_gemm(layout: Layout,
+impl Gemm for Complex<f64> {
+    unsafe fn unsafe_gemm(layout: blas::c::Layout,
                           transa: Transpose,
                           transb: Transpose,
                           m: i32,
@@ -915,7 +1015,376 @@ impl Blas for Complex<f64> {
                           c: &mut [Self],
                           ldc: i32) {
         blas::c::zgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc);
+                       alpha, a, lda, b, ldb, beta, c, ldc)
+    }
+}
+
+/// Desired range of eigenvalues.
+#[derive(Clone, Debug)]
+pub enum EigenvalueRange<T> {
+    All,
+    /// Half-open range of desired eigenvalues.
+    Values(Range<T>),
+    /// 1-indexed indices of the desired eigenvalues in ascending order.
+    Indices(RangeInclusive<i32>),
+}
+
+impl<T> Default for EigenvalueRange<T> {
+    fn default() -> Self {
+        EigenvalueRange::All
+    }
+}
+
+impl<T: PartialOrd> EigenvalueRange<T> {
+    pub fn to_raw(
+        self,
+        n: i32,
+        vl: &mut T,
+        vu: &mut T,
+        il: &mut i32,
+        iu: &mut i32,
+    ) -> (u8, bool, i32) {
+        match self {
+            EigenvalueRange::All => (b'A', true, n),
+            EigenvalueRange::Values(Range { start, end }) => {
+                assert!(start < end);
+                *vl = start;
+                *vu = end;
+                (b'V', false, n)
+            }
+            EigenvalueRange::Indices(RangeInclusive { start, end }) => {
+                assert!(1 <= start);
+                assert!(start <= end);
+                assert!(end <= n);
+                *il = start;
+                *iu = end;
+                let max_m = end - start + 1;
+                (b'I', max_m == n, max_m)
+            }
+        }
+    }
+}
+
+pub fn part_to_u8(part: Part) -> u8 {
+    match part {
+        Part::Upper => b'U',
+        Part::Lower => b'L',
+    }
+}
+
+pub trait Heevr: NormSqr + Copy {
+    unsafe fn unsafe_heevr(
+        layout: lapack::c::Layout,
+        jobz: u8,
+        range: u8,
+        uplo: u8,
+        n: i32,
+        a: &mut [Self],
+        lda: i32,
+        vl: Self::Real,
+        vu: Self::Real,
+        il: i32,
+        iu: i32,
+        abstol: Self::Real,
+        m: &mut i32,
+        w: &mut [Self::Real],
+        z: &mut [Self],
+        ldz: i32,
+        isuppz: &mut [i32],
+    ) -> i32;
+
+    /// If `left` is true, calculate left eigenvectors stored as rows;
+    /// otherwise, calculate right eigenvectors stored as columns.
+    fn heevr(
+        left: bool,
+        range: EigenvalueRange<Self::Real>,
+        uplo: Part,
+        a: MatMut<Self>,
+        abstol: Self::Real,
+        w: &mut [Self::Real],
+        z: MatMut<Self>,
+        isuppz: &mut [i32],
+    ) -> Result<usize, i32> {
+        unsafe {
+            let n = a.nrows();
+            assert_eq!(n, a.ncols());
+            let lda = cast(a.stride());
+            let ldz = cast(z.stride());
+            let mut vl = mem::uninitialized();
+            let mut vu = mem::uninitialized();
+            let mut il = mem::uninitialized();
+            let mut iu = mem::uninitialized();
+            let (range, all, max_m) = range.to_raw(
+                cast(n),
+                &mut vl,
+                &mut vu,
+                &mut il,
+                &mut iu,
+            );
+            let max_m = max_m as usize;
+            assert!(w.len() >= max(1, n));
+            let (nz, mz) = z.transpose_dims_if(left);
+            assert!(nz >= n);
+            assert!(mz >= max_m);
+            if all {
+                assert!(isuppz.len() >= 2 * max(1, n));
+            }
+            let mut m = mem::uninitialized();
+            let e = Self::unsafe_heevr(
+                if left {
+                    lapack::c::Layout::ColumnMajor
+                } else {
+                    lapack::c::Layout::RowMajor
+                },
+                b'V',
+                range,
+                part_to_u8(uplo),
+                cast(n),
+                a.to_slice_mut(),
+                lda,
+                vl,
+                vu,
+                il,
+                iu,
+                abstol,
+                &mut m,
+                w,
+                z.to_slice_mut(),
+                ldz,
+                isuppz,
+            );
+            if e == 0 {
+                Ok(cast(m))
+            } else {
+                Err(e)
+            }
+        }
+    }
+
+    /// If `left` is true, calculate left eigenvalues;
+    /// otherwise, calculate right eigenvalues
+    fn heevr_n(
+        left: bool,
+        range: EigenvalueRange<Self::Real>,
+        uplo: Part,
+        a: MatMut<Self>,
+        abstol: Self::Real,
+        w: &mut [Self::Real],
+    ) -> Result<usize, i32> {
+        unsafe {
+            let n = a.nrows();
+            assert_eq!(n, a.ncols());
+            let lda = cast(a.stride());
+            let mut vl = mem::uninitialized();
+            let mut vu = mem::uninitialized();
+            let mut il = mem::uninitialized();
+            let mut iu = mem::uninitialized();
+            let (range, _, _) = range.to_raw(
+                cast(n),
+                &mut vl,
+                &mut vu,
+                &mut il,
+                &mut iu,
+            );
+            assert!(w.len() >= max(1, n));
+            let mut m = mem::uninitialized();
+            let e = Self::unsafe_heevr(
+                if left {
+                    lapack::c::Layout::ColumnMajor
+                } else {
+                    lapack::c::Layout::RowMajor
+                },
+                b'N',
+                range,
+                part_to_u8(uplo),
+                cast(n),
+                a.to_slice_mut(),
+                lda,
+                vl,
+                vu,
+                il,
+                iu,
+                abstol,
+                &mut m,
+                w,
+                &mut [],
+                1,
+                &mut [],
+            );
+            if e == 0 {
+                Ok(cast(m))
+            } else {
+                Err(e)
+            }
+        }
+    }
+}
+
+impl Heevr for f32 {
+    unsafe fn unsafe_heevr(
+        layout: lapack::c::Layout,
+        jobz: u8,
+        range: u8,
+        uplo: u8,
+        n: i32,
+        a: &mut [Self],
+        lda: i32,
+        vl: Self::Real,
+        vu: Self::Real,
+        il: i32,
+        iu: i32,
+        abstol: Self::Real,
+        m: &mut i32,
+        w: &mut [Self::Real],
+        z: &mut [Self],
+        ldz: i32,
+        isuppz: &mut [i32],
+    ) -> i32 {
+        lapack::c::ssyevr(
+            layout,
+            jobz,
+            range,
+            uplo,
+            n,
+            a,
+            lda,
+            vl,
+            vu,
+            il,
+            iu,
+            abstol,
+            m,
+            w,
+            z,
+            ldz,
+            isuppz,
+        )
+    }
+}
+
+impl Heevr for f64 {
+    unsafe fn unsafe_heevr(
+        layout: lapack::c::Layout,
+        jobz: u8,
+        range: u8,
+        uplo: u8,
+        n: i32,
+        a: &mut [Self],
+        lda: i32,
+        vl: Self::Real,
+        vu: Self::Real,
+        il: i32,
+        iu: i32,
+        abstol: Self::Real,
+        m: &mut i32,
+        w: &mut [Self::Real],
+        z: &mut [Self],
+        ldz: i32,
+        isuppz: &mut [i32],
+    ) -> i32 {
+        lapack::c::dsyevr(
+            layout,
+            jobz,
+            range,
+            uplo,
+            n,
+            a,
+            lda,
+            vl,
+            vu,
+            il,
+            iu,
+            abstol,
+            m,
+            w,
+            z,
+            ldz,
+            isuppz,
+        )
+    }
+}
+
+impl Heevr for Complex<f32> {
+    unsafe fn unsafe_heevr(
+        layout: lapack::c::Layout,
+        jobz: u8,
+        range: u8,
+        uplo: u8,
+        n: i32,
+        a: &mut [Self],
+        lda: i32,
+        vl: Self::Real,
+        vu: Self::Real,
+        il: i32,
+        iu: i32,
+        abstol: Self::Real,
+        m: &mut i32,
+        w: &mut [Self::Real],
+        z: &mut [Self],
+        ldz: i32,
+        isuppz: &mut [i32],
+    ) -> i32 {
+        lapack::c::cheevr(
+            layout,
+            jobz,
+            range,
+            uplo,
+            n,
+            a,
+            lda,
+            vl,
+            vu,
+            il,
+            iu,
+            abstol,
+            m,
+            w,
+            z,
+            ldz,
+            isuppz,
+        )
+    }
+}
+
+impl Heevr for Complex<f64> {
+    unsafe fn unsafe_heevr(
+        layout: lapack::c::Layout,
+        jobz: u8,
+        range: u8,
+        uplo: u8,
+        n: i32,
+        a: &mut [Self],
+        lda: i32,
+        vl: Self::Real,
+        vu: Self::Real,
+        il: i32,
+        iu: i32,
+        abstol: Self::Real,
+        m: &mut i32,
+        w: &mut [Self::Real],
+        z: &mut [Self],
+        ldz: i32,
+        isuppz: &mut [i32],
+    ) -> i32 {
+        lapack::c::zheevr(
+            layout,
+            jobz,
+            range,
+            uplo,
+            n,
+            a,
+            lda,
+            vl,
+            vu,
+            il,
+            iu,
+            abstol,
+            m,
+            w,
+            z,
+            ldz,
+            isuppz,
+        )
     }
 }
 

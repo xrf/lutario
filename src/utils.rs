@@ -26,6 +26,13 @@ impl<T> Offset for *mut T {
     }
 }
 
+/// Temporary definition until `std::ops::RangeInclusive` is stabilized.
+#[derive(Clone, Debug)]
+pub struct RangeInclusive<Idx> {
+    pub start: Idx,
+    pub end: Idx,
+}
+
 /// Shorthand for casting numbers.  Panics if out of range.
 pub fn cast<T: ValueInto<U>, U>(x: T) -> U {
     try_cast(x).expect("integer conversion failure")
