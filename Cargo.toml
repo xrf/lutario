@@ -1,0 +1,29 @@
+[package]
+name = "lutario"
+version = "0.1.0"
+authors = ["Fei Yuan <yuan@nscl.msu.edu>"]
+
+[features]
+default = ["libblas"]
+libblas = ["netlib-src"]
+accelerate = ["blas/accelerate", "lapack/accelerate"]
+openblas = ["blas/openblas", "lapack/openblas"]
+
+[dependencies]
+conv = "0.3.3"
+num = "0.1.40"
+
+[dependencies.blas]
+version = "0.17.0"
+default-features = false
+
+[dependencies.lapack]
+version = "0.13.1"
+default-features = false
+
+# despite the name this is not actually Netlib BLAS because we enabled "system"
+[dependencies.netlib-src]
+version = "0.7.0"
+optional = true
+default-features = false
+features = ["system"]
