@@ -10,8 +10,11 @@ accelerate = ["blas/accelerate", "lapack/accelerate"]
 openblas = ["blas/openblas", "lapack/openblas"]
 
 [dependencies]
+any_key = "0.1.0"
 conv = "0.3.3"
 num = "0.1.40"
+stable_deref_trait = "1.0.0"
+take_mut = "0.2.0"
 
 [dependencies.blas]
 version = "0.17.0"
