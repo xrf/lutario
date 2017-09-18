@@ -1,0 +1,14 @@
+language: rust
+sudo: false
+matrix:
+  include:
+  - rust: stable
+addons:
+  apt:
+    packages:
+    - libblas-dev
+    - libgfortran-4.8-dev
+    - liblapack-dev
+script:
+- cargo build --verbose
+- cargo test --verbose
