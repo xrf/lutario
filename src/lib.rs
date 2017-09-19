@@ -1,6 +1,7 @@
 extern crate any_key;
 extern crate blas;
 extern crate conv;
+extern crate debugit;
 extern crate num;
 extern crate lapack;
 #[allow(unused_extern_crates)]
@@ -21,11 +22,16 @@ pub use btree_cache::*;
 pub mod cache;
 pub use cache::*;
 
+pub mod half;
+pub use half::*;
+
 pub mod linalg;
 pub use linalg::*;
 
 pub mod matrix;
 pub use matrix::*;
+
+pub mod nuclei;
 
 pub mod parity;
 pub use parity::*;

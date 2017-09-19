@@ -1,7 +1,4 @@
-use std::mem;
-use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::rc::Rc;
 use super::btree_cache::BTreeCache;
 use super::block_matrix::{BlockMat, BlockMatMut};
 use super::matrix::MatShape;
@@ -146,6 +143,6 @@ impl<'a, T> Op<'a, T> {
 }
 
 pub struct OpMut<'a, T: 'a> {
-    block_mat: BlockMatMut<'a, T>,
-    info: OpInfo<'a>,
+    pub block_mat: BlockMatMut<'a, T>,
+    pub info: OpInfo<'a>,
 }
