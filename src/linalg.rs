@@ -1,6 +1,6 @@
 use std::mem;
 use std::cmp::max;
-use std::ops::Range;
+use std::ops::{Neg, Range};
 use blas;
 use lapack;
 use num::{Complex, Num};
@@ -63,6 +63,77 @@ pub mod lamch {
     }
 }
 
+pub trait Conj {
+    fn conj(&self) -> Self;
+}
+
+impl Conj for f32 {
+    fn conj(&self) -> Self {
+        *self
+    }
+}
+
+impl Conj for f64 {
+    fn conj(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Clone + Num + Neg<Output = T>> Conj for Complex<T> {
+    fn conj(&self) -> Self {
+        self.conj()
+    }
+}
+
+pub trait NormSqr {
+    type Real: PartialOrd;
+
+    fn norm_sqr(&self) -> Self::Real;
+}
+
+impl NormSqr for f32 {
+    type Real = Self;
+
+    fn norm_sqr(&self) -> Self::Real {
+        f32::abs(*self)
+    }
+}
+
+impl NormSqr for f64 {
+    type Real = Self;
+
+    fn norm_sqr(&self) -> Self::Real {
+        f64::abs(*self)
+    }
+}
+
+impl<T: Num + PartialOrd + Clone> NormSqr for Complex<T> {
+    type Real = T;
+
+    fn norm_sqr(&self) -> Self::Real {
+        Complex::norm_sqr(self)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct AdjSym {
+    conjugate: bool,
+    negate: bool,
+}
+
+impl AdjSym {
+    pub fn apply<T: Conj + Neg<Output = T>>(self, mut x: T) -> T {
+        x = if self.conjugate { x.conj() } else { x };
+        x = if self.negate { -x } else { x };
+        x
+    }
+}
+
+pub const HERMITIAN: AdjSym = AdjSym { conjugate: true, negate: false };
+pub const ANTIHERMITIAN: AdjSym = AdjSym { conjugate: true, negate: true };
+pub const SYMMETRIC: AdjSym = AdjSym { conjugate: false, negate: false };
+pub const ANTISYMMETRIC: AdjSym = AdjSym { conjugate: false, negate: true };
+
 /// Desired range of eigenvalues.
 #[derive(Clone, Debug)]
 pub enum EigenvalueRange<T> {
@@ -113,36 +184,6 @@ pub fn part_to_u8(part: Part) -> u8 {
     match part {
         Part::Upper => b'U',
         Part::Lower => b'L',
-    }
-}
-
-pub trait NormSqr {
-    type Real: PartialOrd;
-
-    fn norm_sqr(&self) -> Self::Real;
-}
-
-impl NormSqr for f32 {
-    type Real = Self;
-
-    fn norm_sqr(&self) -> Self::Real {
-        f32::abs(*self)
-    }
-}
-
-impl NormSqr for f64 {
-    type Real = Self;
-
-    fn norm_sqr(&self) -> Self::Real {
-        f64::abs(*self)
-    }
-}
-
-impl<T: Num + PartialOrd + Clone> NormSqr for Complex<T> {
-    type Real = T;
-
-    fn norm_sqr(&self) -> Self::Real {
-        Complex::norm_sqr(self)
     }
 }
 

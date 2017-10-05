@@ -1,4 +1,6 @@
-use std::{cmp, fmt, mem};
+use std::{ascii, cmp, fmt, mem, ptr};
+use std::collections::{BTreeMap, HashMap};
+use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
 use num::{One, ToPrimitive, Zero};
 use take_mut;
@@ -84,6 +86,16 @@ impl<A> Iterator for RangeInclusive<A>
     }
 }
 
+pub fn intersect_range_inclusive<Idx: Ord>(
+    range1: RangeInclusive<Idx>,
+    range2: RangeInclusive<Idx>,
+) -> RangeInclusive<Idx> {
+    RangeInclusive {
+        start: cmp::max(range1.start, range2.start),
+        end: cmp::min(range1.end, range2.end),
+    }
+}
+
 pub fn swap<T>((x, y): (T, T)) -> (T, T) {
     (y, x)
 }
@@ -95,6 +107,15 @@ pub fn swap_if<T>(cond: bool, val: (T, T)) -> (T, T) {
         val
     }
 }
+
+pub fn with_tuple2_ref<A, B, F, R>(a: &A, b: &B, f: F) -> R
+    where F: FnOnce(&(A, B)) -> R
+{
+    unsafe {
+        f(&mem::ManuallyDrop::new((ptr::read(a), ptr::read(b))))
+    }
+}
+
 
 /// Shorthand for casting numbers.  Panics if out of range.
 pub fn cast<T: ValueInto<U>, U>(x: T) -> U {
@@ -140,5 +161,77 @@ pub fn chop_slice_mut<'a, T>(
         }))
     } else {
         None
+    }
+}
+
+/// Works just like `HashMap::default()` but avoids unnecessary bounds on `K`.
+pub fn default_hash_map<K, V, S: BuildHasher + Default>() -> HashMap<K, V, S> {
+    // very sketchy! (assuming Default
+    let m = HashMap::<(), (), S>::default();
+    let r = unsafe { mem::transmute_copy(&m) };
+    assert_eq!(mem::size_of_val(&m), mem::size_of_val(&r));
+    mem::forget(m);
+    r
+}
+
+pub fn pretty_bytes(bytes: &[u8]) -> String {
+    bytes.iter()
+        .cloned()
+        .flat_map(ascii::escape_default)
+        .map(|c| c as char)
+        .collect()
+}
+
+pub trait Map<K: ?Sized> {
+    type Value;
+    fn get(&self, key: &K) -> Option<Self::Value>;
+}
+
+impl<K, V, F: Fn(&K) -> Option<V>> Map<K> for F {
+    type Value = V;
+    fn get(&self, key: &K) -> Option<Self::Value> {
+        self(key)
+    }
+}
+
+impl<V: Clone> Map<usize> for Vec<V> {
+    type Value = V;
+    fn get(&self, key: &usize) -> Option<Self::Value> {
+        (**self).get(*key).cloned()
+    }
+}
+
+impl<V: Clone> Map<usize> for Box<[V]> {
+    type Value = V;
+    fn get(&self, key: &usize) -> Option<Self::Value> {
+        (**self).get(*key).cloned()
+    }
+}
+
+impl<K: Ord, V: Clone> Map<K> for BTreeMap<K, V> {
+    type Value = V;
+    fn get(&self, key: &K) -> Option<Self::Value> {
+        self.get(key).cloned()
+    }
+}
+
+impl<K: Eq + Hash, V: Clone, S: BuildHasher> Map<K> for HashMap<K, V, S> {
+    type Value = V;
+    fn get(&self, key: &K) -> Option<Self::Value> {
+        self.get(key).cloned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::hash_map;
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let mut m: HashMap<_, _, hash_map::RandomState> = default_hash_map();
+        m.insert(42, ":3");
+        assert_eq!(m.get(&42), Some(&":3"));
+        assert_eq!(m.get(&0), None);
     }
 }
