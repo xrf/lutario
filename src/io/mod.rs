@@ -1,3 +1,4 @@
+//! Input and output utility.
 use std::{io, str};
 use std::fs::File;
 use std::marker::PhantomData;

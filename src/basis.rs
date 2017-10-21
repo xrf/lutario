@@ -26,11 +26,8 @@
 //!
 //!   - `l` = channel (in text, `λ` is sometimes used)
 //!   - `u` = auxiliary
-//!   - `x` = part (suggestive for "eXcitation")
+//!   - `x` = part ("eXcitation" / unoccupancy)
 //!   - `p` = state, isomorphic to `(l, u)`
-//!   - `nx` = `num_parts`
-//!   - `npl` = `num_states_in_channel`
-//!   - `nplx` = `num_states_in_channel_part`
 //!
 //! These letters could refer to either indices or the concrete objects.  When
 //! there is ambiguity, indicial variables are prefixed with `i`.
@@ -42,13 +39,12 @@
 use std::fmt;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::ops::{Range, Sub};
+use std::ops::{Sub};
 use std::sync::Arc;
 use fnv::FnvHashMap;
 use num::Zero;
-use super::half::Half;
+use super::block_matrix::{BlockMat, BlockMatMut};
 use super::matrix::{Mat, MatShape};
-use super::tri_matrix::TriMatrix;
 use super::utils;
 
 /// An Abelian group.
@@ -134,10 +130,10 @@ impl<T: Hash + Eq + Clone> HashChart<T> {
 #[derive(Clone, Debug, Default)]
 pub struct BasisLayout {
     pub num_parts: usize,
-    /// `part_offsets[l * nx + x - 1] == ∑[x' < x] nplx(l, x')
-    /// where l < nl && x > 0 && x ≤ nx`
+    /// `part_offsets[l * num_parts + x - 1] == ∑[x' < x] num_states_l_x(l, x')
+    /// where l < nl && x > 0 && x ≤ num_parts`
     pub part_offsets: Vec<usize>,
-    /// `chan_offsets[l] == ∑[l' < l] npl(l')
+    /// `chan_offsets[l] == ∑[l' < l] num_states_l(l')
     /// where l ≤ nl`
     pub chan_offsets: Vec<usize>,
 }
@@ -418,147 +414,147 @@ impl<'a, L, X1, X2, U1, U2> MatChart<'a, L, X1, X2, U1, U2>
     }
 }
 
+/// Orbital index.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Orb(pub u32);
 
-// pub trait Basis {
-//     type Chan;
-//     fn decode_chan(index: usize) -> Self::Chan;
-// }
-
-pub struct ChanIndex<'a, B: 'a> {
-    pub basis: &'a B,
-    pub index: usize,
+/// Channelized state index.
+#[derive(Clone, Copy, Debug)]
+pub struct ChanState {
+    /// Channel index
+    pub l: u32,
+    /// Auxiliary index
+    pub u: u32,
 }
 
-pub struct ChanIndexRange<'a, B: 'a> {
-    pub basis: &'a B,
-    pub start: usize,
-    pub end: usize,
-}
-
-impl<'a, B> Iterator for ChanIndexRange<'a, B> {
-    type Item = ChanIndex<'a, B>;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.start < self.end {
-            let r = Self::Item {
-                basis: self.basis,
-                index: self.start,
-            };
-            self.start += 1;
-            Some(r)
-        } else {
-            None
-        }
-    }
-}
-
-pub struct JChan {
-    /// angular momentum magnitude
-    pub j: Half<i32>,
-    /// remaining system-dependent value
-    pub k: u32,
-}
-
-pub struct AbelianTable {
-    /// triangular matrix
-    pub table: TriMatrix<u32>,
-}
-
-impl AbelianTable {
-    pub fn add(&self, x: u32, y: u32) -> Option<u32> {
-        self.table.as_ref().get(x as _, y as _).cloned()
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Excit10 {
+/// Occupancy of a state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Occ {
+    /// Occupied ("hole") state
     I,
+    /// Unoccupied ("particle") state
     A,
 }
 
-impl Excit10 {
-    pub fn to_usize(self) -> usize {
-        match self {
-            Excit10::I => 0,
-            Excit10::A => 1,
+impl From<Occ> for usize {
+    fn from(x: Occ) -> Self {
+        use self::Occ::*;
+        match x {
+            I => 0,
+            A => 1,
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Excit20 {
+pub mod occ {
+    //! Convenient aliases for occupancies.
+    use super::Occ;
+
+    pub use super::Occ::I;
+    pub use super::Occ::A;
+    pub const II: [Occ; 2] = [Occ::I, Occ::I];
+    pub const AI: [Occ; 2] = [Occ::A, Occ::I];
+    pub const IA: [Occ; 2] = [Occ::I, Occ::A];
+    pub const AA: [Occ; 2] = [Occ::A, Occ::A];
+}
+
+/// Occupancy of antisymmetrized two-particle states.
+#[derive(Clone, Copy, Debug)]
+pub enum Occ20 {
     II,
     AI,
     AA,
 }
 
-impl Excit20 {
-    pub fn to_usize(self) -> usize {
-        match self {
-            Excit20::II => 0,
-            Excit20::AI => 1,
-            Excit20::AA => 2,
+impl Occ20 {
+    pub fn from_usize(x: usize) -> Option<Self> {
+        use self::Occ20::*;
+        match x {
+            0 => Some(II),
+            1 => Some(AI),
+            2 => Some(AA),
+            _ => None,
+        }
+    }
+
+    pub fn step(self) -> Option<Self> {
+        Self::from_usize(usize::from(self) + 1)
+    }
+}
+
+impl From<Occ20> for usize {
+    fn from(x: Occ20) -> Self {
+        use self::Occ20::*;
+        match x {
+            II => 0,
+            AI => 1,
+            AA => 2,
         }
     }
 }
 
-pub struct BasisJ10 {
-    pub chans: Vec<JChan>,
-    // s1 -> (l1, u1)
-    pub encoder: Vec<(u32, u32)>,
-    // l1 -> u1
-    pub excit_threshold: Vec<u32>,
+pub trait IndexBlockVec {
+    type Elem;
+    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem;
 }
 
-impl BasisJ10 {
-    // pub fn new(states: &mut Iterator<Item = (JChan, >) {
+pub trait IndexBlockVecMut: IndexBlockVec {
+    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem;
+}
 
-    // }
-
-    pub fn excit(&self, l: usize, u: usize) -> Excit10 {
-        if u >= self.excit_threshold[l] as _ {
-            Excit10::A
-        } else {
-            Excit10::I
-        }
-    }
-
-    pub fn encode(&self, s: usize) -> (usize, usize) {
-        let (l1, u1) = self.encoder[s];
-        (l1 as _, u1 as _)
+impl<T> IndexBlockVec for Vec<Vec<T>> {
+    type Elem = T;
+    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem {
+        &self[l][u]
     }
 }
 
-pub struct BasisJ20 {
-    pub chans: Vec<JChan>,
-    // l12 -> x12 -> u12
-    pub part_offsets: Vec<Vec<u32>>,
-    // l12 -> u12 -> (s1, s2)
-    pub decoder: Vec<Vec<(u32, u32)>>,
-}
-
-impl BasisJ20 {
-    pub fn chans(&self) -> ChanIndexRange<Self> {
-        ChanIndexRange {
-            basis: self,
-            start: 0,
-            end: self.chans.len(),
-        }
-    }
-
-    pub fn auxs(&self, l: usize, x1: Excit20, x2: Excit20) -> Range<usize> {
-        Range {
-            start: self.part_offsets[l][x1.to_usize()] as _,
-            end: self.part_offsets[l][x2.to_usize() + 1] as _,
-        }
-    }
-
-    pub fn decode(&self, l: usize, u: usize) -> (usize, usize) {
-        let (s1, s2) = self.decoder[l][u];
-        (s1 as _, s2 as _)
+impl<T> IndexBlockVecMut for Vec<Vec<T>> {
+    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem {
+        &mut self[l][u]
     }
 }
 
-pub struct JScheme {
-    pub basis_j10: BasisJ10,
-    pub basis_j20: BasisJ20,
+pub trait IndexBlockMat {
+    type Elem;
+    fn index_block_mat(
+        &self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+    ) -> &Self::Elem;
+}
+
+pub trait IndexBlockMatMut: IndexBlockMat {
+    fn index_block_mat_mut(
+        &mut self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+    ) -> &mut Self::Elem;
+}
+
+impl<'a, T> IndexBlockMat for BlockMat<'a, T> {
+    type Elem = T;
+    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
+        self.get(l).unwrap().get(u1, u2).unwrap()
+    }
+}
+
+impl<'a, T> IndexBlockMat for BlockMatMut<'a, T> {
+    type Elem = T;
+    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
+        self.as_ref().get(l).unwrap().get(u1, u2).unwrap()
+    }
+}
+
+impl<'a, T> IndexBlockMatMut for BlockMatMut<'a, T> {
+    fn index_block_mat_mut(
+        &mut self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+    ) -> &mut Self::Elem {
+        self.as_mut().get(l).unwrap().get(u1, u2).unwrap()
+    }
 }

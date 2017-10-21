@@ -1,3 +1,4 @@
+//! Parity data type.
 use std::ops::{Add, Rem, Sub};
 use num::{One, Zero};
 use super::basis::Abelian;

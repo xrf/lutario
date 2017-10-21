@@ -1,18 +1,67 @@
 //! Angular momentum coupling.
-use super::half::Half;
+use std::ops::{Add, Mul, Sub};
+use num::FromPrimitive;
 
-/// Returns `(-1)^φ`
+/// Reflection about the 22.5° axis.
+///
+/// ```text
+/// ⎡√½  √½⎤
+/// ⎣√½ −√½⎦
+/// ```
 #[inline]
-pub fn phase(phi: i32) -> f64 {
-    if phi % 2 == 0 {
-        1.0
-    } else {
-        -1.0
+pub fn reflect_16th<T>(x: T, y: T) -> (T, T) where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
+     + Mul<Output = T> + Clone,
+{
+    let sqrt_2 = T::from_f64(0.5f64.sqrt()).unwrap();
+    (
+        sqrt_2.clone() * (x.clone() + y.clone()),
+        sqrt_2 * (x - y),
+    )
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Coupled2HalfSpins<T> {
+    /// `j=0 m=0`
+    pub z00: T,
+    /// `j=1 m=−1`
+    pub m11: T,
+    /// `j=1 m=0`
+    pub z10: T,
+    /// `j=1 m=+1`
+    pub p11: T,
+}
+
+impl<T> From<Uncoupled2HalfSpins<T>> for Coupled2HalfSpins<T> where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
+     + Mul<Output = T> + Clone,
+{
+    #[inline]
+    fn from(x: Uncoupled2HalfSpins<T>) -> Self {
+        let (z10, z00) = reflect_16th(x.pm, x.mp);
+        Self { z00, m11: x.mm, z10, p11: x.pp }
     }
 }
 
-/// Returns `(2 * j + 1)^(e / 2)`.
-#[inline]
-pub fn jweight(j: Half<i32>, e: i32) -> f64 {
-    ((j.twice() + 1) as f64).powf(e as f64 / 2.0)
+#[derive(Clone, Copy, Debug)]
+pub struct Uncoupled2HalfSpins<T> {
+    /// ↓↓
+    pub mm: T,
+    /// ↓↑
+    pub mp: T,
+    /// ↑↓
+    pub pm: T,
+    /// ↑↑
+    pub pp: T,
+}
+
+impl<T> From<Coupled2HalfSpins<T>> for Uncoupled2HalfSpins<T> where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
+     + Mul<Output = T> + Clone,
+{
+    #[inline]
+    fn from(x: Coupled2HalfSpins<T>) -> Self {
+        let (pm, mp) = reflect_16th(x.z10, x.z00);
+        Self { mm: x.m11, mp, pm, pp: x.p11 }
+    }
 }

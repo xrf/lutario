@@ -29,6 +29,7 @@ pub mod btree_cache;
 pub mod cache;
 pub mod half;
 pub mod io;
+pub mod j_scheme;
 pub mod linalg;
 pub mod matrix;
 pub mod nuclei;

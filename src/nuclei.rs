@@ -1,3 +1,4 @@
+//! Nuclei systems.
 use std::{fmt, str};
 use std::cmp::min;
 use std::ops::{Add, Sub};
@@ -304,48 +305,73 @@ impl Nucleus {
     }
 }
 
-pub fn iter_darmstadt_me2j<F, E>(npjs: &[Npj], e12_max: i32, mut f: F)
-                                    -> Result<(), E>
-    where F: FnMut(Pjtw, Npj, Npj, Npj, Npj) -> Result<(), E>
-{
-    for i1 in 0 .. npjs.len() {
-        let npj1 = npjs[i1];
-        for i2 in range_inclusive(0, i1) {
-            let npj2 = npjs[i2];
-            if npj1.e() + npj2.e() > e12_max {
-                break;
-            }
-            for i3 in range_inclusive(0, i1) {
-                let npj3 = npjs[i3];
-                for i4 in range_inclusive(0, if i3 == i1 { i2 } else { i3 }) {
-                    let npj4 = npjs[i4];
-                    if npj3.e() + npj4.e() > e12_max {
-                        break;
-                    }
-                    let p12 = npj1.p + npj2.p;
-                    if p12 != npj3.p + npj4.p {
-                        continue;
-                    }
-                    for j12 in utils::intersect_range_inclusive(
-                        Half::tri_range(npj1.j, npj2.j),
-                        Half::tri_range(npj3.j, npj4.j),
-                    ) {
-                        for t12 in Half::tri_range(Half(1), Half(1)) {
-                            for w12 in t12.multiplet() {
-                                f(Pjtw {
-                                    p: p12,
-                                    j: j12,
-                                    t: t12,
-                                    w: w12,
-                                }, npj1, npj2, npj3, npj4)?;
-                            }
+#[derive(Clone, Copy, Debug)]
+pub struct Pj {
+    pub p: Parity,
+    pub j: Half<i32>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct DarmstadtMe2j<'a> {
+    pub npjs: &'a [Npj],
+    pub e12_max: i32,
+}
+
+impl<'a> DarmstadtMe2j<'a> {
+    pub fn foreach_isospin_block<F, E>(self, mut f: F) -> Result<(), E>
+        where F: FnMut(Pj, Npj, Npj, Npj, Npj) -> Result<(), E>,
+    {
+        let e12_max = self.e12_max;
+        let npjs = self.npjs;
+        for i1 in 0 .. npjs.len() {
+            let npj1 = self.npjs[i1];
+            for i2 in range_inclusive(0, i1) {
+                let npj2 = self.npjs[i2];
+                if npj1.e() + npj2.e() > e12_max {
+                    break;
+                }
+                for i3 in range_inclusive(0, i1) {
+                    let npj3 = npjs[i3];
+                    let i4_max = if i3 == i1 { i2 } else { i3 };
+                    for i4 in range_inclusive(0, i4_max) {
+                        let npj4 = npjs[i4];
+                        if npj3.e() + npj4.e() > e12_max {
+                            break;
+                        }
+                        let p12 = npj1.p + npj2.p;
+                        if p12 != npj3.p + npj4.p {
+                            continue;
+                        }
+                        for j12 in utils::intersect_range_inclusive(
+                            Half::tri_range(npj1.j, npj2.j),
+                            Half::tri_range(npj3.j, npj4.j),
+                        ) {
+                            f(Pj { p: p12, j: j12 }, npj1, npj2, npj3, npj4)?;
                         }
                     }
                 }
             }
         }
+        Ok(())
     }
-    Ok(())
+
+    pub fn foreach_elem<F, E>(self, mut f: F) -> Result<(), E>
+        where F: FnMut(Pjtw, Npj, Npj, Npj, Npj) -> Result<(), E>,
+    {
+        self.foreach_isospin_block(|pj12, npj1, npj2, npj3, npj4| {
+            for t12 in Half::tri_range(Half(1), Half(1)) {
+                for w12 in t12.multiplet() {
+                    f(Pjtw {
+                        p: pj12.p,
+                        j: pj12.j,
+                        t: t12,
+                        w: w12,
+                    }, npj1, npj2, npj3, npj4)?;
+                }
+            }
+            Ok(())
+        })
+    }
 }
 
 /// Construct a table of symmetric j-scheme states with isospin.
@@ -415,7 +441,10 @@ pub fn load_me2j<'a>(
     let mut n = 0;
     let mut progress_timer = 0;
     progress(n);
-    let r = iter_darmstadt_me2j(&table, e12_max, |pjtw12, npj1, npj2, npj3, npj4| {
+    let r = DarmstadtMe2j {
+        npjs: &table,
+        e12_max,
+    }.foreach_elem(|pjtw12, npj1, npj2, npj3, npj4| {
         let x = elems.next().ok_or(Err(LoadError::UnexpectedEof))?;
         let t_phase = pjtw12.t.abs_diff(Half(1) + Half(1));
         let atsy_phase12 = pjtw12.j.abs_diff(npj1.j + npj2.j) + t_phase;

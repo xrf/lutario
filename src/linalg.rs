@@ -1,3 +1,4 @@
+//! Linear algebra.
 use std::mem;
 use std::cmp::max;
 use std::ops::{Neg, Range};

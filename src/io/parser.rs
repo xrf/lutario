@@ -1,3 +1,5 @@
+//! Utility for parsing byte strings.
+
 use std::{io, mem};
 use std::cell::RefCell;
 use std::ops::Deref;
@@ -137,6 +139,16 @@ impl Alloc {
     }
 }
 
+/// The saved state of a parser.  This can later be used to restore the parser
+/// to its original state.
+#[derive(Clone, Debug)]
+pub struct State {
+    index: usize,
+    chain: SharedChain,
+}
+
+/// Adds infinite lookahead to a `Read` stream and the ability to save and
+/// restore parsing state arbitrarily.
 #[derive(Debug)]
 pub struct Parser<R> {
     reader: R,
@@ -154,24 +166,25 @@ impl<R> Drop for Parser<R> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct State {
-    index: usize,
-    chain: SharedChain,
-}
-
 impl<R> Parser<R> {
+    /// The `buf_cap` sets the capacity of a single buffer chunk.  This
+    /// doesn't affect the size of the lookahead (it's always infinite), as
+    /// multiple chunks are permitted; this only affects the efficiency.
     pub fn with_capacity(reader: R, buf_cap: usize) -> Self {
         let alloc = Alloc::new(buf_cap);
         let chain = alloc.allocate();
         Self {
             reader,
             index: 0,
-            buf: chain.replace_buf(Default::default()).unwrap(),
+            buf: chain.replace_buf(Default::default()).expect("!?"),
             chain,
         }
     }
 
+    /// Save the parser state for later.  While the state object lives, it
+    /// will store all the bytes between the saved point and the current
+    /// parser point in memory, so it's important to dispose of the state when
+    /// it's no longer needed.
     pub fn save(&self) -> State {
         State {
             index: self.index,
@@ -179,15 +192,17 @@ impl<R> Parser<R> {
         }
     }
 
+    /// Restore the parser state.
     pub fn restore(&mut self, state: State) {
+        let new_buf = state.chain.replace_buf(Default::default())
+            .expect("invalid State");
         self.index = state.index;
         let old_chain = mem::replace(&mut self.chain, state.chain);
-        let new_buf = self.chain.replace_buf(Default::default()).unwrap();
         if new_buf.capacity() != 0 {
             // if capacity is zero, then this state shares the same buffer as
             // the old one
             let old_buf = mem::replace(&mut self.buf, new_buf);
-            old_chain.replace_buf(old_buf).unwrap();
+            old_chain.replace_buf(old_buf).expect("corrupt Parser");
         }
     }
 }

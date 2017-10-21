@@ -1,7 +1,8 @@
+//! Quasidegenerate perturbation theory.
 use std::ops::MulAssign;
-use super::ang_mom::{jweight, phase};
-use super::basis::{Excit10, Excit20, JScheme};
+use super::basis::occ;
 use super::block_matrix::BlockMat;
+use super::j_scheme::{DiagOpJ10, OpJ100, OpJ200};
 
 pub fn block_vec_set<T: Clone>(value: T, out: &mut Vec<Vec<T>>) {
     for out_l in out.iter_mut() {
@@ -24,112 +25,52 @@ pub fn block_vec_mul_assign<T>(factor: T, out: &mut Vec<Vec<T>>)
 /// Diagonal QDPT2 term #3.
 ///
 /// ```text
-/// 1/2 ∑[jpi i a b] (Jpi / Jp)² |V[p i a b]|² / (h1d[p] + h1d[i] − h1d[a] − h1[b])
+/// R[p] = 1/2 ∑[i a b] (J[p i]^2 / J[p]^2) abs(H[p i a b])^2 / Δ[p i a b]
 /// ```
 pub fn dqdpt2_term3(
-    scheme: &JScheme,
-    h1: BlockMat<f64>,
-    h2: BlockMat<f64>,
-    out: &mut Vec<Vec<f64>>,
+    h1: OpJ100<BlockMat<f64>>,
+    h2: OpJ200<BlockMat<f64>>,
+    r: &mut DiagOpJ10<Vec<Vec<f64>>>,
 )
 {
-    block_vec_set(0.0, out);
-    for lpi in scheme.basis_j20.chans() {
-        let lpi = lpi.index as usize;
-        let jpi = scheme.basis_j20.chans[lpi].j;
-        for upi in scheme.basis_j20.auxs(lpi, Excit20::II, Excit20::AI) {
-            let (sp, si) = scheme.basis_j20.decode(lpi, upi);
-            let (lp, up) = scheme.basis_j10.encode(sp);
-            let (li, ui) = scheme.basis_j10.encode(si);
-            let jp = scheme.basis_j10.chans[lp].j;
-            let ji = scheme.basis_j10.chans[li].j;
-            for uab in scheme.basis_j20.auxs(lpi, Excit20::AA, Excit20::AA) {
-                let (sa, sb) = scheme.basis_j20.decode(lpi, uab);
-                let (la, ua) = scheme.basis_j10.encode(sa);
-                let (lb, ub) = scheme.basis_j10.encode(sb);
-                let ja = scheme.basis_j10.chans[la].j;
-                let jb = scheme.basis_j10.chans[lb].j;
-                let x =
-                    h2.index(lpi)[(upi, uab)].abs().powi(2)
-                    / (h1.index(lp)[(up, up)]
-                       + h1.index(li)[(ui, ui)]
-                       - h1.index(la)[(ua, ua)]
-                       - h1.index(lb)[(ub, ub)]);
-                out[lp][up] +=
-                    jweight(jpi, 2) / jweight(jp, 2)
-                    * (1.0 - if sa != sb {
-                        phase((ja + jb - jpi).unwrap())
-                    } else {
-                        0.0
-                    })
-                    * x;
-                if scheme.basis_j10.excit(lp, up) == Excit10::I && sp != si {
-                    out[li][ui] +=
-                        jweight(jpi, 2) / jweight(ji, 2)
-                        * phase((jp + ji - jpi).unwrap())
-                        * (1.0 - if sa != sb {
-                            phase((ja + jb - jpi).unwrap())
-                        } else {
-                            0.0
-                        })
-                        * x;
-                }
-            }
+    let scheme = h1.scheme;
+    for pi in scheme.states_j20(&[occ::II, occ::AI]) {
+        let (p, i) = pi.split_to_j10_j10();
+        for ab in pi.related_states(&[occ::AA]) {
+            let (a, b) = ab.split_to_j10_j10();
+            r.add(p, 1.0 / 2.0 * {
+                pi.jweight(2)
+                / p.jweight(2)
+                * h2.at(pi, ab).abs().powi(2)
+                / (h1.at(p, p) + h1.at(i, i) - h1.at(a, a) - h1.at(b, b))
+            });
         }
     }
-    block_vec_mul_assign(1.0 / 2.0, out);
 }
 
 /// Diagonal QDPT2 term #4.
 ///
 /// ```text
-/// -1/2 ∑[jij i j a] (Jij / Jp)² |V[i j p a]|² / (h1d[i] + h1d[j] - h1d[p] - h1d[a])
+/// R[p] = −1/2 ∑[i j a] (J[i j]^2 / J[p]^2) abs(H[i j p a])^2 / Δ[i j p a]
 /// ```
-#[allow(unused_variables)]
 pub fn dqdpt2_term4(
-    scheme: &JScheme,
-    h1: BlockMat<f64>,
-    h2: BlockMat<f64>,
-    out: &mut Vec<Vec<f64>>,
+    h1: OpJ100<BlockMat<f64>>,
+    h2: OpJ200<BlockMat<f64>>,
+    r: &mut DiagOpJ10<Vec<Vec<f64>>>,
 )
 {
-    block_vec_set(0.0, out);
-    for lap in scheme.basis_j20.chans() {
-        let lap = lap.index as usize;
-        let jap = scheme.basis_j20.chans[lap].j;
-        for uap in scheme.basis_j20.auxs(lap, Excit20::II, Excit20::AI) {
-            let (sa, sp) = scheme.basis_j20.decode(lap, uap);
-            let (la, ua) = scheme.basis_j10.encode(sa);
-            let (lp, up) = scheme.basis_j10.encode(sp);
-            let ja = scheme.basis_j10.chans[la].j;
-            let jp = scheme.basis_j10.chans[lp].j;
-            for uij in scheme.basis_j20.auxs(lap, Excit20::AA, Excit20::AA) {
-                let (si, sj) = scheme.basis_j20.decode(lap, uij);
-                let (li, ui) = scheme.basis_j10.encode(si);
-                let (lj, uj) = scheme.basis_j10.encode(sj);
-                let ji = scheme.basis_j10.chans[li].j;
-                let jj = scheme.basis_j10.chans[lj].j;
-                let x =
-                    if si != sj {
-                        phase((ji + jj - jap).unwrap())
-                    } else {
-                        0.0
-                    } * h2.index(lap)[(uij, uap)].abs().powi(2)
-                    / (h1.index(li)[(ui, ui)]
-                    + h1.index(lj)[(uj, uj)]
-                    - h1.index(la)[(ua, ua)]
-                    - h1.index(lp)[(up, up)]);
-                out[lp][up] +=
-                    jweight(jap, 2) / jweight(jp, 2)
-                    * x;
-                if scheme.basis_j10.excit(lp, up) == Excit10::A && sa != sp {
-                    out[la][ua] +=
-                        jweight(jap, 2) / jweight(ja, 2)
-                        * phase((ja + jp - jap).unwrap())
-                        * x;
-                }
-            }
+    let scheme = h1.scheme;
+    for pa in scheme.states_j20(&[occ::IA, occ::AA]) {
+        let (p, a) = pa.split_to_j10_j10();
+        for ij in pa.related_states(&[occ::II]) {
+            let (i, j) = ij.split_to_j10_j10();
+            r.add(p, -1.0 / 2.0 * {
+                ij.jweight(2)
+                / p.jweight(2)
+                * h2.at(ij, pa).abs().powi(2)
+                / (h1.at(i, i) + h1.at(j, j) - h1.at(p, p) - h1.at(a, a))
+            });
         }
     }
-    block_vec_mul_assign(-1.0 / 2.0, out);
+    block_vec_mul_assign(-1.0 / 2.0, &mut r.data);
 }
