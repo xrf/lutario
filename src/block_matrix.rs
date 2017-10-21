@@ -189,6 +189,10 @@ impl<'a, T> BlockMat<'a, T> {
         }
     }
 
+    pub fn index(self, l: usize) -> Mat<'a, T> {
+        self.get(l).unwrap()
+    }
+
     pub unsafe fn get_unchecked(self, l: usize) -> Mat<'a, T> {
         Mat::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
                       self.raw.shape_at(l))

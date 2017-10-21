@@ -3,6 +3,7 @@
 use std::{fmt, mem, slice};
 use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut, Range};
+use num::Zero;
 use super::utils::{self, Offset, try_cast};
 
 /// Number of rows (or, equivalently, columns).
@@ -42,11 +43,15 @@ impl TriMatDim {
         }
     }
 
-    pub fn extent(&self) -> usize {
+    pub fn dim(self) -> usize {
+        self.0
+    }
+
+    pub fn extent(self) -> usize {
         Self::raw_index(self.0, 0)
     }
 
-    pub fn contains(&self, i: usize, j: usize) -> bool {
+    pub fn contains(self, i: usize, j: usize) -> bool {
         i < self.0 && j < self.0
     }
 
@@ -54,12 +59,12 @@ impl TriMatDim {
         i * (i + 1) / 2 + j
     }
 
-    pub unsafe fn offset_unchecked<P: Offset>(&self, ptr: P,
+    pub unsafe fn offset_unchecked<P: Offset>(self, ptr: P,
                                               i: usize, j: usize) -> P {
         ptr.offset(Self::raw_index(i, j) as _)
     }
 
-    pub fn row_width(&self, i: usize) -> usize {
+    pub fn row_width(self, i: usize) -> usize {
         i + 1
     }
 
@@ -394,5 +399,132 @@ impl<'a, T> DoubleEndedIterator for TriMatRowsMut<'a, T> {
 impl<'a, T> ExactSizeIterator for TriMatRowsMut<'a, T> {
     fn len(&self) -> usize {
         self.range.len()
+    }
+}
+
+pub struct TriMatrix<T> {
+    phantom: PhantomData<Box<[T]>>,
+    ptr: *mut T,
+    shape: TriMatDim,
+}
+
+impl<T: fmt::Debug> fmt::Debug for TriMatrix<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.as_ref().fmt(f)
+    }
+}
+
+impl<T: Clone> Clone for TriMatrix<T> {
+    fn clone(&self) -> Self {
+        Self::from_vec(self.as_slice().to_vec(), self.shape().dim())
+    }
+}
+
+impl<T> Drop for TriMatrix<T> {
+    fn drop(&mut self) {
+        unsafe {
+            mem::replace(self, mem::uninitialized()).into_boxed_slice();
+        }
+    }
+}
+
+impl<T> Default for TriMatrix<T> {
+    fn default() -> Self {
+        Self::from_vec(vec![], 0)
+    }
+}
+
+impl<T: PartialEq<U>, U> PartialEq<TriMatrix<U>> for TriMatrix<T> {
+    fn eq(&self, rhs: &TriMatrix<U>) -> bool {
+        self.as_ref().eq(&rhs.as_ref())
+    }
+}
+
+impl<T: Eq> Eq for TriMatrix<T> {}
+
+impl<T: Clone> TriMatrix<T> {
+    pub fn replicate(dim: usize, value: T) -> Self {
+        let dim = TriMatDim::new(dim).unwrap();
+        unsafe {
+            Self::from_vec_unchecked(vec![value; dim.extent()], dim)
+        }
+    }
+}
+
+impl<T: Clone + Zero> TriMatrix<T> {
+    pub fn zero(dim: usize) -> Self {
+        Self::replicate(dim, Zero::zero())
+    }
+}
+
+impl<T> TriMatrix<T> {
+    /// Panics if the vector is too short.
+    pub fn from_vec(mut vec: Vec<T>, dim: usize) -> Self {
+        let shape = TriMatDim::new(dim).unwrap();
+        let n = shape.extent();
+        assert!(vec.len() >= n);
+        vec.truncate(n);
+        vec.shrink_to_fit();
+        unsafe {
+            Self::from_vec_unchecked(vec, shape)
+        }
+    }
+
+    pub unsafe fn from_vec_unchecked(mut vec: Vec<T>, shape: TriMatDim) -> Self {
+        // in order to reconstruct the vector correctly during Drop,
+        // we need to ensure capacity == num_rows * num_cols
+        debug_assert_eq!(vec.capacity(), shape.extent());
+        debug_assert_eq!(vec.len(), shape.extent());
+        let ptr = vec.as_mut_ptr();
+        mem::forget(vec);
+        Self::from_raw(ptr, shape)
+    }
+
+    pub unsafe fn from_raw(ptr: *mut T, shape: TriMatDim) -> Self {
+        Self {
+            phantom: PhantomData,
+            ptr,
+            shape
+        }
+    }
+
+    pub fn shape(&self) -> TriMatDim {
+        self.shape
+    }
+
+    pub fn extent(&self) -> usize {
+        self.shape().extent()
+    }
+
+    pub fn as_ptr(&self) -> *mut T {
+        self.ptr
+    }
+
+    pub fn as_ref(&self) -> TriMat<T> {
+        unsafe { TriMat::from_raw(self.as_ptr(), self.shape()) }
+    }
+
+    pub fn as_mut(&mut self) -> TriMatMut<T> {
+        unsafe { TriMatMut::from_raw(self.as_ptr(), self.shape()) }
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        unsafe { slice::from_raw_parts(self.as_ptr(), self.extent()) }
+    }
+
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        unsafe { slice::from_raw_parts_mut(self.as_ptr(), self.extent()) }
+    }
+
+    pub fn into_boxed_slice(mut self) -> Box<[T]> {
+        unsafe {
+            let b = Box::from_raw(self.as_slice_mut());
+            mem::forget(self);
+            b
+        }
+    }
+
+    pub fn into_vec(self) -> Vec<T> {
+        self.into_boxed_slice().into_vec()
     }
 }

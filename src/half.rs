@@ -68,7 +68,7 @@ impl<T: Ord + Sub> Half<T> {
     }
 }
 
-impl<T: Clone + Ord + Add<Output = T> + Sub<Output = T> + One> Half<T> {
+impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
     /// Obtain the range of values that satisfy the triangular condition, i.e.
     /// the range from `|self − other|` to `self + other` (inclusive).
     pub fn tri_range(self, other: Half<T>) -> RangeInclusive<Half<T>> {
@@ -79,11 +79,11 @@ impl<T: Clone + Ord + Add<Output = T> + Sub<Output = T> + One> Half<T> {
     }
 }
 
-impl Half<u32> {
-    pub fn multiplet(self) -> RangeInclusive<Half<i32>> {
-        let end = Half(cast(self.twice()));
+impl<T: Neg<Output = T> + Clone> Half<T> {
+    pub fn multiplet(self) -> RangeInclusive<Self> {
+        let end = Half(self.twice());
         RangeInclusive {
-            start: -end,
+            start: -end.clone(),
             end,
         }
     }

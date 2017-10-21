@@ -637,8 +637,13 @@ impl<T> From<Vec<Vec<T>>> for Matrix<T> {
 
 impl<T: Clone> Matrix<T> {
     pub fn replicate(num_rows: usize, num_cols: usize, value: T) -> Self {
+        MatShape::packed(num_rows, num_cols).validate().unwrap();
         unsafe {
-            Self::from_vec_unchecked(vec![value; num_rows * num_cols], num_rows, num_cols)
+            Self::from_vec_unchecked(
+                vec![value; num_rows * num_cols],
+                num_rows,
+                num_cols,
+            )
         }
     }
 }
@@ -652,6 +657,7 @@ impl<T: Clone + Zero> Matrix<T> {
 impl<T> Matrix<T> {
     /// Panics if the vector is too short.
     pub fn from_vec(mut vec: Vec<T>, num_rows: usize, num_cols: usize) -> Self {
+        MatShape::packed(num_rows, num_cols).validate().unwrap();
         let n = num_rows * num_cols;
         assert!(vec.len() >= n);
         vec.truncate(n);
@@ -675,9 +681,9 @@ impl<T> Matrix<T> {
     pub unsafe fn from_raw(ptr: *mut T, num_rows: usize, num_cols: usize) -> Self {
         Self {
             phantom: PhantomData,
-            ptr: ptr,
-            num_rows: num_rows,
-            num_cols: num_cols,
+            ptr,
+            num_rows,
+            num_cols,
         }
     }
 

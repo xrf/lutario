@@ -12,7 +12,7 @@ use super::utils;
 
 /// Orbital angular momentum (l)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct OrbAng(pub u32);
+pub struct OrbAng(pub i32);
 
 /// Display the spectroscopic label using the base-20 alphabet
 /// "spdfghiklmnoqrtuvwxyz".
@@ -73,11 +73,11 @@ impl Abelian for Pw {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Npj {
     /// Principal quantum number (n)
-    pub n: u32,
+    pub n: i32,
     /// Parity (π)
     pub p: Parity,
     /// Total angular momentum magnitude (j)
-    pub j: Half<u32>,
+    pub j: Half<i32>,
 }
 
 /// Display using spectroscopic notation.
@@ -89,7 +89,7 @@ impl fmt::Display for Npj {
 
 impl Npj {
     /// Shell index
-    pub fn e(self) -> u32 {
+    pub fn e(self) -> i32 {
         2 * self.n + self.l().0
     }
 
@@ -97,26 +97,78 @@ impl Npj {
     pub fn l(self) -> OrbAng {
         debug_assert!(self.j.try_get().is_err());
         let a = self.j.twice() / 2; // caution: integer division!
-        OrbAng(a + (a + u32::from(self.p)) % 2)
+        OrbAng(a + (a + i32::from(self.p)) % 2)
+    }
+}
+
+/// Principal quantum number, parity, total angular momentum magnitude, and
+/// isospin projection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Npjw {
+    /// Principal quantum number (n)
+    pub n: i32,
+    /// Parity (π)
+    pub p: Parity,
+    /// Total angular momentum magnitude (j)
+    pub j: Half<i32>,
+    /// Isospin projection (w)
+    pub w: Half<i32>,
+}
+
+impl Npjw {
+    /// Shell index
+    pub fn e(self) -> i32 {
+        self.npj().e()
+    }
+
+    pub fn npj(self) -> Npj {
+        Npj { n: self.n, p: self.p, j: self.j }
+    }
+}
+
+/// Principal quantum number, parity, total angular momentum magnitude, total
+/// angular momentum projection, and isospin projection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Npjmw {
+    /// Principal quantum number (n)
+    pub n: i32,
+    /// Parity (π)
+    pub p: Parity,
+    /// Total angular momentum magnitude (j)
+    pub j: Half<i32>,
+    /// Total angular momentum projection (m)
+    pub m: Half<i32>,
+    /// Isospin projection (w)
+    pub w: Half<i32>,
+}
+
+impl Npjmw {
+    /// Shell index
+    pub fn e(self) -> i32 {
+        self.npj().e()
+    }
+
+    pub fn npj(self) -> Npj {
+        Npj { n: self.n, p: self.p, j: self.j }
     }
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct NuclBasisSpec {
     /// Maximum shell index
-    pub e_max: u32,
+    pub e_max: i32,
     /// Maximum principal quantum number
-    pub n_max: u32,
+    pub n_max: i32,
     /// Maximum orbital angular momentum magnitude
-    pub l_max: u32,
+    pub l_max: i32,
 }
 
 impl NuclBasisSpec {
-    pub fn with_e_max(e_max: u32) -> Self {
+    pub fn with_e_max(e_max: i32) -> Self {
         Self {
             e_max,
-            n_max: u32::max_value(),
-            l_max: u32::max_value(),
+            n_max: i32::max_value(),
+            l_max: i32::max_value(),
         }
     }
 
@@ -138,11 +190,22 @@ impl NuclBasisSpec {
         orbitals
     }
 
-    pub fn wnpj_states(self) -> Vec<(Half<i32>, Npj)> {
+    pub fn npjw_states(self) -> Vec<Npjw> {
         let mut orbitals = Vec::new();
-        for npj in self.npj_states() {
-            orbitals.push((Half(-1), npj));
-            orbitals.push((Half(1), npj));
+        for Npj { n, p, j } in self.npj_states() {
+            for w in Half(1).multiplet() {
+                orbitals.push(Npjw { n, p, j, w });
+            }
+        }
+        orbitals
+    }
+
+    pub fn npjmw_states(self) -> Vec<Npjmw> {
+        let mut orbitals = Vec::new();
+        for Npjw { n, p, j, w } in self.npjw_states() {
+            for m in j.multiplet() {
+                orbitals.push(Npjmw { n, p, j, m, w });
+            }
         }
         orbitals
     }
@@ -151,8 +214,8 @@ impl NuclBasisSpec {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Pjtw {
     pub p: Parity,
-    pub j: Half<u32>,
-    pub t: Half<u32>,
+    pub j: Half<i32>,
+    pub t: Half<i32>,
     pub w: Half<i32>,
 }
 
@@ -176,7 +239,72 @@ impl fmt::Display for Pjtw {
     }
 }
 
-pub fn iter_darmstadt_me2j<F, E>(npjs: &[Npj], e12_max: u32, mut f: F)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Pmw {
+    pub p: Parity,
+    pub m: Half<i32>,
+    pub w: Half<i32>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Nj {
+    pub n: i32,
+    pub j: Half<i32>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Nucleus {
+    pub basis_spec: NuclBasisSpec,
+    pub num_filled: i32,
+}
+
+impl Nucleus {
+    pub fn channelize_j1(&self, npjw: Npjw) -> State<Pjtw, i32, i32> {
+        let Npjw { n, p, j, w } = npjw;
+        State {
+            chan: Pjtw { p, j, t: Half(1), w },
+            part: (npjw.e() >= self.num_filled) as i32,
+            aux: n,
+        }
+    }
+
+    pub fn channelize_m1(&self, npjmw: Npjmw) -> State<Pmw, i32, Nj> {
+        let Npjmw { n, p, j, m, w } = npjmw;
+        State {
+            chan: Pmw { p, m, w },
+            part: (npjmw.e() >= self.num_filled) as _,
+            aux: Nj { n, j },
+        }
+    }
+
+    pub fn channelize_j2(&self, (pjtw12, npj1, npj2): (Pjtw, Npj, Npj))
+                         -> State<Pjtw, i32, State2<Npj>> {
+        let x1 = (npj1.e() >= self.num_filled) as i32;
+        let x2 = (npj2.e() >= self.num_filled) as i32;
+        State {
+            chan: pjtw12,
+            part: x1 + x2,
+            aux: State2(npj1, npj2),
+        }
+    }
+
+    pub fn channelize_m2(&self, (npjmw1, npjmw2): (Npjmw, Npjmw))
+                         -> State<Pmw, i32, State2<Npjmw>> {
+        let x1 = (npjmw1.e() >= self.num_filled) as i32;
+        let x2 = (npjmw2.e() >= self.num_filled) as i32;
+        State {
+            chan: Pmw {
+                p: npjmw1.p + npjmw2.p,
+                m: npjmw1.m + npjmw2.m,
+                w: npjmw1.w + npjmw2.w,
+            },
+            part: x1 + x2,
+            aux: State2(npjmw1, npjmw2),
+        }
+    }
+}
+
+pub fn iter_darmstadt_me2j<F, E>(npjs: &[Npj], e12_max: i32, mut f: F)
                                     -> Result<(), E>
     where F: FnMut(Pjtw, Npj, Npj, Npj, Npj) -> Result<(), E>
 {
@@ -220,7 +348,7 @@ pub fn iter_darmstadt_me2j<F, E>(npjs: &[Npj], e12_max: u32, mut f: F)
     Ok(())
 }
 
-/// Construct a table of bisymmetric j-scheme states with isospin.
+/// Construct a table of symmetric j-scheme states with isospin.
 ///
 /// Assumes j of orbitals are half-integers.
 pub fn jt2_states(
@@ -239,7 +367,7 @@ pub fn jt2_states(
             let j2 = npj2.j;
             let p12 = npj1.p + npj2.p;
             for j12 in Half::tri_range(j1, j2) {
-                for t12 in Half::tri_range(Half(1u32), Half(1u32)) {
+                for t12 in Half::tri_range(Half(1), Half(1)) {
                     if i1 == i2 && ((j1 + j2).abs_diff(j12)
                                     + t12).unwrap() % 2 != 0 {
                         // forbidden state
@@ -259,40 +387,6 @@ pub fn jt2_states(
     states
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Nucleus {
-    pub basis_spec: NuclBasisSpec,
-    pub num_filled: u32,
-}
-
-impl Nucleus {
-    pub fn channelize1(&self, wnpj: (Half<i32>, Npj))
-                      -> State<Pjtw, u32, u32> {
-        let (w, npj) = wnpj;
-        State {
-            chan: Pjtw {
-                p: npj.p,
-                j: npj.j,
-                t: Half(1),
-                w,
-            },
-            part: (npj.e() >= self.num_filled) as u32,
-            aux: npj.n,
-        }
-    }
-
-    pub fn channelize2(&self, (pjtw12, npj1, npj2): (Pjtw, Npj, Npj))
-                       -> State<Pjtw, u32, State2<Npj>> {
-        let x1 = (npj1.e() >= self.num_filled) as u32;
-        let x2 = (npj2.e() >= self.num_filled) as u32;
-        State {
-            chan: pjtw12,
-            part: x1 + x2,
-            aux: State2(npj1, npj2),
-        }
-    }
-}
-
 quick_error! {
     #[derive(Debug)]
     pub enum LoadError {
@@ -308,9 +402,9 @@ quick_error! {
 pub fn load_me2j<'a>(
     elems: &mut Iterator<Item = f64>,
     table: &[Npj],
-    e_max: u32,
-    e12_max: u32,
-    mc2: &MatChart<Pjtw, u32, u32, State2<Npj>, State2<Npj>>,
+    e_max: i32,
+    e12_max: i32,
+    mc2: &MatChart<Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
     progress: &mut FnMut(usize),
     dest_adj: AdjSym,
     dest: &mut [f64],
@@ -323,7 +417,7 @@ pub fn load_me2j<'a>(
     progress(n);
     let r = iter_darmstadt_me2j(&table, e12_max, |pjtw12, npj1, npj2, npj3, npj4| {
         let x = elems.next().ok_or(Err(LoadError::UnexpectedEof))?;
-        let t_phase = pjtw12.t.abs_diff(Half(1u32) + Half(1u32));
+        let t_phase = pjtw12.t.abs_diff(Half(1) + Half(1));
         let atsy_phase12 = pjtw12.j.abs_diff(npj1.j + npj2.j) + t_phase;
         let atsy_phase34 = pjtw12.j.abs_diff(npj3.j + npj4.j) + t_phase;
         if (npj1 == npj2 && atsy_phase12.unwrap() % 2 == 0)
@@ -368,9 +462,9 @@ pub fn load_me2j<'a>(
 
 pub fn do_load_me2j_file(
     path: &Path,
-    e_max: u32,
-    e12_max: u32,
-    mc2: &MatChart<Pjtw, u32, u32, State2<Npj>, State2<Npj>>,
+    e_max: i32,
+    e12_max: i32,
+    mc2: &MatChart<Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
     dest_adj: AdjSym,
     dest: &mut [f64],
 ) -> Result<(), Error> {

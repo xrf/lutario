@@ -21,6 +21,7 @@ extern crate stable_deref_trait;
 extern crate take_mut;
 extern crate xz2;
 
+pub mod ang_mom;
 pub mod basis;
 pub mod block_matrix;
 pub mod block_tri_matrix;
@@ -32,6 +33,7 @@ pub mod linalg;
 pub mod matrix;
 pub mod nuclei;
 pub mod parity;
+pub mod qdpt;
 pub mod scheme;
 pub mod tri_matrix;
 pub mod utils;

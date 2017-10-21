@@ -42,11 +42,13 @@
 use std::fmt;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::ops::Sub;
+use std::ops::{Range, Sub};
 use std::sync::Arc;
 use fnv::FnvHashMap;
 use num::Zero;
+use super::half::Half;
 use super::matrix::{Mat, MatShape};
+use super::tri_matrix::TriMatrix;
 use super::utils;
 
 /// An Abelian group.
@@ -414,4 +416,149 @@ impl<'a, L, X1, X2, U1, U2> MatChart<'a, L, X1, X2, U1, U2>
         let iu2 = self.right.encode_aux(il, &u2).expect("invalid right state");
         self.layout.offset(il, iu1, iu2)
     }
+}
+
+
+// pub trait Basis {
+//     type Chan;
+//     fn decode_chan(index: usize) -> Self::Chan;
+// }
+
+pub struct ChanIndex<'a, B: 'a> {
+    pub basis: &'a B,
+    pub index: usize,
+}
+
+pub struct ChanIndexRange<'a, B: 'a> {
+    pub basis: &'a B,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl<'a, B> Iterator for ChanIndexRange<'a, B> {
+    type Item = ChanIndex<'a, B>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.start < self.end {
+            let r = Self::Item {
+                basis: self.basis,
+                index: self.start,
+            };
+            self.start += 1;
+            Some(r)
+        } else {
+            None
+        }
+    }
+}
+
+pub struct JChan {
+    /// angular momentum magnitude
+    pub j: Half<i32>,
+    /// remaining system-dependent value
+    pub k: u32,
+}
+
+pub struct AbelianTable {
+    /// triangular matrix
+    pub table: TriMatrix<u32>,
+}
+
+impl AbelianTable {
+    pub fn add(&self, x: u32, y: u32) -> Option<u32> {
+        self.table.as_ref().get(x as _, y as _).cloned()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Excit10 {
+    I,
+    A,
+}
+
+impl Excit10 {
+    pub fn to_usize(self) -> usize {
+        match self {
+            Excit10::I => 0,
+            Excit10::A => 1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Excit20 {
+    II,
+    AI,
+    AA,
+}
+
+impl Excit20 {
+    pub fn to_usize(self) -> usize {
+        match self {
+            Excit20::II => 0,
+            Excit20::AI => 1,
+            Excit20::AA => 2,
+        }
+    }
+}
+
+pub struct BasisJ10 {
+    pub chans: Vec<JChan>,
+    // s1 -> (l1, u1)
+    pub encoder: Vec<(u32, u32)>,
+    // l1 -> u1
+    pub excit_threshold: Vec<u32>,
+}
+
+impl BasisJ10 {
+    // pub fn new(states: &mut Iterator<Item = (JChan, >) {
+
+    // }
+
+    pub fn excit(&self, l: usize, u: usize) -> Excit10 {
+        if u >= self.excit_threshold[l] as _ {
+            Excit10::A
+        } else {
+            Excit10::I
+        }
+    }
+
+    pub fn encode(&self, s: usize) -> (usize, usize) {
+        let (l1, u1) = self.encoder[s];
+        (l1 as _, u1 as _)
+    }
+}
+
+pub struct BasisJ20 {
+    pub chans: Vec<JChan>,
+    // l12 -> x12 -> u12
+    pub part_offsets: Vec<Vec<u32>>,
+    // l12 -> u12 -> (s1, s2)
+    pub decoder: Vec<Vec<(u32, u32)>>,
+}
+
+impl BasisJ20 {
+    pub fn chans(&self) -> ChanIndexRange<Self> {
+        ChanIndexRange {
+            basis: self,
+            start: 0,
+            end: self.chans.len(),
+        }
+    }
+
+    pub fn auxs(&self, l: usize, x1: Excit20, x2: Excit20) -> Range<usize> {
+        Range {
+            start: self.part_offsets[l][x1.to_usize()] as _,
+            end: self.part_offsets[l][x2.to_usize() + 1] as _,
+        }
+    }
+
+    pub fn decode(&self, l: usize, u: usize) -> (usize, usize) {
+        let (s1, s2) = self.decoder[l][u];
+        (s1 as _, s2 as _)
+    }
+}
+
+pub struct JScheme {
+    pub basis_j10: BasisJ10,
+    pub basis_j20: BasisJ20,
 }
