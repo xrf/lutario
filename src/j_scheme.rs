@@ -1,9 +1,22 @@
-use std::ops::{AddAssign, Mul, Range};
+use std::{f64, mem};
+use std::ops::{AddAssign, Deref, Mul, Range};
 use num::{FromPrimitive, Zero};
 use super::basis::{occ, ChanState, IndexBlockVec, IndexBlockVecMut,
                    IndexBlockMat, IndexBlockMatMut, Occ, Occ20, Orb};
 use super::half::Half;
 use super::tri_matrix::TriMatrix;
+
+#[derive(Clone, Copy, Debug)]
+pub struct JOrbital<K, U> {
+    /// Angular momentum magnitude.
+    pub j: Half<i32>,
+    /// Linear part of the channel.
+    pub k: K,
+    /// Auxiliary quantum numbers.
+    pub u: U,
+    /// Occupancy.
+    pub x: Occ,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct JChan {
@@ -25,9 +38,9 @@ pub struct BasisJ10 {
 }
 
 impl BasisJ10 {
-    // pub fn new(states: &mut Iterator<Item = (JChan, >) {
-
-    // }
+    pub fn new(states: &mut Iterator<Item = (JChan, u32, Occ)>) -> (Self) {
+        unimplemented!()
+    }
 
     #[inline]
     pub fn occ(&self, lu: ChanState) -> Occ {
@@ -103,6 +116,38 @@ impl BasisJ20 {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct StateMask20 {
+    /// `occ12 -> needed`
+    pub x_mask: [bool; 3],
+    /// `(occ1 + occ2 * 2) -> needed`
+    pub xx_mask: [bool; 4],
+}
+
+impl StateMask20 {
+    #[inline]
+    pub fn new(xs: &[[Occ; 2]]) -> Self {
+        let ii = xs.contains(&occ::II);
+        let ai = xs.contains(&occ::AI);
+        let ia = xs.contains(&occ::IA);
+        let aa = xs.contains(&occ::AA);
+        StateMask20 {
+            x_mask: [ii, ai || ia, aa],
+            xx_mask: [ii, ai, ia, aa],
+        }
+    }
+
+    #[inline]
+    pub fn test_occ20(self, occ: Occ20) -> bool {
+        self.x_mask[usize::from(occ)]
+    }
+
+    #[inline]
+    pub fn test_occ_occ(self, occ1: Occ, occ2: Occ) -> bool {
+        self.xx_mask[usize::from(occ1) + usize::from(occ2) * 2]
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct StatesJ20<'a> {
     pub l_range: Range<u32>,
@@ -110,10 +155,10 @@ pub struct StatesJ20<'a> {
 }
 
 impl<'a> StatesJ20<'a> {
-    pub fn new(scheme: &'a JScheme, xs: &[[Occ; 2]]) -> Self {
+    pub fn new(scheme: &'a JScheme, mask: StateMask20) -> Self {
         Self {
             l_range: 1 .. scheme.basis_j20.num_chans(),
-            states: RelatedStatesJ20::new(scheme, 0, xs),
+            states: RelatedStatesJ20::new(scheme, 0, mask),
         }
     }
 }
@@ -127,10 +172,10 @@ impl<'a> Iterator for StatesJ20<'a> {
                 return r;
             }
             if let Some(l) = self.l_range.next() {
-                self.states = RelatedStatesJ20::with_x_permuts(
-                    self.states.scheme,
+                self.states = RelatedStatesJ20::new(
+                    self.states.scheme(),
                     l,
-                    self.states.x_permuts,
+                    self.states.mask(),
                 );
                 continue;
             }
@@ -141,54 +186,52 @@ impl<'a> Iterator for StatesJ20<'a> {
 
 #[derive(Clone, Debug)]
 pub struct RelatedStatesJ20<'a> {
-    pub scheme: &'a JScheme,
-    pub l: u32,
+    pub state: StateJ20<'a>,
     pub x: Occ20,
     pub u_range: Range<u32>,
-    pub u: u32,
-    pub permut: u8,
-    /// `x_permuts[occ20 * 2 + permut]`
-    pub x_permuts: [bool; 6],
+    pub mask: StateMask20,
 }
 
 impl<'a> RelatedStatesJ20<'a> {
     #[inline]
-    pub fn new(scheme: &'a JScheme, l: u32, xs: &[[Occ; 2]]) -> Self {
-        // de-antisymmetrization within specific occupation parts is tricky
-        let mut x_permuts = [false; 6];
-        if xs.contains(&occ::II) {
-            x_permuts[usize::from(Occ20::II) * 2 + 0] = true;
-            x_permuts[usize::from(Occ20::II) * 2 + 1] = true;
+    pub fn new(scheme: &'a JScheme, l: u32, mask: StateMask20) -> Self {
+        let x = Occ20::from_usize(0).unwrap();
+        Self {
+            state: StateJ20 {
+                scheme,
+                lu12: ChanState { l, u: 0 },
+                // we modify self.state.scheme and self.state.lu12 directly;
+                // everything else will be overwritten later on
+                j12: Half(0),
+                s1: JChanOrb {
+                    lu: ChanState { l: 0, u: 0 },
+                    j: Half(0),
+                    x: Occ::I,
+                },
+                s2: JChanOrb {
+                    lu: ChanState { l: 0, u: 0 },
+                    j: Half(0),
+                    x: Occ::I,
+                },
+                permut: 0,
+                num_permut: 0, // initially empty
+                get_factor: f64::NAN,
+                set_factor: f64::NAN,
+            },
+            x,
+            u_range: scheme.basis_j20.aux_range(0, x),
+            mask,
         }
-        if xs.contains(&occ::AI) {
-            x_permuts[usize::from(Occ20::AI) * 2 + 0] = true;
-        }
-        if xs.contains(&occ::IA) {
-            x_permuts[usize::from(Occ20::AI) * 2 + 1] = true;
-        }
-        if xs.contains(&occ::AA) {
-            x_permuts[usize::from(Occ20::AA) * 2 + 0] = true;
-            x_permuts[usize::from(Occ20::AA) * 2 + 1] = true;
-        }
-        Self::with_x_permuts(scheme, l, x_permuts)
     }
 
     #[inline]
-    pub fn with_x_permuts(
-        scheme: &'a JScheme,
-        l: u32,
-        x_permuts: [bool; 6],
-    ) -> Self {
-        let x = Occ20::from_usize(0).unwrap();
-        Self {
-            scheme,
-            l,
-            x,
-            u_range: scheme.basis_j20.aux_range(0, x),
-            u: 0,
-            permut: 2, // empty at start
-            x_permuts,
-        }
+    pub fn scheme(&self) -> &'a JScheme {
+        self.state.scheme
+    }
+
+    #[inline]
+    pub fn mask(&self) -> StateMask20 {
+        self.mask
     }
 }
 
@@ -196,40 +239,154 @@ impl<'a> Iterator for RelatedStatesJ20<'a> {
     type Item = StateJ20<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        // writing loops in inverted form is extremely annoying
         loop {
-            if self.permut < 2 {
-                let permut = self.permut;
-                self.permut += 1;
-                if !self.x_permuts[usize::from(self.x) * 2 + permut as usize] {
-                    continue;
-                }
-                // FIXME: the ordering here assumes I < A
-                // which is no longer true because we adopted (l, u) ordering
-                match StateJ20::new(
-                    self.scheme,
-                    self.l,
-                    self.u,
-                    permut,
-                ) {
-                    Some(s) => return Some(s),
-                    None => continue, // skip this permut
+            // next permut
+            while let Some(state) = self.state.next_permut() {
+                self.state = state;
+                if self.mask.test_occ_occ(state.s1.x, state.s2.x) {
+                    return Some(state);
                 }
             }
+
             loop {
+                // next u
                 if let Some(u) = self.u_range.next() {
-                    self.u = u;
-                    self.permut = 0;
+                    self.state.lu12.u = u;
+                    self.state = StateJ20::new(
+                        self.state.scheme,
+                        self.state.lu12,
+                    );
                     break;
                 }
-                if let Some(x) = self.x.step() {
+
+                // next x
+                let mut found_x = false;
+                while let Some(x) = self.x.step() {
                     self.x = x;
-                    self.u_range = self.scheme.basis_j20.aux_range(self.l, x);
+                    if self.mask.test_occ20(x) {
+                        found_x = true;
+                        break;
+                    }
+                }
+                if found_x {
+                    self.u_range = self.scheme().basis_j20.aux_range(
+                        self.state.lu12.l,
+                        self.x,
+                    );
                     continue;
                 }
                 return None;
             }
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct JChanOrb {
+    pub lu: ChanState,
+    pub j: Half<i32>,
+    pub x: Occ,
+}
+
+impl JChanOrb {
+    #[inline]
+    pub fn new(scheme: &JScheme, lu: ChanState) -> Self {
+        JChanOrb {
+            lu,
+            j: scheme.basis_j10.j_chan(lu.l).j,
+            x: scheme.basis_j10.occ(lu),
+        }
+    }
+
+    #[inline]
+    pub fn jweight(self, exponent: i32) -> f64 {
+        self.j.weight(exponent)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StateJ10<'a> {
+    pub scheme: &'a JScheme,
+    pub s1: JChanOrb,
+}
+
+impl<'a> Deref for StateJ10<'a> {
+    type Target = JChanOrb;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.s1
+    }
+}
+
+impl<'a> StateJ10<'a> {
+    #[inline]
+    pub fn new(scheme: &'a JScheme, lu1: ChanState) -> Self {
+        Self { scheme, s1: JChanOrb::new(scheme, lu1) }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StateJ20<'a> {
+    pub scheme: &'a JScheme,
+    pub lu12: ChanState,
+    pub j12: Half<i32>,
+    pub s1: JChanOrb,
+    pub s2: JChanOrb,
+    pub permut: u8,
+    /// Number of states related by antisymmetry
+    pub num_permut: u8,
+    pub get_factor: f64,
+    /// `set_factor == 1.0 / (get_factor * num_permut)`
+    pub set_factor: f64,
+}
+
+impl<'a> StateJ20<'a> {
+    #[inline]
+    pub fn new(scheme: &'a JScheme, lu12: ChanState) -> Self {
+        let (s1, s2) = scheme.basis_j20.decode(lu12);
+        let num_permut = if s1 == s2 { 1 } else { 2 };
+        Self {
+            scheme,
+            lu12,
+            j12: scheme.basis_j20.j_chan(lu12.l).j,
+            s1: JChanOrb::new(scheme, scheme.basis_j10.encode(s1)),
+            s2: JChanOrb::new(scheme, scheme.basis_j10.encode(s2)),
+            permut: 0,
+            num_permut,
+            get_factor: 1.0,
+            set_factor: 1.0 / num_permut as f64,
+        }
+    }
+
+    #[inline]
+    pub fn next_permut(mut self) -> Option<Self> {
+        self.permut += 1;
+        if self.permut >= self.num_permut {
+            return None;
+        }
+        mem::swap(&mut self.s1, &mut self.s2);
+        let sign = -(self.s1.j + self.s2.j - self.j12).phase();
+        self.get_factor = sign;
+        self.set_factor = sign / self.num_permut as f64;
+        Some(self)
+    }
+
+    #[inline]
+    pub fn jweight(self, exponent: i32) -> f64 {
+        self.j12.weight(exponent)
+    }
+
+    #[inline]
+    pub fn related_states(self, xs: &[[Occ; 2]]) -> RelatedStatesJ20<'a> {
+        RelatedStatesJ20::new(self.scheme, self.lu12.l, StateMask20::new(xs))
+    }
+
+    #[inline]
+    pub fn split_to_j10_j10(self) -> (StateJ10<'a>, StateJ10<'a>) {
+        (
+            StateJ10 { scheme: self.scheme, s1: self.s1 },
+            StateJ10 { scheme: self.scheme, s1: self.s2 },
+        )
     }
 }
 
@@ -242,99 +399,7 @@ pub struct JScheme {
 impl JScheme {
     #[inline]
     pub fn states_j20(&self, xs: &[[Occ; 2]]) -> StatesJ20 {
-        StatesJ20::new(self, xs)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct StateJ10<'a> {
-    pub scheme: &'a JScheme,
-    pub lu1: ChanState,
-    pub j1: Half<i32>,
-}
-
-impl<'a> StateJ10<'a> {
-    #[inline]
-    pub fn jweight(self, exponent: i32) -> f64 {
-        self.j1.weight(exponent)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct StateJ20<'a> {
-    pub scheme: &'a JScheme,
-    pub lu12: ChanState,
-    pub j12: Half<i32>,
-    pub lu1: ChanState,
-    pub j1: Half<i32>,
-    pub lu2: ChanState,
-    pub j2: Half<i32>,
-    pub get_factor: f64,
-    /// The set factor contains the inverse phase, but also inverse the number
-    /// of antisymmetry-related entries.
-    pub set_factor: f64,
-}
-
-impl<'a> StateJ20<'a> {
-    #[inline]
-    pub fn new(
-        scheme: &'a JScheme,
-        l12: u32,
-        u12: u32,
-        permut: u8,
-    ) -> Option<Self>
-    {
-        let basis_j10 = &scheme.basis_j10;
-        let basis_j20 = &scheme.basis_j20;
-        let j12 = basis_j20.j_chan(l12).j;
-        let lu12 = ChanState { l: l12, u: u12 };
-        let (s1, s2) = basis_j20.decode(lu12);
-        let num_permut = if s1 == s2 {
-            1
-        } else {
-            2
-        };
-        if permut >= num_permut {
-            return None;
-        }
-        let lu1 = basis_j10.encode(s1);
-        let j1 = basis_j10.j_chan(lu1.l).j;
-        let lu2 = basis_j10.encode(s2);
-        let j2 = basis_j10.j_chan(lu2.l).j;
-        let sign = if permut == 0 {
-            1.0
-        } else {
-            -(j1 + j2 - j12).phase()
-        };
-        Some(StateJ20 {
-            scheme,
-            lu12,
-            j12,
-            lu1,
-            j1,
-            lu2,
-            j2,
-            get_factor: sign,
-            set_factor: sign / num_permut as f64,
-        })
-    }
-
-    #[inline]
-    pub fn jweight(self, exponent: i32) -> f64 {
-        self.j12.weight(exponent)
-    }
-
-    #[inline]
-    pub fn related_states(self, xs: &[[Occ; 2]]) -> RelatedStatesJ20<'a> {
-        RelatedStatesJ20::new(self.scheme, self.lu12.l, xs)
-    }
-
-    #[inline]
-    pub fn split_to_j10_j10(self) -> (StateJ10<'a>, StateJ10<'a>) {
-        (
-            StateJ10 { scheme: self.scheme, lu1: self.lu1, j1: self.j1 },
-            StateJ10 { scheme: self.scheme, lu1: self.lu2, j1: self.j2 },
-        )
+        StatesJ20::new(self, StateMask20::new(xs))
     }
 }
 
@@ -349,8 +414,8 @@ impl<'a, D: IndexBlockVec> DiagOpJ10<'a, D> where
 {
     #[inline]
     pub fn at(&self, s1: StateJ10) -> D::Elem {
-        let l = s1.lu1.l as _;
-        let u = s1.lu1.u as _;
+        let l = s1.lu.l as _;
+        let u = s1.lu.u as _;
         self.data.index_block_vec(l, u).clone()
     }
 }
@@ -360,8 +425,8 @@ impl<'a, D: IndexBlockVecMut> DiagOpJ10<'a, D> where
 {
     #[inline]
     pub fn add(&mut self, s1: StateJ10, value: D::Elem) {
-        let l = s1.lu1.l as _;
-        let u = s1.lu1.u as _;
+        let l = s1.lu.l as _;
+        let u = s1.lu.u as _;
         *self.data.index_block_vec_mut(l, u) += value;
     }
 }
@@ -377,10 +442,10 @@ impl<'a, D: IndexBlockMat> OpJ100<'a, D> where
 {
     #[inline]
     pub fn at(&self, s1: StateJ10, s2: StateJ10) -> D::Elem {
-        let ll = s1.lu1.l as _;
-        let lr = s2.lu1.l as _;
-        let ul = s1.lu1.u as _;
-        let ur = s2.lu1.u as _;
+        let ll = s1.lu.l as _;
+        let lr = s2.lu.l as _;
+        let ul = s1.lu.u as _;
+        let ur = s2.lu.u as _;
         if ll != lr {
             return D::Elem::zero();
         }
@@ -393,10 +458,10 @@ impl<'a, D: IndexBlockMatMut> OpJ100<'a, D> where
 {
     #[inline]
     pub fn add(&mut self, s1: StateJ10, s2: StateJ10, value: D::Elem) {
-        let ll = s1.lu1.l as _;
-        let lr = s2.lu1.l as _;
-        let ul = s1.lu1.u as _;
-        let ur = s2.lu1.u as _;
+        let ll = s1.lu.l as _;
+        let lr = s2.lu.l as _;
+        let ul = s1.lu.u as _;
+        let ur = s2.lu.u as _;
         if ll != lr {
             return;
         }
