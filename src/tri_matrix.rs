@@ -6,7 +6,8 @@ use std::ops::{Deref, Index, IndexMut, Range};
 use num::Zero;
 use super::utils::{self, Offset, try_cast};
 
-/// Number of rows (or, equivalently, columns).
+/// Dimensions of a non-strict lower triangular matrix, equal to the number of
+/// rows or columns.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub struct TriMatDim(usize);
@@ -43,16 +44,12 @@ impl TriMatDim {
         }
     }
 
-    pub fn dim(self) -> usize {
-        self.0
-    }
-
     pub fn extent(self) -> usize {
         Self::raw_index(self.0, 0)
     }
 
     pub fn contains(self, i: usize, j: usize) -> bool {
-        i < self.0 && j < self.0
+        i >= j && j < self.0
     }
 
     pub fn raw_index(i: usize, j: usize) -> usize {
@@ -77,6 +74,62 @@ impl TriMatDim {
             debug_assert!(TriMatDim::is_valid(dim));
         }
         mem::transmute(slice)
+    }
+}
+
+/// Dimensions of a strict lower triangular matrix, equal to the number of
+/// rows or columns.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[repr(C)]
+pub struct StrictTriMatDim(usize);
+
+impl Deref for StrictTriMatDim {
+    type Target = usize;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl StrictTriMatDim {
+    pub fn is_valid(dim: usize) -> bool {
+        // make sure (dim - 1) * dim / 2 doesn't overflow
+        || -> Result<isize, ()> {
+            try_cast(
+                dim
+                    .checked_sub(1).ok_or(())?
+                    .checked_mul(dim).ok_or(())?
+                    / 2
+            ).ok_or(())
+        }().is_ok()
+    }
+
+    pub unsafe fn from_raw(dim: usize) -> Self {
+        StrictTriMatDim(dim)
+    }
+
+    pub fn new(dim: usize) -> Result<Self, usize> {
+        if Self::is_valid(dim) {
+            Ok(unsafe { Self::from_raw(dim) })
+        } else {
+            Err(dim)
+        }
+    }
+
+    pub fn extent(self) -> usize {
+        Self::raw_index(self.0, 0)
+    }
+
+    pub fn contains(self, i: usize, j: usize) -> bool {
+        i > j && j < self.0
+    }
+
+    pub fn raw_index(i: usize, j: usize) -> usize {
+        // wrapping is harmless here
+        i * i.wrapping_sub(1) / 2 + j
+    }
+
+    pub fn row_width(self, i: usize) -> usize {
+        i
     }
 }
 
@@ -416,7 +469,7 @@ impl<T: fmt::Debug> fmt::Debug for TriMatrix<T> {
 
 impl<T: Clone> Clone for TriMatrix<T> {
     fn clone(&self) -> Self {
-        Self::from_vec(self.as_slice().to_vec(), self.shape().dim())
+        Self::from_vec(self.as_slice().to_vec(), *self.shape())
     }
 }
 

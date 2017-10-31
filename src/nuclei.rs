@@ -285,7 +285,7 @@ impl Nucleus {
         State {
             chan: pjtw12,
             part: x1 + x2,
-            aux: State2(npj1, npj2),
+            aux: (npj1, npj2),
         }
     }
 
@@ -300,7 +300,7 @@ impl Nucleus {
                 w: npjmw1.w + npjmw2.w,
             },
             part: x1 + x2,
-            aux: State2(npjmw1, npjmw2),
+            aux: (npjmw1, npjmw2),
         }
     }
 }
@@ -377,10 +377,7 @@ impl<'a> DarmstadtMe2j<'a> {
 /// Construct a table of symmetric j-scheme states with isospin.
 ///
 /// Assumes j of orbitals are half-integers.
-pub fn jt2_states(
-    orbitals: &[Npj],
-) -> Vec<(Pjtw, Npj, Npj)>
-{
+pub fn jt2_states(orbitals: &[Npj]) -> Vec<(Pjtw, Npj, Npj)> {
     let mut states = Vec::default();
     // loop: ip1 >= ip2
     for (i1, &npj1) in orbitals.iter().enumerate() {
@@ -465,12 +462,12 @@ pub fn load_me2j<'a>(
                 return Ok(());
             }
             let l = pjtw12;
-            let u1 = State2(npj1, npj2);
-            let u2 = State2(npj3, npj4);
-            let il = mc2.left.encode_chan(&l).expect("invalid channel");
+            let u1 = (npj1, npj2);
+            let u2 = (npj3, npj4);
+            let il = mc2.left.encode_chan(&l).expect("invalid channel") as u32;
             // note: left and right ought to be the same
-            let iu1 = mc2.left.encode_aux(il, &u1).expect("invalid left state");
-            let iu2 = mc2.left.encode_aux(il, &u2).expect("invalid right state");
+            let iu1 = mc2.left.encode_aux(il, &u1).expect("invalid left state") as u32;
+            let iu2 = mc2.left.encode_aux(il, &u2).expect("invalid right state") as u32;
             dest[mc2.layout.offset(il, iu1, iu2)] = x;
             n += 1;
             if iu1 != iu2 {

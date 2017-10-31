@@ -1,13 +1,16 @@
 use std::{f64, mem};
-use std::ops::{AddAssign, Deref, Mul, Range};
+use std::hash::Hash;
+use std::ops::{Add, AddAssign, Deref, Mul, Range};
+use fnv::FnvHashMap;
 use num::{FromPrimitive, Zero};
-use super::basis::{occ, ChanState, IndexBlockVec, IndexBlockVecMut,
-                   IndexBlockMat, IndexBlockMatMut, Occ, Occ20, Orb};
+use super::basis::{occ, BasisChart, BasisLayout, ChanState, HashChart,
+                   IndexBlockVec, IndexBlockVecMut,
+                   IndexBlockMat, IndexBlockMatMut,
+                   Occ, Occ20, Orb, State};
 use super::half::Half;
-use super::tri_matrix::TriMatrix;
 
 #[derive(Clone, Copy, Debug)]
-pub struct JOrbital<K, U> {
+pub struct JOrb<K, U> {
     /// Angular momentum magnitude.
     pub j: Half<i32>,
     /// Linear part of the channel.
@@ -18,7 +21,7 @@ pub struct JOrbital<K, U> {
     pub x: Occ,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct JChan {
     /// Angular momentum magnitude
     pub j: Half<i32>,
@@ -27,24 +30,134 @@ pub struct JChan {
 }
 
 #[derive(Clone, Debug)]
+pub struct ChartedJScheme<K, U: Hash + Eq> {
+    /// `K1 ↔ κ1`
+    pub linchan1_chart: HashChart<K, u32>,
+    /// `K2 ↔ κ2`
+    pub linchan2_chart: HashChart<K, u32>,
+    /// `P1 → υ1`
+    pub aux_decoder: Box<[U]>,
+    /// `(L1, υ1) → U1`
+    pub aux_encoder: FnvHashMap<(u32, U), u32>,
+    pub scheme: JScheme,
+}
+
+impl<K, U> ChartedJScheme<K, U>
+    where K: Add<Output = K> + Hash + Eq + Clone,
+          U: Hash + Eq + Clone,
+{
+    pub fn new<I: Iterator<Item = JOrb<K, U>>>(orbs: I) -> Self {
+        // one-particle states
+        let mut linchan1_chart = HashChart::default();
+        let chart1 = BasisChart::new_with(orbs.map(|JOrb { j, k, u, x }| {
+            State {
+                chan: JChan {
+                    j,
+                    k: linchan1_chart.insert(k).index,
+                },
+                part: x,
+                aux: u,
+            }
+        }), Default::default(), Occ::chart());
+
+        let basis_j10 = BasisJ10 {
+            chan_chart: chart1.chan_chart,
+            layout: chart1.layout,
+        };
+
+        // two-particle states
+        let mut linchan2_chart = HashChart::default();
+        let mut states2 = Vec::default();
+        for l1 in 0 .. basis_j10.num_chans() {
+            for l2 in 0 .. basis_j10.num_chans() {
+                for u1 in basis_j10.auxs(l1, Occ::I, Occ::A) {
+                    for u2 in basis_j10.auxs(l2, Occ::I, Occ::A) {
+                        let lu1 = ChanState { l: l1, u: u1 };
+                        let lu2 = ChanState { l: l2, u: u2 };
+                        let p1 = basis_j10.decode(lu1);
+                        let p2 = basis_j10.decode(lu2);
+                        if p1 < p2 {
+                            continue;
+                        }
+                        let jk1 = basis_j10.j_chan(l1);
+                        let jk2 = basis_j10.j_chan(l2);
+                        let k12 =
+                            linchan1_chart.decode(jk1.k as _).unwrap().clone()
+                            + linchan1_chart.decode(jk2.k as _).unwrap().clone();
+                        let k12 = linchan2_chart.insert(k12).index as _;
+                        let x12 = Occ20::from_usize(
+                            usize::from(basis_j10.occ(lu1))
+                                + usize::from(basis_j10.occ(lu2))).unwrap();
+                        for j12 in Half::tri_range(jk1.j, jk2.j) {
+                            states2.push(State {
+                                chan: JChan { j: j12, k: k12 },
+                                part: x12,
+                                aux: (p1, p2),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        let chart2 = BasisChart::new_with(
+            states2.into_iter(),
+            Default::default(),
+            Occ20::chart(),
+        );
+        let aux_encoder2 = chart2.aux_encoder.iter()
+            .map(|(&(l, (p1, p2)), &u)| {
+                let j = chart2.decode_chan(l).unwrap().j;
+                ((j, p1, p2), ChanState { l, u })
+            })
+            .collect();
+        let basis_j20 = BasisJ20 {
+            chan_chart: chart2.chan_chart,
+            aux_decoder: chart2.aux_decoder,
+            aux_encoder: aux_encoder2,
+            layout: chart2.layout,
+        };
+
+        Self {
+            linchan1_chart,
+            linchan2_chart,
+            aux_decoder: chart1.aux_decoder,
+            aux_encoder: chart1.aux_encoder,
+            scheme: JScheme {
+                basis_j10,
+                basis_j20,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct BasisJ10 {
-    pub chans: Box<[JChan]>,
-    // l -> s_offset
-    pub offsets: Box<[u32]>,
-    // s -> (l, u)
-    pub encoder: Box<[ChanState]>,
-    // l -> u
-    pub num_occ: Box<[u32]>,
+    pub chan_chart: HashChart<JChan, u32>,
+    pub layout: BasisLayout,
 }
 
 impl BasisJ10 {
-    pub fn new(states: &mut Iterator<Item = (JChan, u32, Occ)>) -> (Self) {
-        unimplemented!()
+    #[inline]
+    pub fn num_chans(&self) -> u32 {
+        self.chan_chart.len() as _
+    }
+
+    #[inline]
+    pub fn auxs(&self, l: u32, x1: Occ, x2: Occ) -> Range<u32> {
+        Range {
+            start: self.layout.part_offset(l, u32::from(x1)),
+            end: self.layout.part_offset(l, u32::from(x2) + 1),
+        }
+    }
+
+    #[inline]
+    pub fn part_offset(&self, l: u32, x: u32) -> u32 {
+        self.layout.part_offset(l, x)
     }
 
     #[inline]
     pub fn occ(&self, lu: ChanState) -> Occ {
-        if lu.u >= self.num_occ[lu.l as usize] as _ {
+        if lu.u >= self.layout.part_offset(lu.l, 1) {
             Occ::A
         } else {
             Occ::I
@@ -53,66 +166,62 @@ impl BasisJ10 {
 
     #[inline]
     pub fn j_chan(&self, l: u32) -> JChan {
-        self.chans[l as usize]
+        *self.chan_chart.decode(l).unwrap()
     }
 
     #[inline]
     pub fn decode(&self, lu: ChanState) -> Orb {
-        Orb(self.offsets[lu.l as usize] + lu.u)
+        Orb(self.layout.dechannelize(lu))
     }
 
     #[inline]
-    pub fn encode(&self, s: Orb) -> ChanState {
-        self.encoder[s.0 as usize]
+    pub fn encode(&self, p: Orb) -> ChanState {
+        self.layout.channelize(p.0)
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct BasisJ20 {
-    pub chans: Vec<JChan>,
-    // l12 -> x12 -> u12
-    pub part_offsets: Vec<Vec<u32>>,
-    // l12 -> u12 -> (s1, s2)
-    pub decoder: Vec<Vec<(Orb, Orb)>>,
-    // (s1, s2) -> (l12, u12)
-    pub encoder: TriMatrix<ChanState>,
+    pub chan_chart: HashChart<JChan, u32>,
+    pub layout: BasisLayout,
+    /// `(j12, p1, p2) → (l12, u12)`
+    pub aux_encoder: FnvHashMap<(Half<i32>, Orb, Orb), ChanState>,
+    /// `p12 → (p1, p2)`
+    pub aux_decoder: Box<[(Orb, Orb)]>,
 }
 
 impl BasisJ20 {
     #[inline]
     pub fn num_chans(&self) -> u32 {
-        self.chans.len() as _
+        self.layout.num_chans()
     }
 
     #[inline]
     pub fn auxs(&self, l: u32, x1: Occ20, x2: Occ20) -> Range<u32> {
-        let l = l as usize;
         Range {
-            start: self.part_offsets[l][usize::from(x1)],
-            end: self.part_offsets[l][usize::from(x2) + 1],
+            start: self.layout.part_offset(l, u32::from(x1)),
+            end: self.layout.part_offset(l, u32::from(x2) + 1),
         }
     }
 
     #[inline]
     pub fn aux_range(&self, l: u32, x: Occ20) -> Range<u32> {
-        let l = l as usize;
-        self.part_offsets[l][usize::from(x)] as _ ..
-        self.part_offsets[l][usize::from(x) + 1] as _
+        self.auxs(l, x, x)
     }
 
     #[inline]
     pub fn j_chan(&self, l: u32) -> JChan {
-        self.chans[l as usize]
+        *self.chan_chart.decode(l).unwrap()
     }
 
     #[inline]
     pub fn decode(&self, lu: ChanState) -> (Orb, Orb) {
-        self.decoder[lu.l as usize][lu.u as usize]
+        self.aux_decoder[self.layout.dechannelize(lu) as usize]
     }
 
     #[inline]
-    pub fn encode(&self, (s1, s2): (Orb, Orb)) -> ChanState {
-        *self.encoder.as_ref().get(s1.0 as _, s2.0 as _).unwrap()
+    pub fn encode(&self, j12: Half<i32>, s1: Orb, s2: Orb) -> ChanState {
+        *self.aux_encoder.get(&(j12, s1, s2)).unwrap()
     }
 }
 

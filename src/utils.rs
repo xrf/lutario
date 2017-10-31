@@ -182,9 +182,18 @@ pub fn pretty_bytes(bytes: &[u8]) -> String {
         .collect()
 }
 
+pub trait Key<V> {
+    type Map: Map<Self, Value = V>;
+}
+
 pub trait Map<K: ?Sized> {
     type Value;
     fn get(&self, key: &K) -> Option<Self::Value>;
+}
+
+pub trait MapMut<K>: Map<K> {
+    fn new() -> Self;
+    fn insert(&mut self, key: K, value: Self::Value);
 }
 
 impl<K, V, F: Fn(&K) -> Option<V>> Map<K> for F {
@@ -222,16 +231,57 @@ impl<K: Eq + Hash, V: Clone, S: BuildHasher> Map<K> for HashMap<K, V, S> {
     }
 }
 
+/// Zigzag integer encoding, which maps signed integers to unsigned integers.
+///
+/// ```text
+///  0 → 0
+/// -1 → 1
+///  1 → 2
+/// -2 → 3
+///  2 → 4
+///  etc…
+/// `text
+///
+/// The name "zigzag" originates from the Google Protocol Buffers library,
+/// which uses this encoding to store variable-width integers.
+///
+/// The ordering is defined by the encoded value, not the original value.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Zigzag<T>(pub T);
+
+impl From<i32> for Zigzag<u32> {
+    fn from(i: i32) -> Self {
+        Zigzag(((i << 1) ^ (i >> 31)) as _)
+    }
+}
+
+impl From<Zigzag<u32>> for i32 {
+    fn from(Zigzag(i): Zigzag<u32>) -> Self {
+        (i >> 1) as i32 ^ -((i & 1) as i32)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::hash_map;
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn hash_map() {
         let mut m: HashMap<_, _, hash_map::RandomState> = default_hash_map();
         m.insert(42, ":3");
         assert_eq!(m.get(&42), Some(&":3"));
         assert_eq!(m.get(&0), None);
+    }
+
+    #[test]
+    fn zigzag() {
+        for i in -100 .. 101 {
+            assert_eq!(i32::from(Zigzag::from(i)), i);
+        }
+        for &i in &[-0x80000000, -0x7fffffff, -0x7ffffffe,
+                    0x7ffffffe, 0x7fffffff] {
+            assert_eq!(i32::from(Zigzag::from(i)), i);
+        }
     }
 }
