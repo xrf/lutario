@@ -10,7 +10,7 @@ accelerate = ["blas/accelerate", "lapack/accelerate"]
 openblas = ["blas/openblas", "lapack/openblas"]
 
 [dependencies]
-any_key = "0.1.0"
+any_key = "0.1.1"
 blas = { version = "0.17.0", default-features = false }
 byteorder = "1.1.0"
 conv = "0.3.3"
@@ -19,8 +19,10 @@ error-chain = "0.11.0"
 flate2 = { version = "0.2.20", features = ["zlib"], default-features = false }
 fnv = "1.0.5"
 lapack = { version = "0.13.1", default-features = false }
+lazy_static = "0.2.9"
 num = "0.1.40"
 quick-error = "1.2.1"
+siphasher = "0.2.2"
 stable_deref_trait = "1.0.0"
 take_mut = "0.2.0"
 xz2 = "0.1.3"

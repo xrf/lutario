@@ -1,7 +1,6 @@
 //! Parity data type.
 use std::ops::{Add, Rem, Sub};
 use num::{One, Zero};
-use super::basis::Abelian;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Parity {
@@ -122,8 +121,6 @@ impl Zero for Parity {
         self == &Self::zero()
     }
 }
-
-impl Abelian for Parity {}
 
 #[cfg(test)]
 mod tests {

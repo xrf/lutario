@@ -1,16 +1,17 @@
 //! Type-safe caching of arbitrary data
 
-use std::{cmp, hash, mem};
+use std::{cmp, mem};
 use std::cell::RefCell;
 use std::collections::BTreeSet;
+use std::hash::{Hash, Hasher};
 use any_key::AnyOrd;
 
-/// Implementation detail for `Cache`.
 pub trait CacheKey: Ord + 'static {
     type Value: 'static;
     fn get(&self) -> Self::Value;
 }
 
+/// Implementation detail for `Cache`.
 #[derive(Clone, Copy, Debug)]
 pub struct CacheEntry<K, V> {
     pub key: K,
@@ -25,8 +26,8 @@ impl<K: PartialEq, V> PartialEq for CacheEntry<K, V> {
 
 impl<K: Eq, V> Eq for CacheEntry<K, V> {}
 
-impl<K: hash::Hash, V> hash::Hash for CacheEntry<K, V> {
-    fn hash<H: hash::Hasher>(&self, hasher: &mut H) {
+impl<K: Hash, V> Hash for CacheEntry<K, V> {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.key.hash(hasher)
     }
 }

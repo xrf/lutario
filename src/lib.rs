@@ -12,11 +12,14 @@ extern crate fnv;
 extern crate error_chain;
 extern crate num;
 extern crate lapack;
+#[macro_use]
+extern crate lazy_static;
 #[allow(unused_extern_crates)]
 #[cfg(feature="netlib-src")]
 extern crate netlib_src;
 #[macro_use]
 extern crate quick_error;
+extern crate siphasher;
 extern crate stable_deref_trait;
 extern crate take_mut;
 extern crate xz2;
@@ -27,6 +30,7 @@ pub mod block_matrix;
 pub mod block_tri_matrix;
 pub mod btree_cache;
 pub mod cache;
+pub mod cache2;
 pub mod half;
 pub mod io;
 pub mod j_scheme;

@@ -36,20 +36,70 @@
 //! contexts (e.g. `l` can mean orbital angular momentum, and `p` can mean
 //! parity).
 //!
-use std::{fmt, iter, vec};
+use std::{fmt, iter, mem, vec};
 use std::borrow::Borrow;
-use std::hash::Hash;
-use std::ops::{Sub};
+use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut};
 use fnv::FnvHashMap;
-use num::Zero;
 use super::block_matrix::{BlockMat, BlockMatMut};
-use super::matrix::{Mat, MatShape};
+use super::matrix::{Mat, MatShape, Matrix};
+use super::cache2::Cache;
 use super::utils;
 
-/// An Abelian group.
-pub trait Abelian: Zero + Sub<Output = Self> {}
-
 pub type State2<T> = (T, T);
+
+lazy_static! {
+    /// Global cache for storing basis information.
+    pub static ref CACHE: Cache = Cache::default();
+}
+
+pub fn siphash128<T: Hash + ?Sized>(value: &T, key: (u64, u64)) -> (u64, u64) {
+    use siphasher::sip128::{Hash128, Hasher128, SipHasher};
+    let mut hasher = SipHasher::new_with_keys(key.0, key.1);
+    value.hash(&mut hasher);
+    let Hash128 { h1, h2 } = hasher.finish128();
+    (h1, h2)
+}
+
+#[derive(Clone, Debug)]
+pub struct Hashed<T> {
+    pub inner: T,
+    pub hash: (u64, u64),
+}
+
+impl<T: Hash> Hashed<T> {
+    pub fn new(inner: T) -> Self {
+        let hash = siphash128(&inner, (0, 0));
+        Hashed { inner, hash }
+    }
+}
+
+impl<T> PartialEq for Hashed<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.hash.eq(&other.hash)
+    }
+}
+
+impl<T> Eq for Hashed<T> {}
+
+impl<T> Hash for Hashed<T> {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.hash.hash(hasher)
+    }
+}
+
+impl<T> Deref for Hashed<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> DerefMut for Hashed<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
 
 pub trait IntoUsize {
     fn into_usize(self) -> usize;
@@ -228,7 +278,7 @@ impl BasisLayout {
 
     pub fn channelize(&self, p: u32) -> ChanState {
         let l = self.state_chans[p as usize];
-        let u = p - l;
+        let u = p - self.chan_offset(l);
         ChanState { l, u }
     }
 
@@ -263,13 +313,6 @@ impl BasisLayout {
             ).validate().unwrap(),
         ).unwrap()
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct State<L, X, U> {
-    pub chan: L,
-    pub part: X,
-    pub aux: U,
 }
 
 /// A basis chart contains information needed to interpret an axis of a
@@ -351,21 +394,25 @@ impl<L, X, U> BasisChart<L, X, U>
           X: Hash + Eq + Clone,
           U: Hash + Eq + Clone,
 {
-    pub fn new<I: Iterator<Item = State<L, X, U>>>(states: I) -> Self {
+    pub fn new<I>(states: I) -> Self where
+        I: Iterator<Item = PartState<X, ChanState<L, U>>>,
+    {
         Self::new_with(states, Default::default(), Default::default())
     }
 
-    pub fn new_with<I: Iterator<Item = State<L, X, U>>>(
+    pub fn new_with<I>(
         states: I,
         mut chan_chart: HashChart<L, u32>,
         mut part_chart: HashChart<X, u32>,
-    ) -> Self {
+    ) -> Self where
+        I: Iterator<Item = PartState<X, ChanState<L, U>>>,
+    {
         let mut state_chart = HashChart::default(); // this one is temporary
         let mut lxps = Vec::default();
-        for State { chan, part, aux } in states {
-            let l = chan_chart.insert(chan.clone()).index;
-            let x = part_chart.insert(part).index;
-            let inserted_lu = state_chart.insert((l, aux));
+        for PartState { x, p: ChanState { l, u } } in states {
+            let l = chan_chart.insert(l).index;
+            let x = part_chart.insert(x).index;
+            let inserted_lu = state_chart.insert((l, u));
             assert!(inserted_lu.inserted, "every state (l, u) must be unique");
             let p: u32 = inserted_lu.index;
             lxps.push((l, x, p));
@@ -396,7 +443,7 @@ impl<L, X, U> BasisChart<L, X, U>
                         _ => break,
                     }
                 }
-                if x != num_parts {
+                if x != num_parts - 1 {
                     part_offsets.push(u);
                 }
             }
@@ -530,28 +577,46 @@ impl<'a, L, X1, X2, U1, U2> MatChart<'a, L, X1, X2, U1, U2>
 pub struct Orb(pub u32);
 
 /// Channelized state index.
-#[derive(Clone, Copy, Debug)]
-pub struct ChanState {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ChanState<L = u32, U = u32> {
     /// Channel index
-    pub l: u32,
+    pub l: L,
     /// Auxiliary index
-    pub u: u32,
+    pub u: U,
 }
 
-/// Occupancy of a state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PartState<X, P> {
+    pub x: X,
+    pub p: P,
+}
+
+/// Associates data types with sequences.
+pub trait Increment: Sized {
+    /// Given the current item, return the next item in the associated
+    /// sequence.
+    fn increment(&self) -> Option<Self>;
+}
+
+/// Iterator over `Option<impl Increment>`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Fence<T>(pub T);
+
+impl<T: Increment> Iterator for Fence<Option<T>> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        let t_new = self.0.as_ref().and_then(Increment::increment);
+        mem::replace(&mut self.0, t_new)
+    }
+}
+
+/// Occupancy of an orbital (single-particle state).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Occ {
-    /// Occupied ("hole") state
+    /// Occupied ("hole") orbital
     I,
-    /// Unoccupied ("particle") state
+    /// Unoccupied ("particle") orbital
     A,
-}
-
-impl Occ {
-    pub fn chart() -> HashChart<Self, u32> {
-        use self::Occ::*;
-        [I, A].iter().cloned().collect()
-    }
 }
 
 impl From<Occ> for usize {
@@ -570,10 +635,41 @@ impl From<Occ> for u32 {
     }
 }
 
+impl From<bool> for Occ {
+    fn from(x: bool) -> Self {
+        match x {
+            false => Occ::I,
+            true => Occ::A,
+        }
+    }
+}
+
+impl Increment for Occ {
+    fn increment(&self) -> Option<Self> {
+        Self::from_usize(usize::from(*self) + 1)
+    }
+}
+
+impl Occ {
+    pub fn chart() -> HashChart<Self, u32> {
+        occ::ALL1.iter().cloned().collect()
+    }
+
+    pub fn from_usize(x: usize) -> Option<Self> {
+        use self::Occ::*;
+        match x {
+            0 => Some(I),
+            1 => Some(A),
+            _ => None,
+        }
+    }
+}
+
 pub mod occ {
     //! Convenient aliases for occupancies.
     use super::Occ;
     pub const ALL1: [Occ; 2] = [Occ::I, Occ::A];
+    pub const ALL2: [[Occ; 2]; 4] = [II, AI, IA, AA];
 
     pub use super::Occ::I;
     pub use super::Occ::A;
@@ -591,27 +687,6 @@ pub enum Occ20 {
     AA,
 }
 
-impl Occ20 {
-    pub fn chart() -> HashChart<Self, u32> {
-        use self::Occ20::*;
-        [II, AI, AA].iter().cloned().collect()
-    }
-
-    pub fn from_usize(x: usize) -> Option<Self> {
-        use self::Occ20::*;
-        match x {
-            0 => Some(II),
-            1 => Some(AI),
-            2 => Some(AA),
-            _ => None,
-        }
-    }
-
-    pub fn step(self) -> Option<Self> {
-        Self::from_usize(usize::from(self) + 1)
-    }
-}
-
 impl From<Occ20> for usize {
     fn from(x: Occ20) -> Self {
         use self::Occ20::*;
@@ -626,6 +701,29 @@ impl From<Occ20> for usize {
 impl From<Occ20> for u32 {
     fn from(x: Occ20) -> Self {
         usize::from(x) as _
+    }
+}
+
+impl Increment for Occ20 {
+    fn increment(&self) -> Option<Self> {
+        Self::from_usize(usize::from(*self) + 1)
+    }
+}
+
+impl Occ20 {
+    pub fn chart() -> HashChart<Self, u32> {
+        use self::Occ20::*;
+        [II, AI, AA].iter().cloned().collect()
+    }
+
+    pub fn from_usize(x: usize) -> Option<Self> {
+        use self::Occ20::*;
+        match x {
+            0 => Some(II),
+            1 => Some(AI),
+            2 => Some(AA),
+            _ => None,
+        }
     }
 }
 
@@ -692,5 +790,23 @@ impl<'a, T> IndexBlockMatMut for BlockMatMut<'a, T> {
         u2: usize,
     ) -> &mut Self::Elem {
         self.as_mut().get(l).unwrap().get(u1, u2).unwrap()
+    }
+}
+
+impl<T> IndexBlockMat for Vec<Matrix<T>> {
+    type Elem = T;
+    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
+        self[l].as_ref().get(u1, u2).unwrap()
+    }
+}
+
+impl<T> IndexBlockMatMut for Vec<Matrix<T>> {
+    fn index_block_mat_mut(
+        &mut self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+    ) -> &mut Self::Elem {
+        self[l].as_mut().get(u1, u2).unwrap()
     }
 }

@@ -1,11 +1,14 @@
 //! Nuclei systems.
+//!
+//! Here we use the particle physics convention of proton = +½, neutron = −½.
 use std::{fmt, str};
 use std::cmp::min;
 use std::ops::{Add, Sub};
 use std::path::Path;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use super::{Error, ResultExt};
-use super::basis::{Abelian, MatChart, State, State2};
+use super::basis::{ChanState, MatChart, Occ, PartState, State2};
+use super::j_scheme::JChan;
 use super::half::Half;
 use super::linalg::AdjSym;
 use super::parity::Parity;
@@ -21,7 +24,7 @@ impl fmt::Display for OrbAng {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         const ALPHABET: &[u8] = b"spdfghiklmnoqrtuvwxyz";
         let mut l = self.0 as usize;
-        let mut s = Vec::new();
+        let mut s = Vec::default();
         loop {
             let r = l % ALPHABET.len();
             if r == 0 {
@@ -68,8 +71,6 @@ impl Zero for Pw {
     }
 }
 
-impl Abelian for Pw {}
-
 /// Principal quantum number, parity, and total angular momentum magnitude.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Npj {
@@ -84,20 +85,25 @@ pub struct Npj {
 /// Display using spectroscopic notation.
 impl fmt::Display for Npj {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", self.n, self.l(), self.j)
+        write!(f, "{}{}{}", self.n, self.orb_ang(), self.j)
     }
 }
 
 impl Npj {
-    /// Shell index
-    pub fn e(self) -> i32 {
-        2 * self.n + self.l().0
+    /// Shell index.
+    pub fn shell(self) -> i32 {
+        2 * self.n + self.orb_ang().0
     }
 
-    /// Orbital angular momentum
-    pub fn l(self) -> OrbAng {
+    /// Returns harmonic oscillator energy in natural units.
+    pub fn osc_energy(self) -> f64 {
+        1.5 + self.shell() as f64
+    }
+
+    /// Orbital angular momentum.
+    pub fn orb_ang(self) -> OrbAng {
         debug_assert!(self.j.try_get().is_err());
-        let a = self.j.twice() / 2; // caution: integer division!
+        let a = self.j.twice() / 2;     // intentional integer division
         OrbAng(a + (a + i32::from(self.p)) % 2)
     }
 }
@@ -117,13 +123,44 @@ pub struct Npjw {
 }
 
 impl Npjw {
-    /// Shell index
-    pub fn e(self) -> i32 {
-        self.npj().e()
+    /// Shell index.
+    pub fn shell(self) -> i32 {
+        Npj::from(self).shell()
     }
 
-    pub fn npj(self) -> Npj {
-        Npj { n: self.n, p: self.p, j: self.j }
+    /// Returns harmonic oscillator energy in natural units.
+    pub fn osc_energy(self) -> f64 {
+        Npj::from(self).osc_energy()
+    }
+}
+
+impl From<Npjw> for Npj {
+    fn from(s: Npjw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j }
+    }
+}
+
+impl From<ChanState<JChan<Pw>, i32>> for Npjw {
+    fn from(s: ChanState<JChan<Pw>, i32>) -> Self {
+        Self { n: s.u, p: s.l.k.p, j: s.l.j, w: s.l.k.w }
+    }
+}
+
+impl From<Npjw> for ChanState<JChan<Pw>, i32> {
+    fn from(s: Npjw) -> Self {
+        Self { l: JChan { j: s.j, k: Pw { p: s.p, w: s.w } }, u: s.n }
+    }
+}
+
+/// Display using spectroscopic notation.
+impl fmt::Display for Npjw {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Npj::from(*self).fmt(f)?;
+        match self.w {
+            Half(-1) => write!(f, "n"),
+            Half(1) => write!(f, "p"),
+            _ => write!(f, "(w={})", self.w),
+        }
     }
 }
 
@@ -144,71 +181,15 @@ pub struct Npjmw {
 }
 
 impl Npjmw {
-    /// Shell index
-    pub fn e(self) -> i32 {
-        self.npj().e()
-    }
-
-    pub fn npj(self) -> Npj {
-        Npj { n: self.n, p: self.p, j: self.j }
+    /// Shell index.
+    pub fn shell(self) -> i32 {
+        Npj::from(self).shell()
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct NuclBasisSpec {
-    /// Maximum shell index
-    pub e_max: i32,
-    /// Maximum principal quantum number
-    pub n_max: i32,
-    /// Maximum orbital angular momentum magnitude
-    pub l_max: i32,
-}
-
-impl NuclBasisSpec {
-    pub fn with_e_max(e_max: i32) -> Self {
-        Self {
-            e_max,
-            n_max: i32::max_value(),
-            l_max: i32::max_value(),
-        }
-    }
-
-    /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
-    pub fn npj_states(self) -> Vec<Npj> {
-        let mut orbitals = Vec::new();
-        for e in 0 .. self.e_max + 1 {
-            for l in range_step_inclusive(e % 2, min(e, self.l_max), 2) {
-                let n = (e - l) / 2;
-                if n > self.n_max {
-                    continue;
-                }
-                let p = Parity::of(l);
-                for j in Half::tri_range(l.into(), Half(1)) {
-                    orbitals.push(Npj { n, p, j });
-                }
-            }
-        }
-        orbitals
-    }
-
-    pub fn npjw_states(self) -> Vec<Npjw> {
-        let mut orbitals = Vec::new();
-        for Npj { n, p, j } in self.npj_states() {
-            for w in Half(1).multiplet() {
-                orbitals.push(Npjw { n, p, j, w });
-            }
-        }
-        orbitals
-    }
-
-    pub fn npjmw_states(self) -> Vec<Npjmw> {
-        let mut orbitals = Vec::new();
-        for Npjw { n, p, j, w } in self.npjw_states() {
-            for m in j.multiplet() {
-                orbitals.push(Npjmw { n, p, j, m, w });
-            }
-        }
-        orbitals
+impl From<Npjmw> for Npj {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j }
     }
 }
 
@@ -254,61 +235,149 @@ pub struct Nj {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Nucleus {
-    pub basis_spec: NuclBasisSpec,
-    pub num_filled: i32,
+pub struct Pj {
+    pub p: Parity,
+    pub j: Half<i32>,
 }
 
-impl Nucleus {
-    pub fn channelize_j1(&self, npjw: Npjw) -> State<Pjtw, i32, i32> {
-        let Npjw { n, p, j, w } = npjw;
-        State {
-            chan: Pjtw { p, j, t: Half(1), w },
-            part: (npjw.e() >= self.num_filled) as i32,
-            aux: n,
+#[derive(Clone, Copy, Debug)]
+pub struct NucleonBasisSpec {
+    /// Maximum shell index
+    pub e_max: i32,
+    /// Maximum principal quantum number
+    pub n_max: i32,
+    /// Maximum orbital angular momentum magnitude
+    pub l_max: i32,
+}
+
+impl NucleonBasisSpec {
+    pub fn with_e_max(e_max: i32) -> Self {
+        Self {
+            e_max,
+            n_max: i32::max_value(),
+            l_max: i32::max_value(),
         }
     }
 
-    pub fn channelize_m1(&self, npjmw: Npjmw) -> State<Pmw, i32, Nj> {
-        let Npjmw { n, p, j, m, w } = npjmw;
-        State {
-            chan: Pmw { p, m, w },
-            part: (npjmw.e() >= self.num_filled) as _,
-            aux: Nj { n, j },
+    /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
+    pub fn npj_states(self) -> Vec<Npj> {
+        let mut orbitals = Vec::default();
+        for e in 0 .. self.e_max + 1 {
+            for l in range_step_inclusive(e % 2, min(e, self.l_max), 2) {
+                let n = (e - l) / 2;
+                if n > self.n_max {
+                    continue;
+                }
+                let p = Parity::of(l);
+                for j in Half::tri_range(l.into(), Half(1)) {
+                    orbitals.push(Npj { n, p, j });
+                }
+            }
         }
+        orbitals
     }
 
-    pub fn channelize_j2(&self, (pjtw12, npj1, npj2): (Pjtw, Npj, Npj))
-                         -> State<Pjtw, i32, State2<Npj>> {
-        let x1 = (npj1.e() >= self.num_filled) as i32;
-        let x2 = (npj2.e() >= self.num_filled) as i32;
-        State {
-            chan: pjtw12,
-            part: x1 + x2,
-            aux: (npj1, npj2),
+    pub fn npjw_states(self, w: Half<i32>) -> Vec<Npjw> {
+        let mut orbitals = Vec::default();
+        for Npj { n, p, j } in self.npj_states() {
+            orbitals.push(Npjw { n, p, j, w });
         }
-    }
-
-    pub fn channelize_m2(&self, (npjmw1, npjmw2): (Npjmw, Npjmw))
-                         -> State<Pmw, i32, State2<Npjmw>> {
-        let x1 = (npjmw1.e() >= self.num_filled) as i32;
-        let x2 = (npjmw2.e() >= self.num_filled) as i32;
-        State {
-            chan: Pmw {
-                p: npjmw1.p + npjmw2.p,
-                m: npjmw1.m + npjmw2.m,
-                w: npjmw1.w + npjmw2.w,
-            },
-            part: x1 + x2,
-            aux: (npjmw1, npjmw2),
-        }
+        orbitals
     }
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Pj {
-    pub p: Parity,
-    pub j: Half<i32>,
+pub struct Nucleus {
+    pub neutron_basis_spec: NucleonBasisSpec,
+    pub proton_basis_spec: NucleonBasisSpec,
+    pub e_fermi_neutron: i32,
+    pub e_fermi_proton: i32,
+}
+
+impl Nucleus {
+    // FIXME: remove this function as it does not depend on num_filled
+    pub fn npjw_states(self) -> Vec<Npjw> {
+        let mut states = Vec::default();
+        states.extend(self.neutron_basis_spec.npjw_states(Half(-1)));
+        states.extend(self.proton_basis_spec.npjw_states(Half(1)));
+        states
+    }
+
+    pub fn jpwn_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pw>, i32>>> {
+        self.npjw_states().into_iter().map(|npjw| {
+            let Npjw { n, p, j, w } = npjw;
+            PartState {
+                x: (Npj::from(npjw).shell() >= self.e_fermi(w)).into(),
+                p: ChanState {
+                    l: JChan { j, k: Pw { p, w } },
+                    u: n,
+                },
+            }
+        }).collect()
+    }
+
+    pub fn e_fermi(self, w: Half<i32>) -> i32 {
+        if w < Half(0) {
+            self.e_fermi_neutron
+        } else {
+            self.e_fermi_proton
+        }
+    }
+
+    pub fn channelize_m1(
+        &self,
+        npjmw: Npjmw,
+    ) -> PartState<i32, ChanState<Pmw, Nj>>
+    {
+        let Npjmw { n, p, j, m, w } = npjmw;
+        PartState {
+            x: (npjmw.shell() >= self.e_fermi(w)) as _,
+            p: ChanState {
+                l: Pmw { p, m, w },
+                u: Nj { n, j },
+            },
+        }
+    }
+
+    pub fn channelize_j2(
+        &self,
+        (pjtw12, npj1, npj2): (Pjtw, Npj, Npj),
+    ) -> PartState<i32, ChanState<Pjtw, State2<Npj>>>
+    {
+        assert_eq!(self.e_fermi(Half(-1)), self.e_fermi(Half(1)));
+        let num_filled = self.e_fermi(Half(-1));
+        let x1 = (npj1.shell() >= num_filled) as i32;
+        let x2 = (npj2.shell() >= num_filled) as i32;
+        PartState {
+            x: x1 + x2,
+            p: ChanState {
+                l: pjtw12,
+                u: (npj1, npj2),
+            },
+        }
+    }
+
+    pub fn channelize_m2(
+        &self,
+        (npjmw1, npjmw2): (Npjmw, Npjmw),
+    ) -> PartState<i32, ChanState<Pmw, State2<Npjmw>>>
+    {
+        assert_eq!(self.e_fermi(Half(-1)), self.e_fermi(Half(1)));
+        let num_filled = self.e_fermi(Half(-1));
+        let x1 = (npjmw1.shell() >= num_filled) as i32;
+        let x2 = (npjmw2.shell() >= num_filled) as i32;
+        PartState {
+            x: x1 + x2,
+            p: ChanState {
+                l: Pmw {
+                    p: npjmw1.p + npjmw2.p,
+                    m: npjmw1.m + npjmw2.m,
+                    w: npjmw1.w + npjmw2.w,
+                },
+                u: (npjmw1, npjmw2),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -327,7 +396,7 @@ impl<'a> DarmstadtMe2j<'a> {
             let npj1 = self.npjs[i1];
             for i2 in range_inclusive(0, i1) {
                 let npj2 = self.npjs[i2];
-                if npj1.e() + npj2.e() > e12_max {
+                if npj1.shell() + npj2.shell() > e12_max {
                     break;
                 }
                 for i3 in range_inclusive(0, i1) {
@@ -335,7 +404,7 @@ impl<'a> DarmstadtMe2j<'a> {
                     let i4_max = if i3 == i1 { i2 } else { i3 };
                     for i4 in range_inclusive(0, i4_max) {
                         let npj4 = npjs[i4];
-                        if npj3.e() + npj4.e() > e12_max {
+                        if npj3.shell() + npj4.shell() > e12_max {
                             break;
                         }
                         let p12 = npj1.p + npj2.p;
@@ -425,15 +494,15 @@ quick_error! {
 pub fn load_me2j<'a>(
     elems: &mut Iterator<Item = f64>,
     table: &[Npj],
-    e_max: i32,
     e12_max: i32,
+    e_max: i32,
     mc2: &MatChart<Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
     progress: &mut FnMut(usize),
     dest_adj: AdjSym,
     dest: &mut [f64],
 ) -> Result<(), LoadError> {
     if let Some(npj) = table.last() {
-        assert!(npj.e() >= e_max, "table is too inadequate for this e_max");
+        assert!(npj.shell() >= e_max, "table is too inadequate for this e_max");
     }
     let mut n = 0;
     let mut progress_timer = 0;
@@ -452,13 +521,13 @@ pub fn load_me2j<'a>(
                 return Err(Err(LoadError::NonzeroForbidden));
             }
         } else {
-            if npj1.e() > e_max {
+            if npj1.shell() > e_max {
                 // npj1 is the slowest index, so if it exceeds the
                 // shell index we are completely done here
                 return Err(Ok(()));
-            } else if npj2.e() > e_max
-                   || npj3.e() > e_max
-                   || npj4.e() > e_max {
+            } else if npj2.shell() > e_max
+                   || npj3.shell() > e_max
+                   || npj4.shell() > e_max {
                 return Ok(());
             }
             let l = pjtw12;
@@ -486,56 +555,129 @@ pub fn load_me2j<'a>(
     r
 }
 
-pub fn do_load_me2j_file(
-    path: &Path,
-    e_max: i32,
-    e12_max: i32,
-    mc2: &MatChart<Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
-    dest_adj: AdjSym,
-    dest: &mut [f64],
-) -> Result<(), Error> {
-    use std::io::{self, Write};
-    use byteorder::LittleEndian;
-    use super::io as lio;
+#[derive(Clone, Copy, Debug)]
+pub struct DoLoadMe2jFile<'a> {
+    pub path: &'a Path,
+    pub table_basis_spec: NucleonBasisSpec,
+    pub table_e12_max: i32,
+    pub e_max: i32,
+    pub mc2: &'a MatChart<'a, Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
+    pub adj_sym: AdjSym,
+}
 
-    let (subpath, file) = lio::open_compressed(path.as_ref())
-        .chain_err(|| "cannot open file")?;
-    let ext = subpath.extension().unwrap_or("".as_ref());
-    let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
-        Some("dat") => Box::new(
-            lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
-                .map(|x| {
-                    // don't invert this or you'll change the numbers!
-                    let precision = 1e7;
-                    (x as f64 * precision).round() / precision
-                })),
-        Some("me2j") => Box::new(lio::MapleTableParser::new(
-            io::BufReader::new(file),
-        )),
-        _ => return Err(format!("unknown format: .{}",
-                                ext.to_string_lossy()).into()),
-    };
-    let table = NuclBasisSpec::with_e_max(e_max).npj_states();
-    let mut stdout = io::stdout();
-    let _ = write!(stdout, "\r");
-    let _ = stdout.flush();
-    let num_elems = dest.len();
-    load_me2j(
-        &mut elems,
-        &table,
-        e_max,
-        e12_max,
-        mc2,
-        &mut |n| {
-            let _ = write!(stdout, "\r{:3.0}% ({} / {})",
-                           (n * 100) as f64 / num_elems as f64,
-                           n, num_elems);
-            let _ = stdout.flush();
-        },
-        dest_adj,
-        dest,
-    ).chain_err(|| "load error")?;
-    let _ = writeln!(stdout, "");
-    let _ = stdout.flush();
-    Ok(())
+impl<'a> DoLoadMe2jFile<'a> {
+    pub fn call(self) -> Result<Box<[f64]>, Error> {
+        use std::io::{self, Write};
+        use byteorder::LittleEndian;
+        use super::io as lio;
+
+        let mut v = vec![0.0; self.mc2.layout.len()].into_boxed_slice();
+        let (subpath, file) = lio::open_compressed(self.path)
+            .chain_err(|| "cannot open file")?;
+        let ext = subpath.extension().unwrap_or("".as_ref());
+        let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
+            Some("dat") => Box::new(
+                lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
+                    .map(|x| {
+                        // don't invert this or you'll change the numbers!
+                        let precision = 1e7;
+                        (x as f64 * precision).round() / precision
+                    })),
+            Some("me2j") => Box::new(lio::MapleTableParser::new(
+                io::BufReader::new(file),
+            )),
+            _ => return Err(format!("unknown format: .{}",
+                                    ext.to_string_lossy()).into()),
+        };
+        let table = self.table_basis_spec.npj_states();
+        let mut stdout = io::stdout();
+        let _ = write!(stdout, "\r");
+        let _ = stdout.flush();
+        let num_elems = v.len();
+        load_me2j(
+            &mut elems,
+            &table,
+            self.table_e12_max,
+            self.e_max,
+            self.mc2,
+            &mut |n| {
+                let _ = write!(stdout, "\r{:3.0}% ({} / {})",
+                               (n * 100) as f64 / num_elems as f64,
+                               n, num_elems);
+                let _ = stdout.flush();
+            },
+            self.adj_sym,
+            &mut v,
+        ).chain_err(|| "load error")?;
+        let _ = writeln!(stdout, "");
+        let _ = stdout.flush();
+        Ok(v)
+    }
+}
+
+pub mod morten_vint {
+    use std::io;
+    use byteorder::{LittleEndian, ReadBytesExt};
+    use super::super::half::Half;
+    use super::super::parity::Parity;
+    use super::Npjw;
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct TwoBodyMatElemKey {
+        pub j12: Half<i32>,
+        pub p1: u32,
+        pub p2: u32,
+        pub p3: u32,
+        pub p4: u32,
+    }
+
+    pub fn read_sp_table(
+        reader: &mut io::Read,
+    ) -> io::Result<Box<[Npjw]>>
+    {
+        let mut table = Vec::default();
+        loop {
+            let n = match reader.read_i32::<LittleEndian>() {
+                Err(e) => {
+                    if e.kind() != io::ErrorKind::UnexpectedEof {
+                        return Err(e);
+                    }
+                    break;
+                }
+                Ok(x) => x,
+            };
+            let p = Parity::of(reader.read_i32::<LittleEndian>()?);
+            let j = Half(reader.read_i32::<LittleEndian>()?);
+            // convert nuclear -> HEP convention
+            let w = Half(-reader.read_i32::<LittleEndian>()?);
+            table.push(Npjw { n, p, j, w });
+        }
+        Ok(table.into_boxed_slice())
+    }
+
+    pub fn read_vint_table(
+        reader: &mut io::Read,
+    ) -> io::Result<Box<[(TwoBodyMatElemKey, f64)]>>
+    {
+        let mut table = Vec::default();
+        loop {
+            let j12 = Half(match reader.read_i32::<LittleEndian>() {
+                Err(e) => {
+                    if e.kind() != io::ErrorKind::UnexpectedEof {
+                        return Err(e);
+                    }
+                    break;
+                }
+                Ok(x) => x,
+            });
+            // convert 1-based to 0-based indices
+            let p1 = reader.read_u32::<LittleEndian>()? - 1;
+            let p2 = reader.read_u32::<LittleEndian>()? - 1;
+            let p3 = reader.read_u32::<LittleEndian>()? - 1;
+            let p4 = reader.read_u32::<LittleEndian>()? - 1;
+            let x = reader.read_f64::<LittleEndian>()?;
+            table.push((TwoBodyMatElemKey { j12, p1, p2, p3, p4 }, x));
+        }
+        Ok(table.into_boxed_slice())
+    }
 }
