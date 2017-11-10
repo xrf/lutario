@@ -19,8 +19,15 @@ pub struct JChan<K = u32> {
     pub k: K,
 }
 
+/// Construct a trivial JChan where `j` is zero.
+impl<K> From<K> for JChan<K> {
+    fn from(k: K) -> Self {
+        Self { j: Half(0), k }
+    }
+}
+
 #[derive(Clone, Debug)]
-pub struct ChartedJScheme<K, U: Hash + Eq> { // FIXME: spurious constraints
+pub struct JAtlas<K, U: Hash + Eq> { // FIXME: spurious constraints
     /// `K1 ↔ κ1`
     pub linchan1_chart: HashChart<K, u32>,
     /// `K2 ↔ κ2`
@@ -32,7 +39,7 @@ pub struct ChartedJScheme<K, U: Hash + Eq> { // FIXME: spurious constraints
     pub scheme: JScheme,
 }
 
-impl<K, U> ChartedJScheme<K, U>
+impl<K, U> JAtlas<K, U>
     where K: Add<Output = K> + Hash + Eq + Clone,
           U: Hash + Eq + Clone,
 {
@@ -82,7 +89,14 @@ impl<K, U> ChartedJScheme<K, U>
                         let x12 = Occ20::from_usize(
                             usize::from(basis_j10.occ(lu1))
                                 + usize::from(basis_j10.occ(lu2))).unwrap();
+                        let j1_j2 = jk1.j + jk2.j;
                         for j12 in Half::tri_range(jk1.j, jk2.j) {
+                            if p1 == p2
+                                && j1_j2.abs_diff(j12).unwrap() % 2 == 0
+                            {
+                                // forbidden by antisymmetry
+                                continue;
+                            }
                             states2.push(PartState {
                                 x: x12,
                                 p: ChanState {
@@ -126,7 +140,7 @@ impl<K, U> ChartedJScheme<K, U>
     }
 }
 
-impl<K, U> ChartedJScheme<K, U> where
+impl<K, U> JAtlas<K, U> where
     U: Hash + Eq,                       // FIXME: spurious constraints
     K: Clone,
     U: Clone,
@@ -146,7 +160,7 @@ impl<K, U> ChartedJScheme<K, U> where
     }
 }
 
-impl<K, U> ChartedJScheme<K, U> where
+impl<K, U> JAtlas<K, U> where
     K: Hash + Eq,
     U: Hash + Eq,
 {
@@ -668,6 +682,11 @@ impl<'a> StateJ20<'a> {
         } else {
             None
         }
+    }
+
+    #[inline]
+    pub fn j(self) -> Half<i32> {
+        self.j12
     }
 
     #[inline]

@@ -1,5 +1,6 @@
 //! Input and output utility.
 use std::{io, str};
+use std::error::Error;
 use std::fs::File;
 use std::marker::PhantomData;
 use std::path::{self, Path};
@@ -7,6 +8,12 @@ use byteorder::{ByteOrder, ReadBytesExt};
 
 pub mod parser;
 pub use self::parser::Parser;
+
+/// Helper function for creating `io::Error` with
+/// `io::ErrorKind::InvalidData`.
+pub fn invalid_data<E: Into<Box<Error + Send + Sync>>>(error: E) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, error)
+}
 
 pub fn fill_buf_with_retry<R>(r: &mut R) -> io::Result<&[u8]>
     where R: io::BufRead + ?Sized,
@@ -56,10 +63,7 @@ pub fn copy_while<R, P, W>(r: &mut R, mut pred: P, w: &mut W)
 /// of the `std::path::Path` API.
 pub fn split_extension(path: &Path) -> io::Result<(&str, &str)> {
     let path = path.to_str()
-        .ok_or_else(|| io::Error::new(
-            io::ErrorKind::InvalidData,
-            "path is not UTF-8",
-        ))?;
+        .ok_or_else(|| invalid_data("path is not UTF-8"))?;
     match path.rfind('.') {
         None => Ok((path, "")),
         Some(i) => {
@@ -90,8 +94,7 @@ pub fn open_compressed(path: &Path) -> io::Result<(&Path, Box<io::Read>)> {
         "" => Box::new(file),
         ".gz" => Box::new(flate2::read::GzDecoder::new(file)?),
         ".xz" => Box::new(xz2::read::XzDecoder::new(file)),
-        _ => return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
+        _ => return Err(invalid_data(
             format!("unrecognized compression format: {}", ext),
         )),
     }))
@@ -108,7 +111,7 @@ pub struct MapleTableParser<R> {
 impl<R> MapleTableParser<R> {
     pub fn new(r: R) -> Self {
         Self {
-            parser: Parser::with_capacity(r, 8 * 1024),
+            parser: Parser::new(r),
             buf: Default::default(),
             status: None,
         }
@@ -123,10 +126,7 @@ impl<R: io::Read> MapleTableParser<R> {
     pub fn match_f64(&mut self) -> io::Result<Option<f64>> {
         // skip whitespace and comments
         loop {
-            if self.parser.match_pred(|c| {
-                (c as char).is_whitespace()
-            })?.is_some() {
-                continue;
+            if self.parser.munch_whitespace()? {
             } else if self.parser.match_bytes(b"(*")? {
                 while !self.parser.match_bytes(b"*)")? {
                     if self.parser.get()?.is_none() {
@@ -155,9 +155,9 @@ impl<R: io::Read> MapleTableParser<R> {
         // parse the token
         Ok(Some(
             str::from_utf8(&self.buf)
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                .map_err(invalid_data)?
                 .parse()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                .map_err(invalid_data)?
         ))
     }
 }

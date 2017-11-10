@@ -19,10 +19,15 @@ extern crate lazy_static;
 extern crate netlib_src;
 #[macro_use]
 extern crate quick_error;
+extern crate regex;
 extern crate siphasher;
 extern crate stable_deref_trait;
 extern crate take_mut;
+extern crate wigner_symbols;
 extern crate xz2;
+
+#[macro_use]
+mod macros;
 
 pub mod ang_mom;
 pub mod basis;

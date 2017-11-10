@@ -2,7 +2,7 @@
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use debugit::DebugIt;
-use num::{One, ToPrimitive, Zero};
+use num::{One, Signed, ToPrimitive, Zero};
 use super::utils::RangeInclusive;
 
 /// Type that logically behaves like half-integers, but what is actually
@@ -36,6 +36,20 @@ impl<T> Half<T> {
     #[inline]
     pub fn twice(self) -> T {
         self.0
+    }
+}
+
+impl<T: Signed> Half<T> {
+    #[inline]
+    pub fn abs(self) -> Half<T> {
+        Half(self.twice().abs())
+    }
+}
+
+impl<T: Signed + Ord> Half<T> {
+    #[inline]
+    pub fn in_multiplet_of(self, j: Half<T>) -> bool {
+        self.abs().twice() < j.twice()
     }
 }
 

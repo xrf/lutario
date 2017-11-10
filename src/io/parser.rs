@@ -167,6 +167,10 @@ impl<R> Drop for Parser<R> {
 }
 
 impl<R> Parser<R> {
+    pub fn new(reader: R) -> Self {
+        Self::with_capacity(reader, 8 * 1024)
+    }
+
     /// The `buf_cap` sets the capacity of a single buffer chunk.  This
     /// doesn't affect the size of the lookahead (it's always infinite), as
     /// multiple chunks are permitted; this only affects the efficiency.
@@ -259,6 +263,57 @@ impl<R: io::Read> Parser<R> {
             }
         }
         Ok(true)
+    }
+
+    pub fn munch_whitespace<'a>(&mut self) -> io::Result<bool> {
+        let mut munched = false;
+        while self.match_pred(|c| (c as char).is_whitespace())?.is_some() {
+            munched = true;
+        }
+        Ok(munched)
+    }
+
+    pub fn munch_space<'a>(&mut self) -> io::Result<bool> {
+        let mut munched = false;
+        while self.match_pred(|c| {
+            (c as char).is_whitespace() && c != b'\n' && c != b'\r'
+        })?.is_some() {
+            munched = true;
+        }
+        Ok(munched)
+    }
+
+    /// Get the next non-whitespace token.  This may return an empty string.
+    pub fn get_token<'a>(&mut self, s: &'a mut String)
+                         -> io::Result<&'a mut String> {
+        s.clear();
+        while let Some(c) = self.match_pred(|c| !(c as char).is_whitespace())? {
+            s.push(c as _);
+        }
+        Ok(s)
+    }
+
+    /// Get the next line, including the line terminator.  Returns the empty
+    /// string at EOF.
+    pub fn get_line<'a>(&mut self, line: &'a mut String)
+                        -> io::Result<&'a mut String> {
+        line.clear();
+        while let Some(c) = self.match_pred(|c| c != b'\n')? {
+            line.push(c as _);
+        }
+        if let Some(c) = self.get()? {
+            line.push(c as _);
+        }
+        Ok(line)
+    }
+
+    pub fn next_line<'a>(&mut self, line: &'a mut String, index: &mut usize)
+                        -> io::Result<&'a mut String> {
+        let line = self.get_line(line)?;
+        if !line.is_empty() {
+            *index += 1;
+        }
+        Ok(line)
     }
 }
 

@@ -116,7 +116,6 @@ pub fn with_tuple2_ref<A, B, F, R>(a: &A, b: &B, f: F) -> R
     }
 }
 
-
 /// Shorthand for casting numbers.  Panics if out of range.
 pub fn cast<T: ValueInto<U>, U>(x: T) -> U {
     try_cast(x).expect("integer conversion failure")

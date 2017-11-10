@@ -5,13 +5,16 @@ use std::{fmt, str};
 use std::cmp::min;
 use std::ops::{Add, Sub};
 use std::path::Path;
+use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
+use wigner_symbols::ClebschGordan;
 use super::{Error, ResultExt};
-use super::basis::{ChanState, MatChart, Occ, PartState, State2};
-use super::j_scheme::JChan;
+use super::basis::{occ, ChanState, MatChart, Occ, PartState, State2};
 use super::half::Half;
+use super::j_scheme::{BasisJ20, JAtlas, JChan, Op, OpJ200};
 use super::linalg::AdjSym;
-use super::parity::Parity;
+use super::matrix::Matrix;
+use super::parity::{self, Parity};
 use super::utils;
 
 /// Orbital angular momentum (l)
@@ -51,23 +54,53 @@ pub struct Pw {
 impl Add for Pw {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        Pw { p: self.p + other.p, w: self.w + other.w }
+        Self { p: self.p + other.p, w: self.w + other.w }
     }
 }
 
 impl Sub for Pw {
     type Output = Self;
     fn sub(self, other: Self) -> Self::Output {
-        Pw { p: self.p - other.p, w: self.w - other.w }
+        Self { p: self.p - other.p, w: self.w - other.w }
     }
 }
 
 impl Zero for Pw {
     fn zero() -> Self {
-        Pw { p: Zero::zero(), w: Zero::zero() }
+        Self { p: Zero::zero(), w: Zero::zero() }
     }
     fn is_zero(&self) -> bool {
         self.p.is_zero() && self.w.is_zero()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Pmw {
+    pub p: Parity,
+    pub m: Half<i32>,
+    pub w: Half<i32>,
+}
+
+impl Add for Pmw {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self { p: self.p + other.p, m: self.m + other.m, w: self.w + other.w }
+    }
+}
+
+impl Sub for Pmw {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self { p: self.p - other.p, m: self.m - other.m, w: self.w - other.w }
+    }
+}
+
+impl Zero for Pmw {
+    fn zero() -> Self {
+        Self { p: Zero::zero(), m: Zero::zero(), w: Zero::zero() }
+    }
+    fn is_zero(&self) -> bool {
+        self.p.is_zero() && self.m.is_zero() && self.w.is_zero()
     }
 }
 
@@ -132,11 +165,9 @@ impl Npjw {
     pub fn osc_energy(self) -> f64 {
         Npj::from(self).osc_energy()
     }
-}
 
-impl From<Npjw> for Npj {
-    fn from(s: Npjw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j }
+    pub fn and_m(self, m: Half<i32>) -> Npjmw {
+        Npjmw { n: self.n, p: self.p, j: self.j, m, w: self.w }
     }
 }
 
@@ -148,7 +179,25 @@ impl From<ChanState<JChan<Pw>, i32>> for Npjw {
 
 impl From<Npjw> for ChanState<JChan<Pw>, i32> {
     fn from(s: Npjw) -> Self {
-        Self { l: JChan { j: s.j, k: Pw { p: s.p, w: s.w } }, u: s.n }
+        Self { l: s.into(), u: s.n }
+    }
+}
+
+impl From<Npjw> for JChan<Pw> {
+    fn from(s: Npjw) -> Self {
+        Self { j: s.j, k: s.into() }
+    }
+}
+
+impl From<Npjw> for Npj {
+    fn from(s: Npjw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j }
+    }
+}
+
+impl From<Npjw> for Pw {
+    fn from(s: Npjw) -> Self {
+        Self { p: s.p, w: s.w }
     }
 }
 
@@ -180,10 +229,54 @@ pub struct Npjmw {
     pub w: Half<i32>,
 }
 
+impl From<ChanState<JChan<Pmw>, Nj>> for Npjmw {
+    fn from(s: ChanState<JChan<Pmw>, Nj>) -> Self {
+        debug_assert_eq!(s.l.j, Zero::zero());
+        Self { n: s.u.n, p: s.l.k.p, j: s.u.j, m: s.l.k.m, w: s.l.k.w }
+    }
+}
+
+impl From<Npjmw> for ChanState<JChan<Pmw>, Nj> {
+    fn from(s: Npjmw) -> Self {
+        Self { l: Pmw::from(s).into(), u: s.into() }
+    }
+}
+
+impl From<Npjmw> for Nj {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, j: s.j }
+    }
+}
+
+impl From<Npjmw> for Npjw {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j, w: s.w }
+    }
+}
+
+impl From<Npjmw> for Pmw {
+    fn from(s: Npjmw) -> Self {
+        Self { p: s.p, m: s.m, w: s.w }
+    }
+}
+
 impl Npjmw {
     /// Shell index.
     pub fn shell(self) -> i32 {
         Npj::from(self).shell()
+    }
+}
+
+/// Display using spectroscopic notation.
+impl fmt::Display for Npjmw {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Npj::from(*self).fmt(f)?;
+        write!(f, "[{}]", self.m)?;
+        match self.w {
+            Half(-1) => write!(f, "n"),
+            Half(1) => write!(f, "p"),
+            _ => write!(f, "(w={})", self.w),
+        }
     }
 }
 
@@ -209,9 +302,9 @@ impl fmt::Display for Pjtw {
             self.j,
             self.p.sign_char(),
             self.t,
-            if self.w == Half(0) {
+            if self.w == Zero::zero() {
                 ","
-            } else if self.w > Half(0) {
+            } else if self.w > Zero::zero() {
                 "+"
             } else {
                 ""
@@ -219,13 +312,6 @@ impl fmt::Display for Pjtw {
             self.w,
         )
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Pmw {
-    pub p: Parity,
-    pub m: Half<i32>,
-    pub w: Half<i32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -306,13 +392,32 @@ impl Nucleus {
     pub fn jpwn_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pw>, i32>>> {
         self.npjw_states().into_iter().map(|npjw| {
             let Npjw { n, p, j, w } = npjw;
+            let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
             PartState {
-                x: (Npj::from(npjw).shell() >= self.e_fermi(w)).into(),
+                x,
                 p: ChanState {
                     l: JChan { j, k: Pw { p, w } },
                     u: n,
                 },
             }
+        }).collect()
+    }
+
+    pub fn pmwnj_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pmw>, Nj>>> {
+        self.npjw_states().into_iter().flat_map(|npjw| {
+            let Npjw { n, p, j, w } = npjw;
+            let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
+            let mut states = Vec::default();
+            for m in j.multiplet() {
+                states.push(PartState {
+                    x,
+                    p: ChanState {
+                        l: Pmw { p, m, w }.into(),
+                        u: Nj { n, j },
+                    },
+                })
+            }
+            states
         }).collect()
     }
 
@@ -615,23 +720,263 @@ impl<'a> DoLoadMe2jFile<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct JNpjw2Pair {
+    pub j12: Half<i32>,
+    pub npjw1: Npjw,
+    pub npjw2: Npjw,
+    pub npjw3: Npjw,
+    pub npjw4: Npjw,
+}
+
+impl fmt::Display for JNpjw2Pair {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "J={} {} {} {} {}",
+               self.j12, self.npjw1, self.npjw2, self.npjw3, self.npjw4)
+    }
+}
+
+impl JNpjw2Pair {
+    pub fn canonicalize(self) -> (f64, bool, Self) {
+        let (a, npjw1, npjw2) = parity::sort2(self.npjw1, self.npjw2);
+        let (b, npjw3, npjw4) = parity::sort2(self.npjw3, self.npjw4);
+        let (c, (npjw1, npjw2), (npjw3, npjw4)) = // hermitian ~ symmetric
+            parity::sort2((npjw1, npjw2), (npjw3, npjw4));
+        (
+            (a + b).sign_f64(),
+            c == Parity::Odd,
+            Self { j12: self.j12, npjw1, npjw2, npjw3, npjw4 },
+        )
+    }
+}
+
+pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
+                  cg: ClebschGordan) -> f64 {
+    *cache.entry(cg).or_insert_with(|| f64::from(cg.value()))
+}
+
+pub fn make_v_op_j<'a>(
+    atlas: &'a JAtlas<Pw, i32>,
+    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
+) -> OpJ200<'a, Vec<Matrix<f64>>>
+{
+    let scheme = &atlas.scheme;
+    let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
+    for pq in scheme.states_j20(&occ::ALL2) {
+        let (p, q) = pq.split_to_j10_j10();
+        let p = Npjw::from(atlas.decode(p).unwrap());
+        let q = Npjw::from(atlas.decode(q).unwrap());
+        for rs in pq.related_states(&occ::ALL2) {
+            let (r, s) = rs.split_to_j10_j10();
+            let r = Npjw::from(atlas.decode(r).unwrap());
+            let s = Npjw::from(atlas.decode(s).unwrap());
+            let (sign, _, key) = JNpjw2Pair {
+                j12: pq.j(),
+                npjw1: p,
+                npjw2: q,
+                npjw3: r,
+                npjw4: s,
+            }.canonicalize();
+            h2.add(pq, rs,
+                   *two_body_mat_elems.get(&key)
+                   .unwrap_or_else(|| {
+                       panic!("matrix element not found: {}", key)
+                   })
+                   * sign);
+        }
+    }
+    h2
+}
+
+pub fn make_v_op_m<'a>(
+    atlas: &'a JAtlas<Pmw, Nj>,
+    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
+) -> OpJ200<'a, Vec<Matrix<f64>>>
+{
+    let scheme = &atlas.scheme;
+    let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
+    let mut cg_cache = FnvHashMap::default();
+    for pq in scheme.states_j20(&occ::ALL2) {
+        let (p, q) = pq.split_to_j10_j10();
+        let p = Npjmw::from(atlas.decode(p).unwrap());
+        let q = Npjmw::from(atlas.decode(q).unwrap());
+        for rs in pq.related_states(&occ::ALL2) {
+            let (r, s) = rs.split_to_j10_j10();
+            let r = Npjmw::from(atlas.decode(r).unwrap());
+            let s = Npjmw::from(atlas.decode(s).unwrap());
+            h2.add(pq, rs, utils::intersect_range_inclusive(
+                Half::tri_range(p.j, q.j),
+                Half::tri_range(r.j, s.j),
+            ).map(|j12| {
+                let (sign, _, key) = JNpjw2Pair {
+                    j12,
+                    npjw1: p.into(),
+                    npjw2: q.into(),
+                    npjw3: r.into(),
+                    npjw4: s.into(),
+                }.canonicalize();
+                if j12.unwrap() % 2 == 1
+                    && (key.npjw1 == key.npjw2
+                        || key.npjw3 == key.npjw4)
+                {
+                    return 0.0;
+                }
+                *two_body_mat_elems.get(&key)
+                    .unwrap_or_else(|| {
+                        panic!("matrix element not found: {}", key)
+                    })
+                    * sign
+                    * clebsch_gordan(&mut cg_cache, ClebschGordan {
+                        tj1: p.j.twice(),
+                        tj2: q.j.twice(),
+                        tj12: j12.twice(),
+                        tm1: p.m.twice(),
+                        tm2: q.m.twice(),
+                        tm12: (p.m + q.m).twice(),
+                    })
+                    * clebsch_gordan(&mut cg_cache, ClebschGordan {
+                        tj1: r.j.twice(),
+                        tj2: s.j.twice(),
+                        tj12: j12.twice(),
+                        tm1: r.m.twice(),
+                        tm2: s.m.twice(),
+                        tm12: (r.m + s.m).twice(),
+                    })
+            }).sum());
+        }
+    }
+    h2
+}
+
 pub mod morten_vint {
     use std::io;
+    use std::fs::File;
+    use std::path::Path;
     use byteorder::{LittleEndian, ReadBytesExt};
+    use fnv::FnvHashMap;
+    use regex::Regex;
     use super::super::half::Half;
+    use super::super::io::{Parser, invalid_data};
     use super::super::parity::Parity;
-    use super::Npjw;
+    use super::{JNpjw2Pair, Npjw};
 
-    #[derive(Clone, Copy, Debug)]
-    pub struct TwoBodyMatElemKey {
-        pub j12: Half<i32>,
-        pub p1: u32,
-        pub p2: u32,
-        pub p3: u32,
-        pub p4: u32,
+    pub fn load_sp_table(reader: &mut io::Read) -> io::Result<Vec<Npjw>> {
+        let mut p = Parser::new(reader);
+        let mut line_num = 1;
+
+        // make sure the file looks sane (might be binary / have long lines)
+        p.munch_space()?;
+        if !p.match_bytes(b"----> Oscillator parameters, Model space and single-particle data")? {
+            return Err(invalid_data("line 1 is invalid"));
+        }
+
+        // locate the legend line
+        let mut line = String::default();
+        loop {
+            p.next_line(&mut line, &mut line_num)?;
+            if line.is_empty() {
+                return Err(invalid_data("can't find legend"));
+            }
+            if re!(r"^\s*Legend:").is_match(&line) {
+                break;
+            }
+        }
+        if !re!(r"^\s*Legend:\s+n\s+l\s+2j\s+tz\s+2n\+l\s+HO-energy\s+evalence\s+particle/hole  inside/outside").is_match(&line) {
+            return Err(invalid_data("unsupported legend"));
+        }
+
+        // read the table
+        let mut table = Vec::default();
+        loop {
+            p.next_line(&mut line, &mut line_num)?;
+            if line.is_empty() {
+                break;
+            }
+            if line.trim().is_empty() {
+                continue;
+            }
+            let captures = match re!(r"^\s*Number:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$").captures(&line) {
+                None => return Err(invalid_data(
+                    format!("invalid line {}", line_num))),
+                Some(x) => x,
+            };
+            let n = captures[2].parse().map_err(invalid_data)?;
+            let l: i32 = captures[3].parse().map_err(invalid_data)?;
+            let tj = captures[4].parse().map_err(invalid_data)?;
+            let w_nucl: i32 = captures[5].parse().map_err(invalid_data)?;
+            let p = Parity::of(l);
+            let j = Half(tj);
+            let w = Half(-w_nucl);      // convert nuclear → HEP convention
+            table.push(Npjw { n, p, j, w });
+        }
+        Ok(table)
     }
 
-    pub fn read_sp_table(
+    pub fn load_vint_table(
+        reader: &mut io::Read,
+        sp_table: &[Npjw],
+    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
+    {
+        let mut p = Parser::new(reader);
+        let mut line_num = 1;
+
+        // make sure the file looks sane (might be binary / have long lines)
+        p.munch_space()?;
+        if !p.match_bytes(b"----> Interaction part")? {
+            return Err(invalid_data("line 1 is invalid"));
+        }
+
+        // locate the legend line
+        let mut line = String::default();
+        loop {
+            p.next_line(&mut line, &mut line_num)?;
+            if line.is_empty() {
+                return Err(invalid_data("can't find legend"));
+            }
+            if re!(r"^\s*Tz\s+").is_match(&line) {
+                break;
+            }
+        }
+        if !re!(r"^\s*Tz\s+Par\s+2J\s+a\s+b\s+c\s+d\s+<ab|V|cd>\s+<ab\|Hcom\|cd>\s+<ab\|r_ir_j\|cd>\s+<ab\|p_ip_j\|cd>").is_match(&line) {
+            return Err(invalid_data("unsupported legend"));
+        }
+
+        // read the table
+        let mut table = FnvHashMap::default();
+        loop {
+            p.next_line(&mut line, &mut line_num)?;
+            if line.is_empty() {
+                break;
+            }
+            if line.trim().is_empty() {
+                continue;
+            }
+            let captures = match re!(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$").captures(&line) {
+                None => return Err(invalid_data(
+                    format!("invalid line {}", line_num))),
+                Some(x) => x,
+            };
+            let tj12 = captures[3].parse().map_err(invalid_data)?;
+            let i1: usize = captures[4].parse().map_err(invalid_data)?;
+            let i2: usize = captures[5].parse().map_err(invalid_data)?;
+            let i3: usize = captures[6].parse().map_err(invalid_data)?;
+            let i4: usize = captures[7].parse().map_err(invalid_data)?;
+            let value: f64 = captures[8].parse().map_err(invalid_data)?;
+            let j12 = Half(tj12);
+            let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
+                j12,
+                // convert 1-based to 0-based indices
+                npjw1: sp_table[i1 - 1],
+                npjw2: sp_table[i2 - 1],
+                npjw3: sp_table[i3 - 1],
+                npjw4: sp_table[i4 - 1],
+            }.canonicalize();
+            table.insert(key, sign * value);
+        }
+        Ok(table)
+    }
+
+    pub fn load_sp_table_bin(
         reader: &mut io::Read,
     ) -> io::Result<Box<[Npjw]>>
     {
@@ -655,11 +1000,12 @@ pub mod morten_vint {
         Ok(table.into_boxed_slice())
     }
 
-    pub fn read_vint_table(
+    pub fn load_vint_table_bin(
         reader: &mut io::Read,
-    ) -> io::Result<Box<[(TwoBodyMatElemKey, f64)]>>
+        sp_table: &[Npjw],
+    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
     {
-        let mut table = Vec::default();
+        let mut table = FnvHashMap::default();
         loop {
             let j12 = Half(match reader.read_i32::<LittleEndian>() {
                 Err(e) => {
@@ -670,14 +1016,34 @@ pub mod morten_vint {
                 }
                 Ok(x) => x,
             });
-            // convert 1-based to 0-based indices
-            let p1 = reader.read_u32::<LittleEndian>()? - 1;
-            let p2 = reader.read_u32::<LittleEndian>()? - 1;
-            let p3 = reader.read_u32::<LittleEndian>()? - 1;
-            let p4 = reader.read_u32::<LittleEndian>()? - 1;
-            let x = reader.read_f64::<LittleEndian>()?;
-            table.push((TwoBodyMatElemKey { j12, p1, p2, p3, p4 }, x));
+            let i1 = reader.read_u32::<LittleEndian>()? as usize;
+            let i2 = reader.read_u32::<LittleEndian>()? as usize;
+            let i3 = reader.read_u32::<LittleEndian>()? as usize;
+            let i4 = reader.read_u32::<LittleEndian>()? as usize;
+            let value = reader.read_f64::<LittleEndian>()?;
+            let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
+                j12,
+                // convert 1-based to 0-based indices
+                npjw1: sp_table[i1 - 1],
+                npjw2: sp_table[i2 - 1],
+                npjw3: sp_table[i3 - 1],
+                npjw4: sp_table[i4 - 1],
+            }.canonicalize();
+            table.insert(key, sign * value);
         }
-        Ok(table.into_boxed_slice())
+        Ok(table)
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct LoadTwoBodyMatElems<'a> {
+        pub sp_table_path: &'a Path,
+        pub vint_table_path: &'a Path,
+    }
+
+    impl<'a> LoadTwoBodyMatElems<'a> {
+        pub fn call(self) -> io::Result<FnvHashMap<JNpjw2Pair, f64>> {
+            let sp_table = load_sp_table(&mut File::open(self.sp_table_path)?)?;
+            load_vint_table(&mut File::open(self.vint_table_path)?, &sp_table)
+        }
     }
 }
