@@ -11,7 +11,7 @@ use wigner_symbols::ClebschGordan;
 use super::{Error, ResultExt};
 use super::basis::{occ, ChanState, MatChart, Occ, PartState, State2};
 use super::half::Half;
-use super::j_scheme::{BasisJ20, JAtlas, JChan, Op, OpJ200};
+use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, Op, OpJ100, OpJ200};
 use super::linalg::AdjSym;
 use super::matrix::Matrix;
 use super::parity::{self, Parity};
@@ -381,16 +381,30 @@ pub struct Nucleus {
 }
 
 impl Nucleus {
-    // FIXME: remove this function as it does not depend on num_filled
-    pub fn npjw_states(self) -> Vec<Npjw> {
+    pub fn npjw_orbs(self) -> Vec<Npjw> {
         let mut states = Vec::default();
-        states.extend(self.neutron_basis_spec.npjw_states(Half(-1)));
-        states.extend(self.proton_basis_spec.npjw_states(Half(1)));
+        let mut ns = self.neutron_basis_spec.npjw_states(Half(-1)).into_iter();
+        let mut ps = self.proton_basis_spec.npjw_states(Half(1)).into_iter();
+        // interleave the neutron and proton states
+        loop {
+            let mut found = false;
+            if let Some(n) = ns.next() {
+                states.push(n);
+                found = true;
+            }
+            if let Some(p) = ps.next() {
+                states.push(p);
+                found = true;
+            }
+            if !found {
+                break;
+            }
+        }
         states
     }
 
     pub fn jpwn_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pw>, i32>>> {
-        self.npjw_states().into_iter().map(|npjw| {
+        self.npjw_orbs().into_iter().map(|npjw| {
             let Npjw { n, p, j, w } = npjw;
             let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
             PartState {
@@ -404,7 +418,7 @@ impl Nucleus {
     }
 
     pub fn pmwnj_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pmw>, Nj>>> {
-        self.npjw_states().into_iter().flat_map(|npjw| {
+        self.npjw_orbs().into_iter().flat_map(|npjw| {
             let Npjw { n, p, j, w } = npjw;
             let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
             let mut states = Vec::default();
@@ -753,6 +767,36 @@ impl JNpjw2Pair {
 pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
                   cg: ClebschGordan) -> f64 {
     *cache.entry(cg).or_insert_with(|| f64::from(cg.value()))
+}
+
+pub fn make_ho3d_op_j<'a>(
+    atlas: &'a JAtlas<Pw, i32>,
+    omega: f64,
+) -> OpJ100<'a, Vec<Matrix<f64>>>
+{
+    let scheme = &atlas.scheme;
+    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
+    for p in scheme.states_j10(&occ::ALL1) {
+        let npjw = Npjw::from(atlas.decode(p).unwrap());
+        let e = omega * Npj::from(npjw).osc_energy();
+        h1.set(p, p, e);
+    }
+    h1
+}
+
+pub fn make_ho3d_op_m<'a>(
+    atlas: &'a JAtlas<Pmw, Nj>,
+    omega: f64,
+) -> OpJ100<'a, Vec<Matrix<f64>>>
+{
+    let scheme = &atlas.scheme;
+    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
+    for p in scheme.states_j10(&occ::ALL1) {
+        let npjmw = Npjmw::from(atlas.decode(p).unwrap());
+        let e = omega * Npj::from(npjmw).osc_energy();
+        h1.set(p, p, e);
+    }
+    h1
 }
 
 pub fn make_v_op_j<'a>(

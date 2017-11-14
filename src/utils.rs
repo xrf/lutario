@@ -230,6 +230,32 @@ impl<K: Eq + Hash, V: Clone, S: BuildHasher> Map<K> for HashMap<K, V, S> {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Toler {
+    pub relerr: f64,
+    pub abserr: f64,
+}
+
+/// Default is (1e-10, 1e-10)
+impl Default for Toler {
+    fn default() -> Self {
+        Self {
+            relerr: 1e-10,
+            abserr: 1e-10,
+        }
+    }
+}
+
+impl Toler {
+    pub fn check(self, error: f64, value: f64) -> bool {
+        error.abs() <= value.abs() * self.relerr + self.abserr
+    }
+
+    pub fn is_eq(self, value1: f64, value2: f64) -> bool {
+        self.check(value1 - value2, 0.5 * (value1.abs() + value2.abs()))
+    }
+}
+
 /// Zigzag integer encoding, which maps signed integers to unsigned integers.
 ///
 /// ```text
