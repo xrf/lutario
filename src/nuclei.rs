@@ -8,10 +8,9 @@ use std::path::Path;
 use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
-use super::basis::{occ, ChanState, MatChart, Occ, PartState, State2};
+use super::basis::{occ, ChanState, Occ, PartState, State2};
 use super::half::Half;
 use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, Op, OpJ100, OpJ200};
-use super::linalg::AdjSym;
 use super::matrix::Matrix;
 use super::parity::{self, Parity};
 use super::utils;
@@ -561,176 +560,46 @@ impl<'a> DarmstadtMe2j<'a> {
     }
 }
 
-/// Construct a table of symmetric j-scheme states with isospin.
-///
-/// Assumes j of orbitals are half-integers.
-pub fn jt2_states(orbitals: &[Npj]) -> Vec<(Pjtw, Npj, Npj)> {
-    let mut states = Vec::default();
-    // loop: ip1 >= ip2
-    for (i1, &npj1) in orbitals.iter().enumerate() {
-        for (i2, &npj2) in orbitals.iter().enumerate() {
-            // Q: um should we use ip or (l, u) or (l, x, u) or something else?
-            if i1 < i2 {
-                continue;
-            }
-            let j1 = npj1.j;
-            let j2 = npj2.j;
-            let p12 = npj1.p + npj2.p;
-            for j12 in Half::tri_range(j1, j2) {
-                for t12 in Half::tri_range(Half(1), Half(1)) {
-                    if i1 == i2 && ((j1 + j2).abs_diff(j12)
-                                    + t12).unwrap() % 2 != 0 {
-                        // forbidden state
-                        continue;
-                    }
-                    for w12 in t12.multiplet() {
-                        states.push((
-                            Pjtw { p: p12, j: j12, t: t12, w: w12 },
-                            npj1,
-                            npj2,
-                        ));
-                    }
-                }
-            }
-        }
-    }
-    states
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct JtwNpj2Pair {
+    pub j12: Half<i32>,
+    pub t12: Half<i32>,
+    pub w12: Half<i32>,
+    pub npj1: Npj,
+    pub npj2: Npj,
+    pub npj3: Npj,
+    pub npj4: Npj,
 }
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum LoadError {
-        UnexpectedEof {
-            description("file ended prematurely")
-        }
-        NonzeroForbidden {
-            description("matrix elements of forbidden states must be zero")
-        }
-    }
-}
-
-pub fn load_me2j<'a>(
-    elems: &mut Iterator<Item = f64>,
-    table: &[Npj],
-    e12_max: i32,
-    e_max: i32,
-    mc2: &MatChart<Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
-    progress: &mut FnMut(usize),
-    dest_adj: AdjSym,
-    dest: &mut [f64],
-) -> Result<(), LoadError> {
-    if let Some(npj) = table.last() {
-        assert!(npj.shell() >= e_max, "table is too inadequate for this e_max");
-    }
-    let mut n = 0;
-    let mut progress_timer = 0;
-    progress(n);
-    let r = DarmstadtMe2j {
-        npjs: &table,
-        e12_max,
-    }.foreach_elem(|pjtw12, npj1, npj2, npj3, npj4| {
-        let x = elems.next().ok_or(Err(LoadError::UnexpectedEof))?;
-        let t_phase = pjtw12.t.abs_diff(Half(1) + Half(1));
-        let atsy_phase12 = pjtw12.j.abs_diff(npj1.j + npj2.j) + t_phase;
-        let atsy_phase34 = pjtw12.j.abs_diff(npj3.j + npj4.j) + t_phase;
-        if (npj1 == npj2 && atsy_phase12.unwrap() % 2 == 0)
-        || (npj3 == npj4 && atsy_phase34.unwrap() % 2 == 0) {
-            if x != 0.0 {
-                return Err(Err(LoadError::NonzeroForbidden));
-            }
+impl JtwNpj2Pair {
+    pub fn canonicalize(self) -> (f64, bool, Self) {
+        let (f12, npj1, npj2) = parity::sort2(self.npj1, self.npj2);
+        let f12 = if f12 == Parity::Odd {
+            (self.npj1.j + self.npj2.j - self.j12 - self.t12).phase()
         } else {
-            if npj1.shell() > e_max {
-                // npj1 is the slowest index, so if it exceeds the
-                // shell index we are completely done here
-                return Err(Ok(()));
-            } else if npj2.shell() > e_max
-                   || npj3.shell() > e_max
-                   || npj4.shell() > e_max {
-                return Ok(());
-            }
-            let l = pjtw12;
-            let u1 = (npj1, npj2);
-            let u2 = (npj3, npj4);
-            let il = mc2.left.encode_chan(&l).expect("invalid channel") as u32;
-            // note: left and right ought to be the same
-            let iu1 = mc2.left.encode_aux(il, &u1).expect("invalid left state") as u32;
-            let iu2 = mc2.left.encode_aux(il, &u2).expect("invalid right state") as u32;
-            dest[mc2.layout.offset(il, iu1, iu2)] = x;
-            n += 1;
-            if iu1 != iu2 {
-                dest[mc2.layout.offset(il, iu2, iu1)] = dest_adj.apply(x);
-                n += 1;
-            }
-        }
-        if progress_timer == 10000 {
-            progress(n);
-            progress_timer = 0;
-        }
-        progress_timer += 1;
-        Ok(())
-    }).or_else(|x| x);
-    progress(n);
-    r
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct DoLoadMe2jFile<'a> {
-    pub path: &'a Path,
-    pub table_basis_spec: NucleonBasisSpec,
-    pub table_e12_max: i32,
-    pub e_max: i32,
-    pub mc2: &'a MatChart<'a, Pjtw, i32, i32, State2<Npj>, State2<Npj>>,
-    pub adj_sym: AdjSym,
-}
-
-impl<'a> DoLoadMe2jFile<'a> {
-    pub fn call(self) -> Result<Box<[f64]>, io::Error> {
-        use std::io::Write;
-        use byteorder::LittleEndian;
-        use super::io as lio;
-
-        let mut v = vec![0.0; self.mc2.layout.len()].into_boxed_slice();
-        let (subpath, file) = lio::open_compressed(self.path)?;
-        let ext = subpath.extension().unwrap_or("".as_ref());
-        let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
-            Some("dat") => Box::new(
-                lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
-                    .map(|x| {
-                        // don't invert this or you'll change the numbers!
-                        let precision = 1e7;
-                        (x as f64 * precision).round() / precision
-                    })),
-            Some("me2j") => Box::new(lio::MapleTableParser::new(
-                io::BufReader::new(file),
-            )),
-            _ => return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("unknown format: .{}", ext.to_string_lossy()),
-            )),
+            1.0
         };
-        let table = self.table_basis_spec.npj_states();
-        let mut stderr = io::stderr();
-        let _ = write!(stderr, "\r");
-        let _ = stderr.flush();
-        let num_elems = v.len();
-        load_me2j(
-            &mut elems,
-            &table,
-            self.table_e12_max,
-            self.e_max,
-            self.mc2,
-            &mut |n| {
-                let _ = write!(stderr, "\r{:3.0}% ({} / {})",
-                               (n * 100) as f64 / num_elems as f64,
-                               n, num_elems);
-                let _ = stderr.flush();
+        let (f34, npj3, npj4) = parity::sort2(self.npj3, self.npj4);
+        let f34 = if f34 == Parity::Odd {
+            (self.npj3.j + self.npj4.j - self.j12 - self.t12).phase()
+        } else {
+            1.0
+        };
+        let (adj, (npj1, npj2), (npj3, npj4)) =
+            parity::sort2((npj1, npj2), (npj3, npj4));
+        (
+            f12 * f34,
+            adj == Parity::Odd,
+            Self {
+                j12: self.j12,
+                t12: self.t12,
+                w12: self.w12,
+                npj1,
+                npj2,
+                npj3,
+                npj4,
             },
-            self.adj_sym,
-            &mut v,
-        ).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-        let _ = writeln!(stderr, "");
-        let _ = stderr.flush();
-        Ok(v)
+        )
     }
 }
 
@@ -752,14 +621,123 @@ impl fmt::Display for JNpjw2Pair {
 
 impl JNpjw2Pair {
     pub fn canonicalize(self) -> (f64, bool, Self) {
-        let (a, npjw1, npjw2) = parity::sort2(self.npjw1, self.npjw2);
-        let (b, npjw3, npjw4) = parity::sort2(self.npjw3, self.npjw4);
-        let (c, (npjw1, npjw2), (npjw3, npjw4)) = // hermitian ~ symmetric
+        let (f12, npjw1, npjw2) = parity::sort2(self.npjw1, self.npjw2);
+        let f12 = if f12 == Parity::Odd {
+            -(self.npjw1.j + self.npjw2.j - self.j12).phase()
+        } else {
+            1.0
+        };
+        let (f34, npjw3, npjw4) = parity::sort2(self.npjw3, self.npjw4);
+        let f34 = if f34 == Parity::Odd {
+            -(self.npjw3.j + self.npjw4.j - self.j12).phase()
+        } else {
+            1.0
+        };
+        let (adj, (npjw1, npjw2), (npjw3, npjw4)) =
             parity::sort2((npjw1, npjw2), (npjw3, npjw4));
         (
-            (a + b).sign_f64(),
-            c == Parity::Odd,
+            f12 * f34,
+            adj == Parity::Odd,
             Self { j12: self.j12, npjw1, npjw2, npjw3, npjw4 },
+        )
+    }
+}
+
+pub fn load_me2j<'a>(
+    elems: &mut Iterator<Item = f64>,
+    table: &[Npj],
+    e12_max: i32,
+    e_max: i32,
+) -> io::Result<FnvHashMap<JtwNpj2Pair, f64>> {
+    if let Some(npj) = table.last() {
+        assert!(npj.shell() >= e_max, "table is too inadequate for this e_max");
+    }
+    let mut map = FnvHashMap::default();
+    DarmstadtMe2j {
+        npjs: &table,
+        e12_max,
+    }.foreach_elem(|pjtw12, npj1, npj2, npj3, npj4| {
+        let x = elems.next().ok_or(Err(io::Error::new(
+            io::ErrorKind::UnexpectedEof,
+            "unexpected EOF",
+        )))?;
+        let ft12 = pjtw12.t.abs_diff(Half(1) + Half(1));
+        let f12 = pjtw12.j.abs_diff(npj1.j + npj2.j) + ft12;
+        let f34 = pjtw12.j.abs_diff(npj3.j + npj4.j) + ft12;
+        if
+            (npj1 == npj2 && f12.unwrap() % 2 == 0)
+            || (npj3 == npj4 && f34.unwrap() % 2 == 0)
+        {
+            if x != 0.0 {
+                return Err(Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "matrix elements of forbidden states must be zero",
+                )));
+            }
+        } else {
+            if npj1.shell() > e_max {
+                // npj1 is the slowest index, so if it exceeds the
+                // shell index we are completely done here
+                return Err(Ok(()));
+            } else if
+                npj2.shell() > e_max
+                || npj3.shell() > e_max
+                || npj4.shell() > e_max
+            {
+                return Ok(());
+            }
+            map.insert(JtwNpj2Pair {
+                j12: pjtw12.j,
+                t12: pjtw12.t,
+                w12: pjtw12.w,
+                npj1,
+                npj2,
+                npj3,
+                npj4,
+            }, x);
+        }
+        Ok(())
+    }).or_else(|x| x)?;
+    Ok(map)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct DoLoadMe2jFile<'a> {
+    pub path: &'a Path,
+    pub table_basis_spec: NucleonBasisSpec,
+    pub table_e12_max: i32,
+    pub e_max: i32,
+}
+
+impl<'a> DoLoadMe2jFile<'a> {
+    pub fn call(self) -> io::Result<FnvHashMap<JtwNpj2Pair, f64>> {
+        use byteorder::LittleEndian;
+        use super::io as lio;
+
+        let (subpath, file) = lio::open_compressed(self.path)?;
+        let ext = subpath.extension().unwrap_or("".as_ref());
+        let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
+            Some("dat") => Box::new(
+                lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
+                    .map(|x| {
+                        // don't invert this or you'll change the numbers!
+                        let precision = 1e7;
+                        (x as f64 * precision).round() / precision
+                    })),
+            Some("me2j") => Box::new(lio::MapleTableParser::new(
+                io::BufReader::new(file),
+            )),
+            _ => return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("unknown format: .{}", ext.to_string_lossy()),
+            )),
+        };
+        let table = self.table_basis_spec.npj_states();
+        load_me2j(
+            &mut elems,
+            &table,
+            self.table_e12_max,
+            self.e_max,
         )
     }
 }

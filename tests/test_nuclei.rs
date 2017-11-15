@@ -11,7 +11,7 @@ use lutario::j_scheme::*;
 use lutario::nuclei::*;
 use lutario::utils::Toler;
 
-const TOLER: Toler = Toler { relerr: 1e-15, abserr: 1e-14 };
+const TOLER: Toler = Toler { relerr: 1e-14, abserr: 1e-14 };
 
 fn calc_j(
     nucleus: Nucleus,
@@ -28,7 +28,7 @@ fn calc_j(
     for p in atlas.scheme.states_j10(&occ::ALL1) {
         let npjw = Npjw::from(atlas.decode(p).unwrap());
         let value = r.at(p);
-        if value.is_nan() {
+        if !value.is_finite() {
             continue;
         }
         assert!(results.insert(npjw, value).is_none());
@@ -52,7 +52,7 @@ fn calc_m(
         let npjmw = Npjmw::from(atlas.decode(p).unwrap());
         let npjw = Npjw::from(npjmw);
         let value = r.at(p);
-        if value.is_nan() {
+        if !value.is_finite() {
             continue;
         }
         toler_assert_eq!(TOLER, *results.entry(npjw).or_insert(value), value);
@@ -83,6 +83,6 @@ fn main() {
         let xj = *j_results.get(&npjw).unwrap();
         let xm = *m_results.get(&npjw).unwrap();
         toler_assert_eq!(TOLER, xj, xm);
-        println!("- {} {}", npjw, xj);
+        print!("- {} {}", npjw, xj);
     }
 }
