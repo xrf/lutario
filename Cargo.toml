@@ -15,7 +15,6 @@ blas = { version = "0.17.0", default-features = false }
 byteorder = "1.1.0"
 conv = "0.3.3"
 debugit = "0.1.2"
-error-chain = "0.11.0"
 flate2 = { version = "0.2.20", features = ["zlib"], default-features = false }
 fnv = "1.0.5"
 lapack = { version = "0.13.1", default-features = false }

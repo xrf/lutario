@@ -1,14 +1,13 @@
 //! Nuclei systems.
 //!
 //! Here we use the particle physics convention of proton = +½, neutron = −½.
-use std::{fmt, str};
+use std::{fmt, io, str};
 use std::cmp::min;
 use std::ops::{Add, Sub};
 use std::path::Path;
 use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
-use super::{Error, ResultExt};
 use super::basis::{occ, ChanState, MatChart, Occ, PartState, State2};
 use super::half::Half;
 use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, Op, OpJ100, OpJ200};
@@ -685,14 +684,13 @@ pub struct DoLoadMe2jFile<'a> {
 }
 
 impl<'a> DoLoadMe2jFile<'a> {
-    pub fn call(self) -> Result<Box<[f64]>, Error> {
-        use std::io::{self, Write};
+    pub fn call(self) -> Result<Box<[f64]>, io::Error> {
+        use std::io::Write;
         use byteorder::LittleEndian;
         use super::io as lio;
 
         let mut v = vec![0.0; self.mc2.layout.len()].into_boxed_slice();
-        let (subpath, file) = lio::open_compressed(self.path)
-            .chain_err(|| "cannot open file")?;
+        let (subpath, file) = lio::open_compressed(self.path)?;
         let ext = subpath.extension().unwrap_or("".as_ref());
         let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
             Some("dat") => Box::new(
@@ -705,13 +703,15 @@ impl<'a> DoLoadMe2jFile<'a> {
             Some("me2j") => Box::new(lio::MapleTableParser::new(
                 io::BufReader::new(file),
             )),
-            _ => return Err(format!("unknown format: .{}",
-                                    ext.to_string_lossy()).into()),
+            _ => return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("unknown format: .{}", ext.to_string_lossy()),
+            )),
         };
         let table = self.table_basis_spec.npj_states();
-        let mut stdout = io::stdout();
-        let _ = write!(stdout, "\r");
-        let _ = stdout.flush();
+        let mut stderr = io::stderr();
+        let _ = write!(stderr, "\r");
+        let _ = stderr.flush();
         let num_elems = v.len();
         load_me2j(
             &mut elems,
@@ -720,16 +720,16 @@ impl<'a> DoLoadMe2jFile<'a> {
             self.e_max,
             self.mc2,
             &mut |n| {
-                let _ = write!(stdout, "\r{:3.0}% ({} / {})",
+                let _ = write!(stderr, "\r{:3.0}% ({} / {})",
                                (n * 100) as f64 / num_elems as f64,
                                n, num_elems);
-                let _ = stdout.flush();
+                let _ = stderr.flush();
             },
             self.adj_sym,
             &mut v,
-        ).chain_err(|| "load error")?;
-        let _ = writeln!(stdout, "");
-        let _ = stdout.flush();
+        ).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        let _ = writeln!(stderr, "");
+        let _ = stderr.flush();
         Ok(v)
     }
 }
