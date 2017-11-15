@@ -747,6 +747,35 @@ pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
     *cache.entry(cg).or_insert_with(|| f64::from(cg.value()))
 }
 
+pub fn make_ke_op_j<'a>(
+    atlas: &'a JAtlas<Pw, i32>,
+    omega: f64,
+) -> OpJ100<'a, Vec<Matrix<f64>>>
+{
+    let scheme = &atlas.scheme;
+    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
+    for p in scheme.states_j10(&occ::ALL1) {
+        for q in p.related_states(&occ::ALL1) {
+            let npjw1 = Npjw::from(atlas.decode(p).unwrap());
+            let npjw2 = Npjw::from(atlas.decode(q).unwrap());
+            let (_, na, nb) = parity::sort2(npjw1.n, npjw2.n);
+            let dn = nb - na;
+            assert_eq!(npjw1.p, npjw2.p);
+            assert_eq!(npjw1.j, npjw2.j);
+            assert_eq!(npjw1.w, npjw2.w);
+            if dn == 0 {
+                let e = Npj::from(npjw1).osc_energy();
+                h1.set(p, q, 0.5 * omega * (e + 1.5));
+            } else if dn == 1 {
+                let nb = nb as f64;
+                let l = Npj::from(npjw1).orb_ang().0 as f64;
+                h1.set(p, q, 0.5 * omega * (nb * (nb + l + 0.5)).sqrt());
+            }
+        }
+    }
+    h1
+}
+
 pub fn make_ho3d_op_j<'a>(
     atlas: &'a JAtlas<Pw, i32>,
     omega: f64,

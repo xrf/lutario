@@ -12,8 +12,6 @@ extern crate lazy_static;
 #[allow(unused_extern_crates)]
 #[cfg(feature="netlib-src")]
 extern crate netlib_src;
-#[macro_use]
-extern crate quick_error;
 extern crate regex;
 extern crate siphasher;
 extern crate stable_deref_trait;
