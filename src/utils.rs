@@ -236,12 +236,12 @@ pub struct Toler {
     pub abserr: f64,
 }
 
-/// Default is (1e-10, 1e-10)
+/// Default is (1e-15, 1e-15)
 impl Default for Toler {
     fn default() -> Self {
         Self {
-            relerr: 1e-10,
-            abserr: 1e-10,
+            relerr: 1e-15,
+            abserr: 1e-15,
         }
     }
 }
