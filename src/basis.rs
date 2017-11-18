@@ -41,8 +41,7 @@ use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use fnv::FnvHashMap;
-use super::block_matrix::{BlockMat, BlockMatMut};
-use super::matrix::{Mat, MatShape, Matrix};
+use super::matrix::{Mat, MatShape};
 use super::cache2::Cache;
 use super::utils;
 
@@ -585,10 +584,28 @@ pub struct ChanState<L = u32, U = u32> {
     pub u: U,
 }
 
+impl<L, U> fmt::Display for ChanState<L, U> where
+    L: fmt::Display,
+    U: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{l:{},u:{}}}", self.l, self.u)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PartState<X, P> {
     pub x: X,
     pub p: P,
+}
+
+impl<X, P> fmt::Display for PartState<X, P> where
+    X: fmt::Display,
+    P: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{x:{},p:{}}}", self.x, self.p)
+    }
 }
 
 /// Associates data types with sequences.
@@ -724,89 +741,5 @@ impl Occ20 {
             2 => Some(AA),
             _ => None,
         }
-    }
-}
-
-pub trait IndexBlockVec {
-    type Elem;
-    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem;
-}
-
-pub trait IndexBlockVecMut: IndexBlockVec {
-    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem;
-}
-
-impl<T> IndexBlockVec for Vec<Vec<T>> {
-    type Elem = T;
-    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem {
-        &self[l][u]
-    }
-}
-
-impl<T> IndexBlockVecMut for Vec<Vec<T>> {
-    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem {
-        &mut self[l][u]
-    }
-}
-
-pub trait IndexBlockMat {
-    type Elem;
-    fn index_block_mat(
-        &self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> &Self::Elem;
-}
-
-pub trait IndexBlockMatMut: IndexBlockMat {
-    fn index_block_mat_mut(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> &mut Self::Elem;
-}
-
-impl<'a, T> IndexBlockMat for BlockMat<'a, T> {
-    type Elem = T;
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self.get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-impl<'a, T> IndexBlockMat for BlockMatMut<'a, T> {
-    type Elem = T;
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self.as_ref().get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-impl<'a, T> IndexBlockMatMut for BlockMatMut<'a, T> {
-    fn index_block_mat_mut(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> &mut Self::Elem {
-        self.as_mut().get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-impl<T> IndexBlockMat for Vec<Matrix<T>> {
-    type Elem = T;
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self[l].as_ref().get(u1, u2).unwrap()
-    }
-}
-
-impl<T> IndexBlockMatMut for Vec<Matrix<T>> {
-    fn index_block_mat_mut(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> &mut Self::Elem {
-        self[l].as_mut().get(u1, u2).unwrap()
     }
 }

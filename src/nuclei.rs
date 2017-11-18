@@ -8,10 +8,11 @@ use std::path::Path;
 use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
-use super::basis::{occ, ChanState, Occ, PartState, State2};
+use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
-use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, Op, OpJ100, OpJ200};
+use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, OpJ100, OpJ200};
 use super::matrix::Matrix;
+use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils;
 
@@ -403,33 +404,21 @@ impl Nucleus {
 
     pub fn jpwn_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pw>, i32>>> {
         self.npjw_orbs().into_iter().map(|npjw| {
-            let Npjw { n, p, j, w } = npjw;
-            let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
             PartState {
-                x,
-                p: ChanState {
-                    l: JChan { j, k: Pw { p, w } },
-                    u: n,
-                },
+                x: (Npj::from(npjw).shell() >= self.e_fermi(npjw.w)).into(),
+                p: npjw.into(),
             }
         }).collect()
     }
 
     pub fn pmwnj_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pmw>, Nj>>> {
         self.npjw_orbs().into_iter().flat_map(|npjw| {
-            let Npjw { n, p, j, w } = npjw;
-            let x = (Npj::from(npjw).shell() >= self.e_fermi(w)).into();
-            let mut states = Vec::default();
-            for m in j.multiplet() {
-                states.push(PartState {
-                    x,
-                    p: ChanState {
-                        l: Pmw { p, m, w }.into(),
-                        u: Nj { n, j },
-                    },
-                })
-            }
-            states
+            npjw.j.multiplet().map(move |m| {
+                PartState {
+                    x: (Npj::from(npjw).shell() >= self.e_fermi(npjw.w)).into(),
+                    p: npjw.and_m(m).into(),
+                }
+            })
         }).collect()
     }
 
@@ -438,61 +427,6 @@ impl Nucleus {
             self.e_fermi_neutron
         } else {
             self.e_fermi_proton
-        }
-    }
-
-    pub fn channelize_m1(
-        &self,
-        npjmw: Npjmw,
-    ) -> PartState<i32, ChanState<Pmw, Nj>>
-    {
-        let Npjmw { n, p, j, m, w } = npjmw;
-        PartState {
-            x: (npjmw.shell() >= self.e_fermi(w)) as _,
-            p: ChanState {
-                l: Pmw { p, m, w },
-                u: Nj { n, j },
-            },
-        }
-    }
-
-    pub fn channelize_j2(
-        &self,
-        (pjtw12, npj1, npj2): (Pjtw, Npj, Npj),
-    ) -> PartState<i32, ChanState<Pjtw, State2<Npj>>>
-    {
-        assert_eq!(self.e_fermi(Half(-1)), self.e_fermi(Half(1)));
-        let num_filled = self.e_fermi(Half(-1));
-        let x1 = (npj1.shell() >= num_filled) as i32;
-        let x2 = (npj2.shell() >= num_filled) as i32;
-        PartState {
-            x: x1 + x2,
-            p: ChanState {
-                l: pjtw12,
-                u: (npj1, npj2),
-            },
-        }
-    }
-
-    pub fn channelize_m2(
-        &self,
-        (npjmw1, npjmw2): (Npjmw, Npjmw),
-    ) -> PartState<i32, ChanState<Pmw, State2<Npjmw>>>
-    {
-        assert_eq!(self.e_fermi(Half(-1)), self.e_fermi(Half(1)));
-        let num_filled = self.e_fermi(Half(-1));
-        let x1 = (npjmw1.shell() >= num_filled) as i32;
-        let x2 = (npjmw2.shell() >= num_filled) as i32;
-        PartState {
-            x: x1 + x2,
-            p: ChanState {
-                l: Pmw {
-                    p: npjmw1.p + npjmw2.p,
-                    m: npjmw1.m + npjmw2.m,
-                    w: npjmw1.w + npjmw2.w,
-                },
-                u: (npjmw1, npjmw2),
-            },
         }
     }
 }
@@ -753,9 +687,9 @@ pub fn make_ke_op_j<'a>(
 ) -> OpJ100<'a, Vec<Matrix<f64>>>
 {
     let scheme = &atlas.scheme;
-    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
-    for p in scheme.states_j10(&occ::ALL1) {
-        for q in p.related_states(&occ::ALL1) {
+    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
+    for p in scheme.states_10(&occ::ALL1) {
+        for q in p.costates_10(&occ::ALL1) {
             let npjw1 = Npjw::from(atlas.decode(p).unwrap());
             let npjw2 = Npjw::from(atlas.decode(q).unwrap());
             let (_, na, nb) = parity::sort2(npjw1.n, npjw2.n);
@@ -782,8 +716,8 @@ pub fn make_ho3d_op_j<'a>(
 ) -> OpJ100<'a, Vec<Matrix<f64>>>
 {
     let scheme = &atlas.scheme;
-    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
-    for p in scheme.states_j10(&occ::ALL1) {
+    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
+    for p in scheme.states_10(&occ::ALL1) {
         let npjw = Npjw::from(atlas.decode(p).unwrap());
         let e = omega * Npj::from(npjw).osc_energy();
         h1.set(p, p, e);
@@ -797,8 +731,8 @@ pub fn make_ho3d_op_m<'a>(
 ) -> OpJ100<'a, Vec<Matrix<f64>>>
 {
     let scheme = &atlas.scheme;
-    let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
-    for p in scheme.states_j10(&occ::ALL1) {
+    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
+    for p in scheme.states_10(&occ::ALL1) {
         let npjmw = Npjmw::from(atlas.decode(p).unwrap());
         let e = omega * Npj::from(npjmw).osc_energy();
         h1.set(p, p, e);
@@ -812,13 +746,13 @@ pub fn make_v_op_j<'a>(
 ) -> OpJ200<'a, Vec<Matrix<f64>>>
 {
     let scheme = &atlas.scheme;
-    let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
-    for pq in scheme.states_j20(&occ::ALL2) {
-        let (p, q) = pq.split_to_j10_j10();
+    let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
+    for pq in scheme.states_20(&occ::ALL2) {
+        let (p, q) = pq.split_to_10_10();
         let p = Npjw::from(atlas.decode(p).unwrap());
         let q = Npjw::from(atlas.decode(q).unwrap());
-        for rs in pq.related_states(&occ::ALL2) {
-            let (r, s) = rs.split_to_j10_j10();
+        for rs in pq.costates_20(&occ::ALL2) {
+            let (r, s) = rs.split_to_10_10();
             let r = Npjw::from(atlas.decode(r).unwrap());
             let s = Npjw::from(atlas.decode(s).unwrap());
             let (sign, _, key) = JNpjw2Pair {
@@ -845,14 +779,14 @@ pub fn make_v_op_m<'a>(
 ) -> OpJ200<'a, Vec<Matrix<f64>>>
 {
     let scheme = &atlas.scheme;
-    let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
+    let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
     let mut cg_cache = FnvHashMap::default();
-    for pq in scheme.states_j20(&occ::ALL2) {
-        let (p, q) = pq.split_to_j10_j10();
+    for pq in scheme.states_20(&occ::ALL2) {
+        let (p, q) = pq.split_to_10_10();
         let p = Npjmw::from(atlas.decode(p).unwrap());
         let q = Npjmw::from(atlas.decode(q).unwrap());
-        for rs in pq.related_states(&occ::ALL2) {
-            let (r, s) = rs.split_to_j10_j10();
+        for rs in pq.costates_20(&occ::ALL2) {
+            let (r, s) = rs.split_to_10_10();
             let r = Npjmw::from(atlas.decode(r).unwrap());
             let s = Npjmw::from(atlas.decode(s).unwrap());
             h2.add(pq, rs, utils::intersect_range_inclusive(

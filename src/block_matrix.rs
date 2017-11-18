@@ -293,7 +293,7 @@ pub fn block_heevr<T: Heevr>(
     mut isuppz: Option<BlockMatMut<i32>>,
     m: &mut [usize],
 ) -> Result<(), i32> where
-    T::Real: Copy,
+    T::Real: Clone,
 {
     // not implemented: range: EigenvalueRange<T::Real>,
     // because selecting eigenvalues by index makes no sense here!
@@ -304,7 +304,7 @@ pub fn block_heevr<T: Heevr>(
             EigenvalueRange::All,
             uplo,
             a.as_mut().get(l).unwrap(),
-            abstol,
+            abstol.clone(),
             w.as_mut().get(l).unwrap().row(0).unwrap(),
             z.as_mut().get(l).unwrap(),
             match isuppz {

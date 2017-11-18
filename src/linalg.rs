@@ -1,7 +1,7 @@
 //! Linear algebra.
 use std::mem;
 use std::cmp::max;
-use std::ops::{Neg, Range};
+use std::ops::{Add, Mul, Neg, Range};
 use blas;
 use lapack;
 use num::{Complex, Num};
@@ -660,6 +660,21 @@ pub fn heevr_n<T: Heevr>(
             Ok(cast(m))
         } else {
             Err(e)
+        }
+    }
+}
+
+/// `y ← α × x + β × y`
+pub fn mat_axpby<T>(alpha: T, x: Mat<T>, beta: T, mut y: MatMut<T>)
+    where T: Add<Output = T> + Mul<Output = T> + Clone,
+{
+    assert_eq!(x.shape().num_rows, y.shape().num_rows);
+    assert_eq!(x.shape().num_cols, y.shape().num_cols);
+    for i in 0 .. x.shape().num_rows {
+        for j in 0 .. x.shape().num_cols {
+            let xij = x.get(i, j).unwrap().clone();
+            let yij = y.as_mut().get(i, j).unwrap();
+            *yij = alpha.clone() * xij + beta.clone() * yij.clone()
         }
     }
 }

@@ -1,4 +1,4 @@
-//! Row-major, lower-triangular matrices (`i > j`).
+//! Row-major, lower-triangular matrices (`i ≥ j`).
 
 use std::{fmt, mem, slice};
 use std::marker::PhantomData;

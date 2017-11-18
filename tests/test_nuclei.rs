@@ -9,9 +9,10 @@ use lutario::*;
 use lutario::basis::*;
 use lutario::j_scheme::*;
 use lutario::nuclei::*;
+use lutario::op::DiagOp;
 use lutario::utils::Toler;
 
-const TOLER: Toler = Toler { relerr: 1e-14, abserr: 1e-14 };
+const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
 
 fn calc_j(
     nucleus: Nucleus,
@@ -25,7 +26,7 @@ fn calc_j(
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut results = FnvHashMap::default();
-    for p in atlas.scheme.states_j10(&occ::ALL1) {
+    for p in atlas.scheme.states_10(&occ::ALL1) {
         let npjw = Npjw::from(atlas.decode(p).unwrap());
         let value = r.at(p);
         if !value.is_finite() {
@@ -48,7 +49,7 @@ fn calc_m(
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut results = FnvHashMap::default();
-    for p in atlas.scheme.states_j10(&occ::ALL1) {
+    for p in atlas.scheme.states_10(&occ::ALL1) {
         let npjmw = Npjmw::from(atlas.decode(p).unwrap());
         let npjw = Npjw::from(npjmw);
         let value = r.at(p);
@@ -63,7 +64,7 @@ fn calc_m(
 #[test]
 fn main() {
     let omega = 24.0;
-    let basis_spec = NucleonBasisSpec::with_e_max(2);
+    let basis_spec = NucleonBasisSpec::with_e_max(3);
     let nucleus = Nucleus {
         neutron_basis_spec: basis_spec,
         proton_basis_spec: basis_spec,
@@ -83,6 +84,6 @@ fn main() {
         let xj = *j_results.get(&npjw).unwrap();
         let xm = *m_results.get(&npjw).unwrap();
         toler_assert_eq!(TOLER, xj, xm);
-        print!("- {} {}", npjw, xj);
+        println!("- {} {}", npjw, xj);
     }
 }

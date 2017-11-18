@@ -506,6 +506,16 @@ impl<'a, T> MatMut<'a, T> {
     }
 }
 
+impl<'a, T: Clone> MatMut<'a, T> {
+    pub fn fill(&mut self, value: &T) {
+        for i in 0 .. self.num_rows() {
+            for j in 0 .. self.num_cols() {
+                self[(i, j)] = value.clone();
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct MatRows<'a, T: 'a> {
     mat: Mat<'a, T>,
