@@ -62,7 +62,7 @@ fn calc_m(
 }
 
 #[test]
-fn main() {
+fn test_nuclei() {
     let omega = 24.0;
     let basis_spec = NucleonBasisSpec::with_e_max(3);
     let nucleus = Nucleus {
