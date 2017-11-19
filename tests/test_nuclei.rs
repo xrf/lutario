@@ -3,6 +3,7 @@
 extern crate fnv;
 #[macro_use]
 extern crate lutario;
+extern crate libblas;
 
 use fnv::FnvHashMap;
 use lutario::*;

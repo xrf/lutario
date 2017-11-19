@@ -2,13 +2,13 @@
 use std::mem;
 use std::cmp::max;
 use std::ops::{Add, Mul, Neg, Range};
-use blas;
-use lapack;
+use cblas;
+use lapacke;
 use num::{Complex, Num};
 use super::matrix::{Mat, MatMut};
 use super::utils::{self, RangeInclusive, cast};
 
-pub use blas::c::{Part, Transpose};
+pub use cblas::{Part, Transpose};
 
 pub mod lamch {
     //! Defines and re-exports some floating-point constants following the
@@ -190,7 +190,7 @@ pub fn part_to_u8(part: Part) -> u8 {
 
 pub trait Gemm: Copy {
     unsafe fn gemm(
-        layout: blas::c::Layout,
+        layout: cblas::Layout,
         transa: Transpose,
         transb: Transpose,
         m: i32,
@@ -209,7 +209,7 @@ pub trait Gemm: Copy {
 
 impl Gemm for f32 {
     unsafe fn gemm(
-        layout: blas::c::Layout,
+        layout: cblas::Layout,
         transa: Transpose,
         transb: Transpose,
         m: i32,
@@ -224,14 +224,14 @@ impl Gemm for f32 {
         c: &mut [Self],
         ldc: i32,
     ) {
-        blas::c::sgemm(layout, transa, transb, m, n, k,
+        cblas::sgemm(layout, transa, transb, m, n, k,
                        alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
 impl Gemm for f64 {
     unsafe fn gemm(
-        layout: blas::c::Layout,
+        layout: cblas::Layout,
         transa: Transpose,
         transb: Transpose,
         m: i32,
@@ -246,14 +246,14 @@ impl Gemm for f64 {
         c: &mut [Self],
         ldc: i32,
     ) {
-        blas::c::dgemm(layout, transa, transb, m, n, k,
+        cblas::dgemm(layout, transa, transb, m, n, k,
                        alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
 impl Gemm for Complex<f32> {
     unsafe fn gemm(
-        layout: blas::c::Layout,
+        layout: cblas::Layout,
         transa: Transpose,
         transb: Transpose,
         m: i32,
@@ -268,14 +268,14 @@ impl Gemm for Complex<f32> {
         c: &mut [Self],
         ldc: i32,
     ) {
-        blas::c::cgemm(layout, transa, transb, m, n, k,
+        cblas::cgemm(layout, transa, transb, m, n, k,
                        alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
 
 impl Gemm for Complex<f64> {
     unsafe fn gemm(
-        layout: blas::c::Layout,
+        layout: cblas::Layout,
         transa: Transpose,
         transb: Transpose,
         m: i32,
@@ -290,7 +290,7 @@ impl Gemm for Complex<f64> {
         c: &mut [Self],
         ldc: i32,
     ) {
-        blas::c::zgemm(layout, transa, transb, m, n, k,
+        cblas::zgemm(layout, transa, transb, m, n, k,
                        alpha, a, lda, b, ldb, beta, c, ldc)
     }
 }
@@ -319,7 +319,7 @@ pub fn gemm<T: Gemm>(
     // FIXME: handle integer overflow for very large matrices
     unsafe {
         T::gemm(
-            blas::c::Layout::RowMajor,
+            cblas::Layout::RowMajor,
             transa,
             transb,
             cast(ma),
@@ -339,7 +339,7 @@ pub fn gemm<T: Gemm>(
 
 pub trait Heevr: NormSqr + Copy {
     unsafe fn heevr(
-        layout: lapack::c::Layout,
+        layout: lapacke::Layout,
         jobz: u8,
         range: u8,
         uplo: u8,
@@ -361,7 +361,7 @@ pub trait Heevr: NormSqr + Copy {
 
 impl Heevr for f32 {
     unsafe fn heevr(
-        layout: lapack::c::Layout,
+        layout: lapacke::Layout,
         jobz: u8,
         range: u8,
         uplo: u8,
@@ -379,7 +379,7 @@ impl Heevr for f32 {
         ldz: i32,
         isuppz: &mut [i32],
     ) -> i32 {
-        lapack::c::ssyevr(
+        lapacke::ssyevr(
             layout,
             jobz,
             range,
@@ -403,7 +403,7 @@ impl Heevr for f32 {
 
 impl Heevr for f64 {
     unsafe fn heevr(
-        layout: lapack::c::Layout,
+        layout: lapacke::Layout,
         jobz: u8,
         range: u8,
         uplo: u8,
@@ -421,7 +421,7 @@ impl Heevr for f64 {
         ldz: i32,
         isuppz: &mut [i32],
     ) -> i32 {
-        lapack::c::dsyevr(
+        lapacke::dsyevr(
             layout,
             jobz,
             range,
@@ -445,7 +445,7 @@ impl Heevr for f64 {
 
 impl Heevr for Complex<f32> {
     unsafe fn heevr(
-        layout: lapack::c::Layout,
+        layout: lapacke::Layout,
         jobz: u8,
         range: u8,
         uplo: u8,
@@ -463,7 +463,7 @@ impl Heevr for Complex<f32> {
         ldz: i32,
         isuppz: &mut [i32],
     ) -> i32 {
-        lapack::c::cheevr(
+        lapacke::cheevr(
             layout,
             jobz,
             range,
@@ -487,7 +487,7 @@ impl Heevr for Complex<f32> {
 
 impl Heevr for Complex<f64> {
     unsafe fn heevr(
-        layout: lapack::c::Layout,
+        layout: lapacke::Layout,
         jobz: u8,
         range: u8,
         uplo: u8,
@@ -505,7 +505,7 @@ impl Heevr for Complex<f64> {
         ldz: i32,
         isuppz: &mut [i32],
     ) -> i32 {
-        lapack::c::zheevr(
+        lapacke::zheevr(
             layout,
             jobz,
             range,
@@ -574,9 +574,9 @@ pub fn heevr<T: Heevr>(
         let mut m = mem::uninitialized();
         let e = T::heevr(
             if left {
-                lapack::c::Layout::ColumnMajor
+                lapacke::Layout::ColumnMajor
             } else {
-                lapack::c::Layout::RowMajor
+                lapacke::Layout::RowMajor
             },
             b'V',
             range,
@@ -635,9 +635,9 @@ pub fn heevr_n<T: Heevr>(
         let mut m = mem::uninitialized();
         let e = T::heevr(
             if left {
-                lapack::c::Layout::ColumnMajor
+                lapacke::Layout::ColumnMajor
             } else {
-                lapack::c::Layout::RowMajor
+                lapacke::Layout::RowMajor
             },
             b'N',
             range,

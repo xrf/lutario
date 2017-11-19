@@ -7,8 +7,8 @@ addons:
   apt:
     packages:
     - libblas-dev
-    - libgfortran-4.8-dev
-    - liblapack-dev
-script:
-- cargo build --verbose
-- cargo test --verbose
+    - liblapacke-dev
+cache: cargo
+before_install:
+# on Ubuntu, blas includes cblas, and libcblas.so doesn't exist
+- sed -i.bak s/=cblas/=blas/ libblas/build.rs

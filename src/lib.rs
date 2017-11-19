@@ -1,17 +1,16 @@
 extern crate any_key;
-extern crate blas;
 extern crate byteorder;
+extern crate cblas;
 extern crate conv;
 extern crate debugit;
 extern crate flate2;
 extern crate fnv;
 extern crate num;
-extern crate lapack;
+extern crate lapacke;
 #[macro_use]
 extern crate lazy_static;
-#[allow(unused_extern_crates)]
-#[cfg(feature="netlib-src")]
-extern crate netlib_src;
+#[cfg(test)]
+extern crate libblas;
 extern crate regex;
 extern crate siphasher;
 extern crate stable_deref_trait;
