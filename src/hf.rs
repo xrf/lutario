@@ -1,4 +1,4 @@
-use std::mem;
+use std::{f64, mem};
 use std::ops::{Add, Mul};
 use super::basis::occ;
 use super::block_vector::BlockVector;
@@ -13,7 +13,6 @@ use super::utils::Toler;
 pub struct HfConf {
     pub init_mix_factor: f64,
     pub mix_modifier: f64,
-    pub max_iterations: u64,
     pub toler: Toler,
     pub heevr_abstol: f64,
 }
@@ -23,7 +22,6 @@ impl Default for HfConf {
         Self {
             init_mix_factor: 0.5,
             mix_modifier: 2.0,
-            max_iterations: 1024,
             toler: Default::default(),
             heevr_abstol: Default::default(),
         }
@@ -50,8 +48,10 @@ impl HfConf {
             qcoeff: Op::new(BasisJ10(scheme), BasisJ10(scheme)),
             fock: Op::new(BasisJ10(scheme), BasisJ10(scheme)),
             fock_old: Op::new(BasisJ10(scheme), BasisJ10(scheme)),
-            iter: Default::default(),
+            energy_sum: f64::NAN,
+            energy_change: 0.0,
             mix_factor: self.init_mix_factor,
+            first: true,
         }
     }
 
@@ -79,12 +79,14 @@ pub struct HfRun<'a> {
     pub qcoeff: OpJ100<'a, Vec<Matrix<f64>>>,
     pub fock: OpJ100<'a, Vec<Matrix<f64>>>,
     pub fock_old: OpJ100<'a, Vec<Matrix<f64>>>,
-    pub iter: usize,
+    pub energy_sum: f64,
+    pub energy_change: f64,
     pub mix_factor: f64,
+    pub first: bool,
 }
 
 impl<'a> HfRun<'a> {
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> Result<(), ()> {
         // Q[λ; v x] = ∑[i] D[λ; x i] D†[λ; i v]
         qcoeff(&self.dcoeff, &mut self.qcoeff);
 
@@ -97,7 +99,8 @@ impl<'a> HfRun<'a> {
 
         // mix in a little bit of the previous matrix to dampen oscillations
         // that can sometimes occur
-        if self.iter > 0 {
+        if self.first {
+            self.first = false;
             block_mat_axpby(
                 self.mix_factor,
                 &self.fock_old.data,
@@ -116,31 +119,41 @@ impl<'a> HfRun<'a> {
             &mut self.energies.data.0,
             &mut self.dcoeff.data,
         ).unwrap();
+
+        // test convergence using energy sum and adjust mixing
+        let old_energy_sum = mem::replace(
+            &mut self.energy_sum,
+            weighted_sum(&self.energies),
+        );
+        let old_energy_change = mem::replace(
+            &mut self.energy_change,
+            self.energy_sum - old_energy_sum,
+        );
+        self.conf.adjust_mix_factor(
+            old_energy_change,
+            self.energy_change,
+            &mut self.mix_factor,
+        );
+        if self.conf.toler.is_eq(self.energy_sum, old_energy_sum) {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     /// Iterates until the convergence criterion has been met.
-    pub fn do_run(&mut self) {
-        self.mix_factor = self.conf.init_mix_factor;
-        self.step();
-        let mut e = self.energies.sum();
-        let mut de = 0.0;
-        let mut i = 0;
+    pub fn do_run(&mut self) -> Result<(), ()> {
         println!("hf:");
-        while i < self.conf.max_iterations {
-            self.step();
-            let e_new = self.energies.sum();
-            let de_new = e_new - e;
-            self.conf.adjust_mix_factor(de, de_new, &mut self.mix_factor);
-            println!("- {{iter: {}, orbital_energy_sum: {}, mix_factor: {}}}",
-                     i, e_new, self.mix_factor);
-            if self.conf.toler.check(e - e_new, e) {
-                break;
+        for i in 0 .. 1024 {
+            if self.step().is_ok() {
+                println!("hf_converged: true");
+                return Ok(());
             }
-            e = e_new;
-            de = de_new;
-            i += 1;
+            println!("- {{iter: {}, energy_sum: {}, mix_factor: {}}}",
+                     i, self.energy_sum, self.mix_factor);
         }
-        println!("hf_converged: {}", i < self.conf.max_iterations);
+        println!("hf_converged: false");
+        Err(())
     }
 }
 
@@ -192,6 +205,18 @@ pub fn block_heevr<T: linalg::Heevr>(
         )?;
     }
     Ok(())
+}
+
+/// ```text
+/// R = ∑[p] Jp E[p]
+/// ```
+pub fn weighted_sum(e1: &DiagOpJ10<BlockVector<f64>>) -> f64 {
+    let scheme = e1.basis.0;
+    let mut r = 0.0;
+    for p in scheme.states_10(&occ::ALL1) {
+        r += p.jweight(2) * e1.at(p);
+    }
+    r
 }
 
 /// ```text
@@ -286,8 +311,8 @@ pub fn transform_h2<'a>(
             for tu in rs.costates_20(&occ::ALL2) {
                 r2.add(tu, pq, (
                     t2.at(tu, rs)
-                        * d1.at(p, r)
-                        * d1.at(q, s)
+                        * d1.at(r, p)
+                        * d1.at(s, q)
                 ));
             }
         }

@@ -17,7 +17,7 @@ pub struct JChan<K = u32> {
     pub k: K,
 }
 
-/// Construct a trivial JChan where `j` is zero.
+/// Construct a trivial `JChan` where `j` is zero.
 impl<K> From<K> for JChan<K> {
     fn from(k: K) -> Self {
         Self { j: Half(0), k }
@@ -81,8 +81,8 @@ impl<K, U> JAtlas<K, U>
                         let jk1 = basis_10.j_chan(l1);
                         let jk2 = basis_10.j_chan(l2);
                         let k12 =
-                            linchan1_chart.decode(jk1.k as _).unwrap().clone()
-                            + linchan1_chart.decode(jk2.k as _).unwrap().clone();
+                            linchan1_chart.decode(jk1.k).unwrap().clone()
+                            + linchan1_chart.decode(jk2.k).unwrap().clone();
                         let k12 = linchan2_chart.insert(k12).index as _;
                         let x12 = Occ20::from_usize(
                             usize::from(basis_10.occ(lu1))
@@ -363,6 +363,11 @@ impl<'a> Iterator for StatesJ10<'a> {
     type Item = StateJ10<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        // for l in l_range {
+        //     for s in costates_10(l) {
+        //         yield s;
+        //     }
+        // }
         loop {
             if let r@Some(_) = self.states.next() {
                 return r;
@@ -416,6 +421,11 @@ impl<'a> Iterator for CostatesJ10<'a> {
     type Item = StateJ10<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        // for x in unmasked_occs(mask) {
+        //     for u in aux_range(l, x) {
+        //         yield state_10(l, u);
+        //     }
+        // }
         loop {
             // next u
             if let Some(u) = self.u_range.next() {
@@ -455,6 +465,11 @@ impl<'a> Iterator for StatesJ20<'a> {
     type Item = StateJ20<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        // for l in l_range {
+        //     for s in costates_j20(l) {
+        //         yield s;
+        //     }
+        // }
         loop {
             if let r@Some(_) = self.states.next() {
                 return r;
@@ -510,6 +525,13 @@ impl<'a> Iterator for CostatesJ20<'a> {
     type Item = StateJ20<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        // for x in unmasked_occs(mask) {
+        //     for u in aux_range(l, x) {
+        //         for state in state_20_permuts(l, x) {
+        //             yield state;
+        //         }
+        //     }
+        // }
         loop {
             // next permut
             while let Some(state) = StateJ20::next(&mut self.state) {

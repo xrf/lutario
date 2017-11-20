@@ -9,7 +9,7 @@ use lutario::j_scheme::{BasisJ10, BasisJ20, JAtlas};
 use lutario::op::Op;
 use lutario::utils::Toler;
 
-const TOLER: Toler = Toler { relerr: 1e-10, abserr: 1e-10 };
+const TOLER: Toler = Toler { relerr: 1e-8, abserr: 1e-8 };
 
 #[derive(Clone, Copy, Debug)]
 pub struct QdotTest {
@@ -32,7 +32,7 @@ impl QdotTest {
             toler: TOLER,
             .. Default::default()
         }.new_run(h1, h2);
-        hf.do_run();
+        hf.do_run().unwrap();
         let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
         let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
         hf::transform_h1(&hf.h1, &hf.dcoeff, &mut h1);
@@ -62,6 +62,7 @@ fn test_qdots_3_2_1() {
 
 #[test]
 fn test_qdots_4_2_d28() {
+    // make sure ω ≠ 1 works
     QdotTest {
         system: qdots::Qdot {
             num_shells: 4,
@@ -70,5 +71,20 @@ fn test_qdots_4_2_d28() {
         omega: 0.28,
         e_hf: 8.1397185533436094,
         de_mp2: -0.23476770967641344,
+    }.run()
+}
+
+#[test]
+fn test_qdots_5_3_1() {
+    // this test is sensitive to the asymmetric nature of HF coefficient matrix;
+    // i.e. so I don't mix up left and right indices during HF transform
+    QdotTest {
+        system: qdots::Qdot {
+            num_shells: 5,
+            num_filled: 3,
+        },
+        omega: 1.0,
+        e_hf: 67.569930237865776,
+        de_mp2: -0.5483183431301903,
     }.run()
 }
