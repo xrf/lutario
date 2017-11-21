@@ -13,7 +13,7 @@ flate2 = { version = "0.2.20", features = ["zlib"], default-features = false }
 fnv = "1.0.5"
 lapacke = "0.1.4"
 lazy_static = "0.2.9"
-libblas = { path = "libblas" }
+netlib-src = { version = "0.7.3", default-features = false, features = ["cblas", "lapacke", "system"] }
 num = "0.1.40"
 regex = "0.2.2"
 siphasher = "0.2.2"

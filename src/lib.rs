@@ -10,7 +10,7 @@ extern crate lapacke;
 #[macro_use]
 extern crate lazy_static;
 #[cfg(test)]
-extern crate libblas;
+extern crate netlib_src;
 extern crate regex;
 extern crate siphasher;
 extern crate stable_deref_trait;

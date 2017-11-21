@@ -1,7 +1,7 @@
 extern crate fnv;
 #[macro_use]
 extern crate lutario;
-extern crate libblas;
+extern crate netlib_src;
 
 use std::fs::File;
 use lutario::{hf, qdots, qdpt};
