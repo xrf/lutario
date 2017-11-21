@@ -10,7 +10,7 @@ use lutario::*;
 use lutario::basis::*;
 use lutario::j_scheme::*;
 use lutario::nuclei::*;
-use lutario::op::{DiagOp, Op};
+use lutario::op::Op;
 use lutario::utils::Toler;
 
 const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
@@ -32,13 +32,13 @@ fn calc_j(
     let h1 = make_ho3d_op_j(&atlas, omega);
     let h2 = make_v_op_j(&atlas, two_body_mat_elems);
 
-    let mut r = DiagOp::new(BasisJ10(scheme));
+    let mut r = Op::new_vec(BasisJ10(scheme));
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
         let npjw = Npjw::from(atlas.decode(p).unwrap());
-        let value = r.at(p);
+        let value = r.at(p, p);
         if !value.is_finite() {
             continue;
         }
@@ -76,14 +76,14 @@ fn calc_m(
     let h1 = make_ho3d_op_m(&atlas, omega);
     let h2 = make_v_op_m(&atlas, two_body_mat_elems);
 
-    let mut r = DiagOp::new(BasisJ10(scheme));
+    let mut r = Op::new_vec(BasisJ10(scheme));
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
         let npjmw = Npjmw::from(atlas.decode(p).unwrap());
         let npjw = Npjw::from(npjmw);
-        let value = r.at(p);
+        let value = r.at(p, p);
         if !value.is_finite() {
             continue;
         }

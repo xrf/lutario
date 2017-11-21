@@ -2,8 +2,8 @@ use std::{f64, iter};
 use std::ops::{AddAssign, Mul};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
+use super::block::Block;
 use super::block_matrix::{BlockMatRef, BlockMatMut};
-use super::block_vector::BlockVector;
 use super::matrix::Mat;
 
 pub trait ChartedBasis {
@@ -25,7 +25,11 @@ pub trait Vector {
     type Elem: Clone;
 }
 
-impl<T: Clone> Vector for BlockVector<T> {
+impl<T: Clone> Vector for Vec<T> {
+    type Elem = T;
+}
+
+impl<T: Clone> Vector for Mat<T> {
     type Elem = T;
 }
 
@@ -37,49 +41,21 @@ impl<'a, T: Clone> Vector for BlockMatMut<'a, T> {
     type Elem = T;
 }
 
-impl<T: Clone> Vector for Vec<Mat<T>> {
-    type Elem = T;
-}
-
 pub trait VectorMut: Vector {
     fn fill(&mut self, value: &Self::Elem);
 }
 
-impl<T: Clone> VectorMut for BlockVector<T> {
+impl<T: Clone> VectorMut for Vec<T> {
     fn fill(&mut self, value: &Self::Elem) {
-        for block in &mut self.0 {
-            let n = block.len();
-            block.clear();
-            block.resize(n, value.clone());
-        }
+        let n = self.len();
+        self.clear();
+        self.resize(n, value.clone());
     }
 }
 
-impl<T: Clone> VectorMut for Vec<Mat<T>> {
+impl<T: Clone> VectorMut for Mat<T> {
     fn fill(&mut self, value: &Self::Elem) {
-        for block in self {
-            block.as_mut().fill(value);
-        }
-    }
-}
-
-pub trait IndexBlockVec: Vector {
-    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem;
-}
-
-impl<T: Clone> IndexBlockVec for BlockVector<T> {
-    fn index_block_vec(&self, l: usize, u: usize) -> &Self::Elem {
-        &self.0[l][u]
-    }
-}
-
-pub trait IndexBlockVecMut: IndexBlockVec + VectorMut {
-    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem;
-}
-
-impl<T: Clone> IndexBlockVecMut for BlockVector<T> {
-    fn index_block_vec_mut(&mut self, l: usize, u: usize) -> &mut Self::Elem {
-        &mut self.0[l][u]
+        self.as_mut().fill(value);
     }
 }
 
@@ -104,12 +80,6 @@ impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {
     }
 }
 
-impl<T: Clone> IndexBlockMatRef for Vec<Mat<T>> {
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self[l].as_ref().get(u1, u2).unwrap()
-    }
-}
-
 pub trait IndexBlockMatMut: IndexBlockMatRef {
     fn index_block_mat_mut(
         &mut self,
@@ -119,6 +89,7 @@ pub trait IndexBlockMatMut: IndexBlockMatRef {
     ) -> &mut Self::Elem;
 }
 
+
 impl<'a, T: Clone> IndexBlockMatMut for BlockMatMut<'a, T> {
     fn index_block_mat_mut(
         &mut self,
@@ -127,87 +98,6 @@ impl<'a, T: Clone> IndexBlockMatMut for BlockMatMut<'a, T> {
         u2: usize,
     ) -> &mut Self::Elem {
         self.as_mut().get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-impl<T: Clone> IndexBlockMatMut for Vec<Mat<T>> {
-    fn index_block_mat_mut(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> &mut Self::Elem {
-        self[l].as_mut().get(u1, u2).unwrap()
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct DiagOp<B, D> {
-    pub basis: B,
-    pub data: D,
-}
-
-impl<B, T> DiagOp<B, BlockVector<T>> where
-    B: ChartedBasis,
-    T: Default + Clone,
-{
-    pub fn new(basis: B) -> Self {
-        let data = {
-            let layout = basis.layout();
-            BlockVector((0 .. layout.num_chans()).map(|l| {
-                vec![Default::default(); layout.num_auxs(l) as _]
-            }).collect())
-        };
-        Self { basis, data }
-    }
-}
-
-impl<B, T> DiagOp<B, BlockVector<T>> where
-    T: Clone + iter::Sum<T>
-{
-    pub fn sum(&self) -> T {
-        self.data.0.iter().map(|x| x.iter().cloned().sum()).sum()
-    }
-}
-
-impl<B, D> DiagOp<B, D> where
-    B: ChartedBasis,
-    D: IndexBlockVec,
-    D::Elem: FromPrimitive + Mul<Output = D::Elem> + Zero + Clone,
-{
-    #[inline]
-    pub fn at(&self, i: B::State) -> D::Elem {
-        let ri = self.basis.reify_state(i);
-        self.data.index_block_vec(ri.chan, ri.aux).clone()
-            * D::Elem::from_f64(ri.get_factor).unwrap()
-    }
-}
-
-impl<B, D> DiagOp<B, D> where
-    B: ChartedBasis,
-    D: IndexBlockVecMut,
-    D::Elem: FromPrimitive + Mul<Output = D::Elem>,
-{
-    #[inline]
-    pub fn set(&mut self, i: B::State, value: D::Elem) {
-        let ri = self.basis.reify_state(i);
-        *self.data.index_block_vec_mut(ri.chan, ri.aux) =
-            value
-            * D::Elem::from_f64(ri.set_factor).unwrap()
-    }
-}
-
-impl<B, D> DiagOp<B, D> where
-    B: ChartedBasis,
-    D: IndexBlockVecMut,
-    D::Elem: FromPrimitive + AddAssign + Mul<Output = D::Elem>,
-{
-    #[inline]
-    pub fn add(&mut self, i: B::State, value: D::Elem) {
-        let ri = self.basis.reify_state(i);
-        *self.data.index_block_vec_mut(ri.chan, ri.aux) +=
-            value
-            * D::Elem::from_f64(ri.add_factor).unwrap();
     }
 }
 
@@ -228,7 +118,7 @@ impl<L, R, D: VectorMut> VectorMut for Op<L, R, D> {
     }
 }
 
-impl<L, R, T> Op<L, R, Vec<Mat<T>>> where
+impl<L, R, T> Op<L, R, Block<Mat<T>>> where
     L: ChartedBasis,
     R: ChartedBasis,
     T: Default + Clone,
@@ -238,15 +128,39 @@ impl<L, R, T> Op<L, R, Vec<Mat<T>>> where
             let left_layout = left_basis.layout();
             let right_layout = right_basis.layout();
             assert_eq!(left_layout.num_chans(), right_layout.num_chans());
-            (0 .. left_layout.num_chans()).map(|l| {
+            Block((0 .. left_layout.num_chans()).map(|l| {
                 Mat::replicate(
                     left_layout.num_auxs(l) as _,
                     right_layout.num_auxs(l) as _,
                     Default::default(),
                 )
-            }).collect()
+            }).collect())
         };
         Self { left_basis, right_basis, data }
+    }
+}
+
+impl<B, T> Op<B, B, Block<Vec<T>>> where
+    B: ChartedBasis + Clone,
+    T: Default + Clone,
+{
+    /// Create a diagonal operator.
+    pub fn new_vec(basis: B) -> Self {
+        let data = {
+            let layout = basis.layout();
+            Block((0 .. layout.num_chans()).map(|l| {
+                vec![Default::default(); layout.num_auxs(l) as _]
+            }).collect())
+        };
+        Self { left_basis: basis.clone(), right_basis: basis, data }
+    }
+}
+
+impl<B, T> Op<B, B, Block<Vec<T>>> where
+    T: Clone + iter::Sum<T>
+{
+    pub fn sum_vec(&self) -> T {
+        self.data.0.iter().map(|x| x.iter().cloned().sum()).sum()
     }
 }
 

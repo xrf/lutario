@@ -23,7 +23,7 @@ mod macros;
 
 pub mod ang_mom;
 pub mod basis;
-pub mod block_vector;
+pub mod block;
 pub mod block_matrix;
 pub mod block_tri_matrix;
 pub mod btree_cache;

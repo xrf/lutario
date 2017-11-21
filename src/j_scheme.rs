@@ -4,8 +4,10 @@ use std::ops::{Add, Deref, Range};
 use fnv::FnvHashMap;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, PartState};
+use super::block::Block;
+use super::matrix::Mat;
 use super::half::Half;
-use super::op::{ChartedBasis, DiagOp, Op, ReifiedState};
+use super::op::{ChartedBasis, Op, ReifiedState};
 use super::utils;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -800,8 +802,8 @@ impl<'a> ChartedBasis for BasisJ20<'a> {
     }
 }
 
-pub type DiagOpJ10<'a, D> = DiagOp<BasisJ10<'a>, D>;
+pub type DiagOpJ10<'a, T> = Op<BasisJ10<'a>, BasisJ10<'a>, Block<Vec<T>>>;
 
-pub type OpJ100<'a, D> = Op<BasisJ10<'a>, BasisJ10<'a>, D>;
+pub type OpJ100<'a, T> = Op<BasisJ10<'a>, BasisJ10<'a>, Block<Mat<T>>>;
 
-pub type OpJ200<'a, D> = Op<BasisJ20<'a>, BasisJ20<'a>, D>;
+pub type OpJ200<'a, T> = Op<BasisJ20<'a>, BasisJ20<'a>, Block<Mat<T>>>;

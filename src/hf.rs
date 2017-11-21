@@ -1,11 +1,10 @@
 use std::{f64, mem};
 use std::ops::{Add, Mul};
 use super::basis::occ;
-use super::block_vector::BlockVector;
 use super::j_scheme::{BasisJ10, BasisJ20, DiagOpJ10, OpJ100, OpJ200};
 use super::linalg::{self, Conj, EigenvalueRange, Part};
 use super::matrix::Mat;
-use super::op::{DiagOp, Op, VectorMut};
+use super::op::{Op, VectorMut};
 use super::utils::Toler;
 
 /// Hartree–Fock with ad hoc linear mixing.
@@ -31,8 +30,8 @@ impl Default for HfConf {
 impl HfConf {
     pub fn new_run<'a>(
         self,
-        h1: OpJ100<'a, Vec<Mat<f64>>>,
-        h2: OpJ200<'a, Vec<Mat<f64>>>,
+        h1: OpJ100<'a, f64>,
+        h2: OpJ200<'a, f64>,
     ) -> HfRun<'a> {
         let scheme = h1.left_basis.0;
         let mut dcoeff = Op::new(BasisJ10(scheme), BasisJ10(scheme));
@@ -43,7 +42,7 @@ impl HfConf {
             conf: self,
             h1,
             h2,
-            energies: DiagOp::new(BasisJ10(scheme)),
+            energies: Op::new_vec(BasisJ10(scheme)),
             dcoeff,
             qcoeff: Op::new(BasisJ10(scheme), BasisJ10(scheme)),
             fock: Op::new(BasisJ10(scheme), BasisJ10(scheme)),
@@ -72,13 +71,13 @@ impl HfConf {
 
 pub struct HfRun<'a> {
     pub conf: HfConf,
-    pub h1: OpJ100<'a, Vec<Mat<f64>>>,
-    pub h2: OpJ200<'a, Vec<Mat<f64>>>,
-    pub energies: DiagOpJ10<'a, BlockVector<f64>>,
-    pub dcoeff: OpJ100<'a, Vec<Mat<f64>>>,
-    pub qcoeff: OpJ100<'a, Vec<Mat<f64>>>,
-    pub fock: OpJ100<'a, Vec<Mat<f64>>>,
-    pub fock_old: OpJ100<'a, Vec<Mat<f64>>>,
+    pub h1: OpJ100<'a, f64>,
+    pub h2: OpJ200<'a, f64>,
+    pub energies: DiagOpJ10<'a, f64>,
+    pub dcoeff: OpJ100<'a, f64>,
+    pub qcoeff: OpJ100<'a, f64>,
+    pub fock: OpJ100<'a, f64>,
+    pub fock_old: OpJ100<'a, f64>,
     pub energy_sum: f64,
     pub energy_change: f64,
     pub mix_factor: f64,
@@ -103,9 +102,9 @@ impl<'a> HfRun<'a> {
             self.first = false;
             block_mat_axpby(
                 self.mix_factor,
-                &self.fock_old.data,
+                &self.fock_old.data.0,
                 1.0 - self.mix_factor,
-                &mut self.fock.data,
+                &mut self.fock.data.0,
             );
         }
 
@@ -114,10 +113,10 @@ impl<'a> HfRun<'a> {
         block_heevr(
             false,
             Part::Lower,
-            &self.fock.data,
+            &self.fock.data.0,
             self.conf.heevr_abstol,
             &mut self.energies.data.0,
-            &mut self.dcoeff.data,
+            &mut self.dcoeff.data.0,
         ).unwrap();
 
         // test convergence using energy sum and adjust mixing
@@ -210,11 +209,11 @@ pub fn block_heevr<T: linalg::Heevr>(
 /// ```text
 /// R = ∑[p] Jp E[p]
 /// ```
-pub fn weighted_sum(e1: &DiagOpJ10<BlockVector<f64>>) -> f64 {
-    let scheme = e1.basis.0;
+pub fn weighted_sum(e1: &DiagOpJ10<f64>) -> f64 {
+    let scheme = e1.left_basis.0;
     let mut r = 0.0;
     for p in scheme.states_10(&occ::ALL1) {
-        r += p.jweight(2) * e1.at(p);
+        r += p.jweight(2) * e1.at(p, p);
     }
     r
 }
@@ -223,8 +222,8 @@ pub fn weighted_sum(e1: &DiagOpJ10<BlockVector<f64>>) -> f64 {
 /// Q[v x] = ∑[i] D[x i] D†[i v]
 /// ```
 pub fn qcoeff<'a>(
-    d1: &OpJ100<'a, Vec<Mat<f64>>>,
-    q1: &mut OpJ100<'a, Vec<Mat<f64>>>,
+    d1: &OpJ100<'a, f64>,
+    q1: &mut OpJ100<'a, f64>,
 )
 {
     let scheme = d1.left_basis.0;
@@ -239,9 +238,9 @@ pub fn qcoeff<'a>(
 }
 
 pub fn fock2<'a>(
-    h2: &OpJ200<'a, Vec<Mat<f64>>>,
-    q1: &OpJ100<'a, Vec<Mat<f64>>>,
-    f1: &mut OpJ100<'a, Vec<Mat<f64>>>,
+    h2: &OpJ200<'a, f64>,
+    q1: &OpJ100<'a, f64>,
+    f1: &mut OpJ100<'a, f64>,
 )
 {
     let scheme = h2.left_basis.0;
@@ -262,9 +261,9 @@ pub fn fock2<'a>(
 }
 
 pub fn transform_h1<'a>(
-    h1: &OpJ100<'a, Vec<Mat<f64>>>,
-    d1: &OpJ100<'a, Vec<Mat<f64>>>,
-    r1: &mut OpJ100<'a, Vec<Mat<f64>>>,
+    h1: &OpJ100<'a, f64>,
+    d1: &OpJ100<'a, f64>,
+    r1: &mut OpJ100<'a, f64>,
 )
 {
     let scheme = h1.left_basis.0;
@@ -284,9 +283,9 @@ pub fn transform_h1<'a>(
 }
 
 pub fn transform_h2<'a>(
-    h2: &OpJ200<'a, Vec<Mat<f64>>>,
-    d1: &OpJ100<'a, Vec<Mat<f64>>>,
-    r2: &mut OpJ200<'a, Vec<Mat<f64>>>,
+    h2: &OpJ200<'a, f64>,
+    d1: &OpJ100<'a, f64>,
+    r2: &mut OpJ200<'a, f64>,
 )
 {
     let scheme = h2.left_basis.0;
@@ -320,8 +319,8 @@ pub fn transform_h2<'a>(
 }
 
 pub fn hf_energy<'a>(
-    h1: &OpJ100<'a, Vec<Mat<f64>>>,
-    h2: &OpJ200<'a, Vec<Mat<f64>>>,
+    h1: &OpJ100<'a, f64>,
+    h2: &OpJ200<'a, f64>,
 ) -> f64
 {
     // ZN[p q] =
@@ -340,11 +339,11 @@ pub fn hf_energy<'a>(
 }
 
 pub fn normord<'a>(
-    h1: &OpJ100<'a, Vec<Mat<f64>>>,
-    h2: &OpJ200<'a, Vec<Mat<f64>>>,
+    h1: &OpJ100<'a, f64>,
+    h2: &OpJ200<'a, f64>,
     r0: &mut f64,
-    r1: &mut OpJ100<'a, Vec<Mat<f64>>>,
-    r2: &mut OpJ200<'a, Vec<Mat<f64>>>,
+    r1: &mut OpJ100<'a, f64>,
+    r2: &mut OpJ200<'a, f64>,
 )
 {
     // UN[p q] =
