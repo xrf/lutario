@@ -2,9 +2,9 @@ use std::{f64, iter};
 use std::ops::{AddAssign, Mul};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
-use super::block_matrix::{BlockMat, BlockMatMut};
+use super::block_matrix::{BlockMatRef, BlockMatMut};
 use super::block_vector::BlockVector;
-use super::matrix::Matrix;
+use super::matrix::Mat;
 
 pub trait ChartedBasis {
     type State;
@@ -29,7 +29,7 @@ impl<T: Clone> Vector for BlockVector<T> {
     type Elem = T;
 }
 
-impl<'a, T: Clone> Vector for BlockMat<'a, T> {
+impl<'a, T: Clone> Vector for BlockMatRef<'a, T> {
     type Elem = T;
 }
 
@@ -37,7 +37,7 @@ impl<'a, T: Clone> Vector for BlockMatMut<'a, T> {
     type Elem = T;
 }
 
-impl<T: Clone> Vector for Vec<Matrix<T>> {
+impl<T: Clone> Vector for Vec<Mat<T>> {
     type Elem = T;
 }
 
@@ -55,7 +55,7 @@ impl<T: Clone> VectorMut for BlockVector<T> {
     }
 }
 
-impl<T: Clone> VectorMut for Vec<Matrix<T>> {
+impl<T: Clone> VectorMut for Vec<Mat<T>> {
     fn fill(&mut self, value: &Self::Elem) {
         for block in self {
             block.as_mut().fill(value);
@@ -83,7 +83,7 @@ impl<T: Clone> IndexBlockVecMut for BlockVector<T> {
     }
 }
 
-pub trait IndexBlockMat: Vector {
+pub trait IndexBlockMatRef: Vector {
     fn index_block_mat(
         &self,
         l: usize,
@@ -92,25 +92,25 @@ pub trait IndexBlockMat: Vector {
     ) -> &Self::Elem;
 }
 
-impl<'a, T: Clone> IndexBlockMat for BlockMat<'a, T> {
+impl<'a, T: Clone> IndexBlockMatRef for BlockMatRef<'a, T> {
     fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
         self.get(l).unwrap().get(u1, u2).unwrap()
     }
 }
 
-impl<'a, T: Clone> IndexBlockMat for BlockMatMut<'a, T> {
+impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {
     fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
         self.as_ref().get(l).unwrap().get(u1, u2).unwrap()
     }
 }
 
-impl<T: Clone> IndexBlockMat for Vec<Matrix<T>> {
+impl<T: Clone> IndexBlockMatRef for Vec<Mat<T>> {
     fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
         self[l].as_ref().get(u1, u2).unwrap()
     }
 }
 
-pub trait IndexBlockMatMut: IndexBlockMat {
+pub trait IndexBlockMatMut: IndexBlockMatRef {
     fn index_block_mat_mut(
         &mut self,
         l: usize,
@@ -130,7 +130,7 @@ impl<'a, T: Clone> IndexBlockMatMut for BlockMatMut<'a, T> {
     }
 }
 
-impl<T: Clone> IndexBlockMatMut for Vec<Matrix<T>> {
+impl<T: Clone> IndexBlockMatMut for Vec<Mat<T>> {
     fn index_block_mat_mut(
         &mut self,
         l: usize,
@@ -228,7 +228,7 @@ impl<L, R, D: VectorMut> VectorMut for Op<L, R, D> {
     }
 }
 
-impl<L, R, T> Op<L, R, Vec<Matrix<T>>> where
+impl<L, R, T> Op<L, R, Vec<Mat<T>>> where
     L: ChartedBasis,
     R: ChartedBasis,
     T: Default + Clone,
@@ -239,7 +239,7 @@ impl<L, R, T> Op<L, R, Vec<Matrix<T>>> where
             let right_layout = right_basis.layout();
             assert_eq!(left_layout.num_chans(), right_layout.num_chans());
             (0 .. left_layout.num_chans()).map(|l| {
-                Matrix::replicate(
+                Mat::replicate(
                     left_layout.num_auxs(l) as _,
                     right_layout.num_auxs(l) as _,
                     Default::default(),
@@ -253,7 +253,7 @@ impl<L, R, T> Op<L, R, Vec<Matrix<T>>> where
 impl<L, R, D> Op<L, R, D> where
     L: ChartedBasis,
     R: ChartedBasis,
-    D: IndexBlockMat,
+    D: IndexBlockMatRef,
     D::Elem: FromPrimitive + Mul<Output = D::Elem> + Zero,
 {
     #[inline]

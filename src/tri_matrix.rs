@@ -133,19 +133,19 @@ impl StrictTriMatDim {
     }
 }
 
-pub struct TriMat<'a, T: 'a> {
+pub struct TriMatRef<'a, T: 'a> {
     phantom: PhantomData<&'a [T]>,
     ptr: *const T,
     dim: TriMatDim,
 }
 
-unsafe impl<'a, T: Sync> Send for TriMat<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for TriMat<'a, T> {}
+unsafe impl<'a, T: Sync> Send for TriMatRef<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for TriMatRef<'a, T> {}
 
-impl<'a, T> Clone for TriMat<'a, T> { fn clone(&self) -> Self { *self } }
-impl<'a, T> Copy for TriMat<'a, T> {}
+impl<'a, T> Clone for TriMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Copy for TriMatRef<'a, T> {}
 
-impl<'a, T: fmt::Debug> fmt::Debug for TriMat<'a, T> {
+impl<'a, T: fmt::Debug> fmt::Debug for TriMatRef<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("tri_mat!")?;
         let mut rows = f.debug_list();
@@ -156,14 +156,14 @@ impl<'a, T: fmt::Debug> fmt::Debug for TriMat<'a, T> {
     }
 }
 
-impl<'a, T> Default for TriMat<'a, T> {
+impl<'a, T> Default for TriMatRef<'a, T> {
     fn default() -> Self {
         Self::new(&mut (&[] as &[_]), Default::default()).expect("!?")
     }
 }
 
-impl<'a, 'b, T: PartialEq<U>, U> PartialEq<TriMat<'b, U>> for TriMat<'a, T> {
-    fn eq(&self, rhs: &TriMat<'b, U>) -> bool {
+impl<'a, 'b, T: PartialEq<U>, U> PartialEq<TriMatRef<'b, U>> for TriMatRef<'a, T> {
+    fn eq(&self, rhs: &TriMatRef<'b, U>) -> bool {
         if self.dim() != rhs.dim() {
             return false;
         }
@@ -178,16 +178,16 @@ impl<'a, 'b, T: PartialEq<U>, U> PartialEq<TriMat<'b, U>> for TriMat<'a, T> {
     }
 }
 
-impl<'a, T: Eq> Eq for TriMat<'a, T> {}
+impl<'a, T: Eq> Eq for TriMatRef<'a, T> {}
 
-impl<'a, T> Index<(usize, usize)> for TriMat<'a, T> {
+impl<'a, T> Index<(usize, usize)> for TriMatRef<'a, T> {
     type Output = T;
     fn index(&self, (i, j): (usize, usize)) -> &Self::Output {
         (*self).index(i, j)
     }
 }
 
-impl<'a, T> TriMat<'a, T> {
+impl<'a, T> TriMatRef<'a, T> {
     /// Split `*slice` into two parts: the first part becomes the matrix,
     /// while the second part is stored back in `slice`.  If the slice is too
     /// short, `None` is returned.
@@ -318,15 +318,15 @@ impl<'a, T> TriMatMut<'a, T> {
         self.as_ref().dim()
     }
 
-    pub fn into_ref(self) -> TriMat<'a, T> {
+    pub fn into_ref(self) -> TriMatRef<'a, T> {
         unsafe {
-            TriMat::from_raw(self.ptr, self.dim)
+            TriMatRef::from_raw(self.ptr, self.dim)
         }
     }
 
-    pub fn as_ref(&self) -> TriMat<T> {
+    pub fn as_ref(&self) -> TriMatRef<T> {
         unsafe {
-            TriMat::from_raw(self.ptr, self.dim)
+            TriMatRef::from_raw(self.ptr, self.dim)
         }
     }
 
@@ -385,7 +385,7 @@ impl<'a, T> TriMatMut<'a, T> {
 
 #[derive(Clone, Debug)]
 pub struct TriMatRows<'a, T: 'a> {
-    mat: TriMat<'a, T>,
+    mat: TriMatRef<'a, T>,
     range: Range<usize>,
 }
 
@@ -455,25 +455,25 @@ impl<'a, T> ExactSizeIterator for TriMatRowsMut<'a, T> {
     }
 }
 
-pub struct TriMatrix<T> {
+pub struct TriMat<T> {
     phantom: PhantomData<Box<[T]>>,
     ptr: *mut T,
     shape: TriMatDim,
 }
 
-impl<T: fmt::Debug> fmt::Debug for TriMatrix<T> {
+impl<T: fmt::Debug> fmt::Debug for TriMat<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.as_ref().fmt(f)
     }
 }
 
-impl<T: Clone> Clone for TriMatrix<T> {
+impl<T: Clone> Clone for TriMat<T> {
     fn clone(&self) -> Self {
         Self::from_vec(self.as_slice().to_vec(), *self.shape())
     }
 }
 
-impl<T> Drop for TriMatrix<T> {
+impl<T> Drop for TriMat<T> {
     fn drop(&mut self) {
         unsafe {
             mem::replace(self, mem::uninitialized()).into_boxed_slice();
@@ -481,21 +481,21 @@ impl<T> Drop for TriMatrix<T> {
     }
 }
 
-impl<T> Default for TriMatrix<T> {
+impl<T> Default for TriMat<T> {
     fn default() -> Self {
         Self::from_vec(vec![], 0)
     }
 }
 
-impl<T: PartialEq<U>, U> PartialEq<TriMatrix<U>> for TriMatrix<T> {
-    fn eq(&self, rhs: &TriMatrix<U>) -> bool {
+impl<T: PartialEq<U>, U> PartialEq<TriMat<U>> for TriMat<T> {
+    fn eq(&self, rhs: &TriMat<U>) -> bool {
         self.as_ref().eq(&rhs.as_ref())
     }
 }
 
-impl<T: Eq> Eq for TriMatrix<T> {}
+impl<T: Eq> Eq for TriMat<T> {}
 
-impl<T: Clone> TriMatrix<T> {
+impl<T: Clone> TriMat<T> {
     pub fn replicate(dim: usize, value: T) -> Self {
         let dim = TriMatDim::new(dim).unwrap();
         unsafe {
@@ -504,13 +504,13 @@ impl<T: Clone> TriMatrix<T> {
     }
 }
 
-impl<T: Clone + Zero> TriMatrix<T> {
+impl<T: Clone + Zero> TriMat<T> {
     pub fn zero(dim: usize) -> Self {
         Self::replicate(dim, Zero::zero())
     }
 }
 
-impl<T> TriMatrix<T> {
+impl<T> TriMat<T> {
     /// Panics if the vector is too short.
     pub fn from_vec(mut vec: Vec<T>, dim: usize) -> Self {
         let shape = TriMatDim::new(dim).unwrap();
@@ -553,8 +553,8 @@ impl<T> TriMatrix<T> {
         self.ptr
     }
 
-    pub fn as_ref(&self) -> TriMat<T> {
-        unsafe { TriMat::from_raw(self.as_ptr(), self.shape()) }
+    pub fn as_ref(&self) -> TriMatRef<T> {
+        unsafe { TriMatRef::from_raw(self.as_ptr(), self.shape()) }
     }
 
     pub fn as_mut(&mut self) -> TriMatMut<T> {

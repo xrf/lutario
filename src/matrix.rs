@@ -91,19 +91,19 @@ impl ValidMatShape {
     }
 }
 
-pub struct Mat<'a, T: 'a> {
+pub struct MatRef<'a, T: 'a> {
     phantom: PhantomData<&'a [T]>,
     ptr: *const T,
     shape: ValidMatShape,
 }
 
-unsafe impl<'a, T: Sync> Send for Mat<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for Mat<'a, T> {}
+unsafe impl<'a, T: Sync> Send for MatRef<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for MatRef<'a, T> {}
 
-impl<'a, T> Clone for Mat<'a, T> { fn clone(&self) -> Self { *self } }
-impl<'a, T> Copy for Mat<'a, T> {}
+impl<'a, T> Clone for MatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Copy for MatRef<'a, T> {}
 
-impl<'a, T: fmt::Debug> fmt::Debug for Mat<'a, T> {
+impl<'a, T: fmt::Debug> fmt::Debug for MatRef<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("mat!")?;
         let mut rows = f.debug_list();
@@ -114,14 +114,14 @@ impl<'a, T: fmt::Debug> fmt::Debug for Mat<'a, T> {
     }
 }
 
-impl<'a, T> Default for Mat<'a, T> {
+impl<'a, T> Default for MatRef<'a, T> {
     fn default() -> Self {
         Self::new(&mut (&[] as &[_]), Default::default()).expect("!?")
     }
 }
 
-impl<'a, 'b, T: PartialEq<U>, U> PartialEq<Mat<'b, U>> for Mat<'a, T> {
-    fn eq(&self, rhs: &Mat<'b, U>) -> bool {
+impl<'a, 'b, T: PartialEq<U>, U> PartialEq<MatRef<'b, U>> for MatRef<'a, T> {
+    fn eq(&self, rhs: &MatRef<'b, U>) -> bool {
         if self.num_rows() != rhs.num_rows() {
             return false;
         }
@@ -137,16 +137,16 @@ impl<'a, 'b, T: PartialEq<U>, U> PartialEq<Mat<'b, U>> for Mat<'a, T> {
     }
 }
 
-impl<'a, T: Eq> Eq for Mat<'a, T> {}
+impl<'a, T: Eq> Eq for MatRef<'a, T> {}
 
-impl<'a, T> Index<(usize, usize)> for Mat<'a, T> {
+impl<'a, T> Index<(usize, usize)> for MatRef<'a, T> {
     type Output = T;
     fn index(&self, (i, j): (usize, usize)) -> &Self::Output {
         (*self).index(i, j)
     }
 }
 
-impl<'a, T> Mat<'a, T> {
+impl<'a, T> MatRef<'a, T> {
     /// Split `*slice` into two parts: the first part becomes the matrix,
     /// while the second part is stored back in `slice`.  If the slice is too
     /// short, `None` is returned.
@@ -376,15 +376,15 @@ impl<'a, T> MatMut<'a, T> {
         self.as_ref().stride()
     }
 
-    pub fn into_ref(self) -> Mat<'a, T> {
+    pub fn into_ref(self) -> MatRef<'a, T> {
         unsafe {
-            Mat::from_raw(self.ptr, self.shape)
+            MatRef::from_raw(self.ptr, self.shape)
         }
     }
 
-    pub fn as_ref(&self) -> Mat<T> {
+    pub fn as_ref(&self) -> MatRef<T> {
         unsafe {
-            Mat::from_raw(self.ptr, self.shape)
+            MatRef::from_raw(self.ptr, self.shape)
         }
     }
 
@@ -518,7 +518,7 @@ impl<'a, T: Clone> MatMut<'a, T> {
 
 #[derive(Clone, Debug)]
 pub struct MatRows<'a, T: 'a> {
-    mat: Mat<'a, T>,
+    mat: MatRef<'a, T>,
     range: Range<usize>,
 }
 
@@ -588,26 +588,26 @@ impl<'a, T> ExactSizeIterator for MatRowsMut<'a, T> {
     }
 }
 
-pub struct Matrix<T> {
+pub struct Mat<T> {
     phantom: PhantomData<Box<[T]>>,
     ptr: *mut T,
     num_rows: usize,
     num_cols: usize,
 }
 
-impl<T: fmt::Debug> fmt::Debug for Matrix<T> {
+impl<T: fmt::Debug> fmt::Debug for Mat<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.as_ref().fmt(f)
     }
 }
 
-impl<T: Clone> Clone for Matrix<T> {
+impl<T: Clone> Clone for Mat<T> {
     fn clone(&self) -> Self {
         Self::from_vec(self.as_slice().to_vec(), self.num_rows, self.num_cols)
     }
 }
 
-impl<T> Drop for Matrix<T> {
+impl<T> Drop for Mat<T> {
     fn drop(&mut self) {
         unsafe {
             mem::replace(self, mem::uninitialized()).into_boxed_slice();
@@ -615,22 +615,22 @@ impl<T> Drop for Matrix<T> {
     }
 }
 
-impl<T> Default for Matrix<T> {
+impl<T> Default for Mat<T> {
     fn default() -> Self {
         Self::from_vec(vec![], 0, 0)
     }
 }
 
-impl<T: PartialEq<U>, U> PartialEq<Matrix<U>> for Matrix<T> {
-    fn eq(&self, rhs: &Matrix<U>) -> bool {
+impl<T: PartialEq<U>, U> PartialEq<Mat<U>> for Mat<T> {
+    fn eq(&self, rhs: &Mat<U>) -> bool {
         self.as_ref().eq(&rhs.as_ref())
     }
 }
 
-impl<T: Eq> Eq for Matrix<T> {}
+impl<T: Eq> Eq for Mat<T> {}
 
 /// Convenience function for creating matrices directly in code.
-impl<T> From<Vec<Vec<T>>> for Matrix<T> {
+impl<T> From<Vec<Vec<T>>> for Mat<T> {
     fn from(rows: Vec<Vec<T>>) -> Self {
         let ni = rows.len();
         let nj = if ni == 0 { 0 } else { rows[0].len() };
@@ -645,7 +645,7 @@ impl<T> From<Vec<Vec<T>>> for Matrix<T> {
     }
 }
 
-impl<T: Clone> Matrix<T> {
+impl<T: Clone> Mat<T> {
     pub fn replicate(num_rows: usize, num_cols: usize, value: T) -> Self {
         MatShape::packed(num_rows, num_cols).validate().unwrap();
         unsafe {
@@ -658,13 +658,13 @@ impl<T: Clone> Matrix<T> {
     }
 }
 
-impl<T: Clone + Zero> Matrix<T> {
+impl<T: Clone + Zero> Mat<T> {
     pub fn zero(num_rows: usize, num_cols: usize) -> Self {
         Self::replicate(num_rows, num_cols, Zero::zero())
     }
 }
 
-impl<T> Matrix<T> {
+impl<T> Mat<T> {
     /// Panics if the vector is too short.
     pub fn from_vec(mut vec: Vec<T>, num_rows: usize, num_cols: usize) -> Self {
         MatShape::packed(num_rows, num_cols).validate().unwrap();
@@ -710,8 +710,8 @@ impl<T> Matrix<T> {
         self.ptr
     }
 
-    pub fn as_ref(&self) -> Mat<T> {
-        unsafe { Mat::from_raw(self.as_ptr(), self.shape()) }
+    pub fn as_ref(&self) -> MatRef<T> {
+        unsafe { MatRef::from_raw(self.as_ptr(), self.shape()) }
     }
 
     pub fn as_mut(&mut self) -> MatMut<T> {

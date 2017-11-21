@@ -41,7 +41,7 @@ use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use fnv::FnvHashMap;
-use super::matrix::{Mat, MatShape};
+use super::matrix::{MatRef, MatShape};
 use super::cache2::Cache;
 use super::utils;
 
@@ -303,8 +303,8 @@ impl BasisLayout {
         }
     }
 
-    pub fn part_offsets(&self) -> Mat<u32> {
-        Mat::new(
+    pub fn part_offsets(&self) -> MatRef<u32> {
+        MatRef::new(
             &mut (&self.part_offsets as _),
             MatShape::packed(
                 self.num_chans() as _,

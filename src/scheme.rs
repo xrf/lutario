@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use super::btree_cache::BTreeCache;
-use super::block_matrix::{BlockMat, BlockMatMut};
+use super::block_matrix::{BlockMatRef, BlockMatMut};
 use super::matrix::MatShape;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -121,7 +121,7 @@ impl<'a> OpInfo<'a> {
 }
 
 pub struct Op<'a, T: 'a> {
-    block_mat: BlockMat<'a, T>,
+    block_mat: BlockMatRef<'a, T>,
     info: OpInfo<'a>,
 }
 

@@ -3,7 +3,7 @@ use std::ops::MulAssign;
 use super::basis::occ;
 use super::block_vector::BlockVector;
 use super::j_scheme::{DiagOpJ10, OpJ100, OpJ200};
-use super::matrix::Matrix;
+use super::matrix::Mat;
 
 pub fn block_vec_set<T: Clone>(value: T, out: &mut Vec<Vec<T>>) {
     for out_l in out.iter_mut() {
@@ -29,8 +29,8 @@ pub fn block_vec_mul_assign<T>(factor: T, out: &mut Vec<Vec<T>>)
 /// R[p] = 1/2 ∑[i a b] J[p i]^2 abs(H[p i a b])^2 / Δ[p i a b]
 /// ```
 pub fn mp2<'a>(
-    h1: &OpJ100<'a, Vec<Matrix<f64>>>,
-    h2: &OpJ200<'a, Vec<Matrix<f64>>>,
+    h1: &OpJ100<'a, Vec<Mat<f64>>>,
+    h2: &OpJ200<'a, Vec<Mat<f64>>>,
 ) -> f64
 {
     let mut r = 0.0;
@@ -54,8 +54,8 @@ pub fn mp2<'a>(
 /// R[p] = 1/2 ∑[i a b] (J[p i]^2 / J[p]^2) abs(H[p i a b])^2 / Δ[p i a b]
 /// ```
 pub fn dqdpt2_term3<'a>(
-    h1: &OpJ100<'a, Vec<Matrix<f64>>>,
-    h2: &OpJ200<'a, Vec<Matrix<f64>>>,
+    h1: &OpJ100<'a, Vec<Mat<f64>>>,
+    h2: &OpJ200<'a, Vec<Mat<f64>>>,
     r: &mut DiagOpJ10<'a, BlockVector<f64>>,
 )
 {
@@ -80,8 +80,8 @@ pub fn dqdpt2_term3<'a>(
 /// R[p] = −1/2 ∑[i j a] (J[i j]^2 / J[p]^2) abs(H[i j p a])^2 / Δ[i j p a]
 /// ```
 pub fn dqdpt2_term4<'a>(
-    h1: &OpJ100<'a, Vec<Matrix<f64>>>,
-    h2: &OpJ200<'a, Vec<Matrix<f64>>>,
+    h1: &OpJ100<'a, Vec<Mat<f64>>>,
+    h2: &OpJ200<'a, Vec<Mat<f64>>>,
     r: &mut DiagOpJ10<'a, BlockVector<f64>>,
 )
 {

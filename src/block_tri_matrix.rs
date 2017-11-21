@@ -2,7 +2,7 @@
 
 use std::{mem, ptr, slice};
 use std::marker::PhantomData;
-use super::tri_matrix::{TriMat, TriMatMut, TriMatDim};
+use super::tri_matrix::{TriMatRef, TriMatMut, TriMatDim};
 
 /// ugly: there's a lot of hidden invariants here that we aren't
 /// being explicit about
@@ -69,18 +69,18 @@ impl<'a> BlockTriMatShape<'a> {
 }
 
 /// A block-diagonal matrix.
-pub struct BlockTriMat<'a, T: 'a> {
+pub struct BlockTriMatRef<'a, T: 'a> {
     ptr: *const T,
     shape: BlockTriMatShape<'a>,
     phantom: PhantomData<&'a T>,
 }
 
-unsafe impl<'a, T: Sync> Send for BlockTriMat<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for BlockTriMat<'a, T> {}
-impl<'a, T> Clone for BlockTriMat<'a, T> { fn clone(&self) -> Self { *self } }
-impl<'a, T> Copy for BlockTriMat<'a, T> {}
+unsafe impl<'a, T: Sync> Send for BlockTriMatRef<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for BlockTriMatRef<'a, T> {}
+impl<'a, T> Clone for BlockTriMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Copy for BlockTriMatRef<'a, T> {}
 
-impl<'a, T> BlockTriMat<'a, T> {
+impl<'a, T> BlockTriMatRef<'a, T> {
     pub unsafe fn from_raw(ptr: *const T, shape: BlockTriMatShape<'a>) -> Self {
         Self { ptr, shape, phantom: PhantomData }
     }
@@ -93,7 +93,7 @@ impl<'a, T> BlockTriMat<'a, T> {
         self.shape
     }
 
-    pub fn get(self, l: usize) -> Option<TriMat<'a, T>> {
+    pub fn get(self, l: usize) -> Option<TriMatRef<'a, T>> {
         if l < self.shape().num_blocks() {
             Some(unsafe { self.get_unchecked(l) })
         } else {
@@ -101,8 +101,8 @@ impl<'a, T> BlockTriMat<'a, T> {
         }
     }
 
-    pub unsafe fn get_unchecked(self, l: usize) -> TriMat<'a, T> {
-        TriMat::from_raw(
+    pub unsafe fn get_unchecked(self, l: usize) -> TriMatRef<'a, T> {
+        TriMatRef::from_raw(
             self.as_ptr().offset(self.shape().offset_unchecked(l) as _),
             self.shape().dim_unchecked(l),
         )
@@ -132,12 +132,12 @@ impl<'a, T> BlockTriMatMut<'a, T> {
         self.shape
     }
 
-    pub fn into_ref(self) -> BlockTriMat<'a, T> {
+    pub fn into_ref(self) -> BlockTriMatRef<'a, T> {
         unsafe { mem::transmute(self.as_ref()) }
     }
 
-    pub fn as_ref<'b>(&'b self) -> BlockTriMat<'b, T> {
-        unsafe { BlockTriMat::from_raw(self.as_ptr(), self.shape()) }
+    pub fn as_ref<'b>(&'b self) -> BlockTriMatRef<'b, T> {
+        unsafe { BlockTriMatRef::from_raw(self.as_ptr(), self.shape()) }
     }
 
     pub fn as_mut<'b>(&'b mut self) -> BlockTriMatMut<'b, T> {

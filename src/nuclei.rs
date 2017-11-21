@@ -11,7 +11,7 @@ use wigner_symbols::ClebschGordan;
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
 use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, OpJ100, OpJ200};
-use super::matrix::Matrix;
+use super::matrix::Mat;
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils;
@@ -684,7 +684,7 @@ pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
 pub fn make_ke_op_j<'a>(
     atlas: &'a JAtlas<Pw, i32>,
     omega: f64,
-) -> OpJ100<'a, Vec<Matrix<f64>>>
+) -> OpJ100<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
@@ -713,7 +713,7 @@ pub fn make_ke_op_j<'a>(
 pub fn make_ho3d_op_j<'a>(
     atlas: &'a JAtlas<Pw, i32>,
     omega: f64,
-) -> OpJ100<'a, Vec<Matrix<f64>>>
+) -> OpJ100<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
@@ -728,7 +728,7 @@ pub fn make_ho3d_op_j<'a>(
 pub fn make_ho3d_op_m<'a>(
     atlas: &'a JAtlas<Pmw, Nj>,
     omega: f64,
-) -> OpJ100<'a, Vec<Matrix<f64>>>
+) -> OpJ100<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
@@ -743,7 +743,7 @@ pub fn make_ho3d_op_m<'a>(
 pub fn make_v_op_j<'a>(
     atlas: &'a JAtlas<Pw, i32>,
     two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
-) -> OpJ200<'a, Vec<Matrix<f64>>>
+) -> OpJ200<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
@@ -776,7 +776,7 @@ pub fn make_v_op_j<'a>(
 pub fn make_v_op_m<'a>(
     atlas: &'a JAtlas<Pmw, Nj>,
     two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
-) -> OpJ200<'a, Vec<Matrix<f64>>>
+) -> OpJ200<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));

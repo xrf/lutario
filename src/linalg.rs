@@ -5,7 +5,7 @@ use std::ops::{Add, Mul, Neg, Range};
 use cblas;
 use lapacke;
 use num::{Complex, Num};
-use super::matrix::{Mat, MatMut};
+use super::matrix::{MatRef, MatMut};
 use super::utils::{self, RangeInclusive, cast};
 
 pub use cblas::{Part, Transpose};
@@ -302,8 +302,8 @@ pub fn gemm<T: Gemm>(
     transa: Transpose,
     transb: Transpose,
     alpha: T,
-    a: Mat<T>,
-    b: Mat<T>,
+    a: MatRef<T>,
+    b: MatRef<T>,
     beta: T,
     c: MatMut<T>,
 ) {
@@ -665,7 +665,7 @@ pub fn heevr_n<T: Heevr>(
 }
 
 /// `y ← α × x + β × y`
-pub fn mat_axpby<T>(alpha: T, x: Mat<T>, beta: T, mut y: MatMut<T>)
+pub fn mat_axpby<T>(alpha: T, x: MatRef<T>, beta: T, mut y: MatMut<T>)
     where T: Add<Output = T> + Mul<Output = T> + Clone,
 {
     assert_eq!(x.shape().num_rows, y.shape().num_rows);
@@ -682,39 +682,53 @@ pub fn mat_axpby<T>(alpha: T, x: Mat<T>, beta: T, mut y: MatMut<T>)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::matrix::Matrix;
+    use super::super::matrix::Mat;
 
     #[test]
     fn it_works() {
-        let a = Matrix::from(vec![vec![1.0, 2.0],
-                                  vec![3.0, 4.0]]);
-        let b = Matrix::from(vec![vec![5.0, 6.0],
-                                  vec![7.0, 8.0]]);
-        let c0 = Matrix::from(vec![vec![-1.0, -2.0],
-                                   vec![-3.0, -4.0]]);
+        let a = Mat::from(vec![
+            vec![1.0, 2.0],
+            vec![3.0, 4.0],
+        ]);
+        let b = Mat::from(vec![
+            vec![5.0, 6.0],
+            vec![7.0, 8.0],
+        ]);
+        let c0 = Mat::from(vec![
+            vec![-1.0, -2.0],
+            vec![-3.0, -4.0],
+        ]);
 
         let mut c = c0.clone();
         gemm(Transpose::None, Transpose::None,
              2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Matrix::from(vec![vec![35.0, 38.0],
-                                        vec![77.0, 88.0]]));
+        assert_eq!(c, Mat::from(vec![
+            vec![35.0, 38.0],
+            vec![77.0, 88.0],
+        ]));
 
         let mut c = c0.clone();
         gemm(Transpose::Ordinary, Transpose::None,
              2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Matrix::from(vec![vec![49.0, 54.0],
-                                        vec![67.0, 76.0]]));
+        assert_eq!(c, Mat::from(vec![
+            vec![49.0, 54.0],
+            vec![67.0, 76.0],
+        ]));
 
         let mut c = c0.clone();
         gemm(Transpose::None, Transpose::Ordinary,
              2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Matrix::from(vec![vec![31.0, 40.0],
-                                        vec![69.0, 94.0]]));
+        assert_eq!(c, Mat::from(vec![
+            vec![31.0, 40.0],
+            vec![69.0, 94.0],
+        ]));
 
         let mut c = c0.clone();
         gemm(Transpose::Ordinary, Transpose::Ordinary,
              2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Matrix::from(vec![vec![43.0, 56.0],
-                                        vec![59.0, 80.0]]));
+        assert_eq!(c, Mat::from(vec![
+            vec![43.0, 56.0],
+            vec![59.0, 80.0],
+        ]));
     }
 }

@@ -6,7 +6,7 @@ use num::{Zero, range_step_inclusive};
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
 use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, OpJ100, OpJ200};
-use super::matrix::Matrix;
+use super::matrix::Mat;
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils::cast;
@@ -158,7 +158,7 @@ impl Nl2Pair {
 pub fn make_ho2d_op<'a>(
     atlas: &'a JAtlas<Ls, i32>,
     omega: f64,
-) -> OpJ100<'a, Vec<Matrix<f64>>>
+) -> OpJ100<'a, Vec<Mat<f64>>>
 {
     let scheme = &atlas.scheme;
     let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
@@ -173,7 +173,7 @@ pub fn make_v_op<'a>(
     atlas: &'a JAtlas<Ls, i32>,
     table: &FnvHashMap<Nl2Pair, f64>,
     omega: f64,
-) -> OpJ200<'a, Vec<Matrix<f64>>>
+) -> OpJ200<'a, Vec<Mat<f64>>>
 {
     let sqrt_omega = omega.sqrt();
     let scheme = &atlas.scheme;

@@ -3,12 +3,12 @@
 use std::{mem, ptr, slice};
 use std::marker::PhantomData;
 use super::linalg::{self, EigenvalueRange, Gemm, Heevr, Part, Transpose};
-use super::matrix::{Mat, MatMut, MatShape, ValidMatShape};
+use super::matrix::{MatRef, MatMut, MatShape, ValidMatShape};
 use super::utils;
 
 /// A block-diagonal matrix with unspecified lifetime and unspecified type.
 #[derive(Clone, Copy, Debug)]
-pub struct RawBlockMat {
+pub struct RawBlockMatRef {
     ptr: *mut (),
     num_blocks: usize,
     block_offsets: *const usize,
@@ -17,7 +17,7 @@ pub struct RawBlockMat {
     block_num_cols: *const usize,
 }
 
-impl RawBlockMat {
+impl RawBlockMatRef {
     /// Unsafe preconditions:
     ///
     ///   - `ptr` must point to an array with sufficient length.
@@ -90,15 +90,15 @@ impl RawBlockMat {
 }
 
 /// A block-diagonal matrix.
-pub struct BlockMat<'a, T: 'a> {
-    raw: RawBlockMat,
+pub struct BlockMatRef<'a, T: 'a> {
+    raw: RawBlockMatRef,
     phantom: PhantomData<&'a T>,
 }
 
-unsafe impl<'a, T: Sync> Send for BlockMat<'a, T> {}
-unsafe impl<'a, T: Sync> Sync for BlockMat<'a, T> {}
-impl<'a, T> Clone for BlockMat<'a, T> { fn clone(&self) -> Self { *self } }
-impl<'a, T> Copy for BlockMat<'a, T> {}
+unsafe impl<'a, T: Sync> Send for BlockMatRef<'a, T> {}
+unsafe impl<'a, T: Sync> Sync for BlockMatRef<'a, T> {}
+impl<'a, T> Clone for BlockMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Copy for BlockMatRef<'a, T> {}
 
 pub fn block_mat_extent(
     num_blocks: usize,
@@ -127,7 +127,7 @@ pub fn block_mat_extent(
     i
 }
 
-impl<'a, T> BlockMat<'a, T> {
+impl<'a, T> BlockMatRef<'a, T> {
     pub fn new(
         slice: &mut &'a [T],
         num_blocks: usize,
@@ -143,7 +143,7 @@ impl<'a, T> BlockMat<'a, T> {
             block_num_rows,
             block_num_cols,
         )).expect("slice too short");
-        unsafe { Self::from_raw(RawBlockMat::new(
+        unsafe { Self::from_raw(RawBlockMatRef::new(
             mine.as_ptr() as _,
             num_blocks,
             block_offsets.as_ptr(),
@@ -153,7 +153,7 @@ impl<'a, T> BlockMat<'a, T> {
         )) }
     }
 
-    pub unsafe fn from_raw(raw: RawBlockMat) -> Self {
+    pub unsafe fn from_raw(raw: RawBlockMatRef) -> Self {
         Self { raw, phantom: PhantomData }
     }
 
@@ -181,7 +181,7 @@ impl<'a, T> BlockMat<'a, T> {
         unsafe { self.raw.block_num_cols() }
     }
 
-    pub fn get(self, l: usize) -> Option<Mat<'a, T>> {
+    pub fn get(self, l: usize) -> Option<MatRef<'a, T>> {
         if l < self.num_blocks() {
             Some(unsafe { self.get_unchecked(l) })
         } else {
@@ -189,12 +189,12 @@ impl<'a, T> BlockMat<'a, T> {
         }
     }
 
-    pub fn index(self, l: usize) -> Mat<'a, T> {
+    pub fn index(self, l: usize) -> MatRef<'a, T> {
         self.get(l).unwrap()
     }
 
-    pub unsafe fn get_unchecked(self, l: usize) -> Mat<'a, T> {
-        Mat::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
+    pub unsafe fn get_unchecked(self, l: usize) -> MatRef<'a, T> {
+        MatRef::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
                       self.raw.shape_at(l))
     }
 
@@ -204,7 +204,7 @@ impl<'a, T> BlockMat<'a, T> {
         block_num_rows: &'a [usize],
         block_num_cols: &'a [usize],
     ) -> Self {
-        Self::from_raw(RawBlockMat::new(
+        Self::from_raw(RawBlockMatRef::new(
             self.raw.mut_ptr(),
             self.raw.num_blocks(),
             block_offsets.as_ptr(),
@@ -217,7 +217,7 @@ impl<'a, T> BlockMat<'a, T> {
 
 /// A mutable block-diagonal matrix.
 pub struct BlockMatMut<'a, T: 'a> {
-    raw: RawBlockMat,
+    raw: RawBlockMatRef,
     phantom: PhantomData<&'a mut T>,
 }
 
@@ -225,7 +225,7 @@ unsafe impl<'a, T: Send> Send for BlockMatMut<'a, T> {}
 unsafe impl<'a, T: Sync> Sync for BlockMatMut<'a, T> {}
 
 impl<'a, T> BlockMatMut<'a, T> {
-    pub unsafe fn from_raw(raw: RawBlockMat) -> Self {
+    pub unsafe fn from_raw(raw: RawBlockMatRef) -> Self {
         Self { raw, phantom: PhantomData }
     }
 
@@ -233,12 +233,12 @@ impl<'a, T> BlockMatMut<'a, T> {
         unsafe { self.raw.mut_ptr() }
     }
 
-    pub fn into_ref(self) -> BlockMat<'a, T> {
+    pub fn into_ref(self) -> BlockMatRef<'a, T> {
         unsafe { mem::transmute(self.as_ref()) }
     }
 
-    pub fn as_ref<'b>(&'b self) -> BlockMat<'b, T> {
-        unsafe { BlockMat::from_raw(self.raw) }
+    pub fn as_ref<'b>(&'b self) -> BlockMatRef<'b, T> {
+        unsafe { BlockMatRef::from_raw(self.raw) }
     }
 
     pub fn as_mut<'b>(&'b mut self) -> BlockMatMut<'b, T> {
@@ -263,8 +263,8 @@ pub fn block_gemm<T: Gemm>(
     transa: Transpose,
     transb: Transpose,
     alpha: T,
-    a: BlockMat<T>,
-    b: BlockMat<T>,
+    a: BlockMatRef<T>,
+    b: BlockMatRef<T>,
     beta: T,
     mut c: BlockMatMut<T>,
 ) {
