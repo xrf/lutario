@@ -5,7 +5,7 @@ use std::ops::{Add, Mul, Neg, Range};
 use cblas;
 use lapacke;
 use num::{Complex, Num};
-use super::matrix::{MatRef, MatMut};
+use super::mat::{MatRef, MatMut};
 use super::utils::{self, RangeInclusive, cast};
 
 pub use cblas::{Part, Transpose};
@@ -682,7 +682,7 @@ pub fn mat_axpby<T>(alpha: T, x: MatRef<T>, beta: T, mut y: MatMut<T>)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::matrix::Mat;
+    use super::super::mat::Mat;
 
     #[test]
     fn it_works() {

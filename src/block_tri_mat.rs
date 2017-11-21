@@ -2,7 +2,7 @@
 
 use std::{mem, ptr, slice};
 use std::marker::PhantomData;
-use super::tri_matrix::{TriMatRef, TriMatMut, TriMatDim};
+use super::tri_mat::{TriMatRef, TriMatMut, TriMatDim};
 
 /// ugly: there's a lot of hidden invariants here that we aren't
 /// being explicit about

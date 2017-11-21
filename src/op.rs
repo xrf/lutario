@@ -3,8 +3,8 @@ use std::ops::{AddAssign, Mul};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
 use super::block::Block;
-use super::block_matrix::{BlockMatRef, BlockMatMut};
-use super::matrix::Mat;
+use super::block_mat::{BlockMatRef, BlockMatMut};
+use super::mat::Mat;
 
 pub trait ChartedBasis {
     type State;

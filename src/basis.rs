@@ -41,7 +41,7 @@ use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use fnv::FnvHashMap;
-use super::matrix::{MatRef, MatShape};
+use super::mat::{MatRef, MatShape};
 use super::cache2::Cache;
 use super::utils;
 

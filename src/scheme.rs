@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use super::btree_cache::BTreeCache;
-use super::block_matrix::{BlockMatRef, BlockMatMut};
-use super::matrix::MatShape;
+use super::block_mat::{BlockMatRef, BlockMatMut};
+use super::mat::MatShape;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Basis {

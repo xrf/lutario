@@ -3,7 +3,7 @@ use std::ops::{Add, Mul};
 use super::basis::occ;
 use super::j_scheme::{BasisJ10, BasisJ20, DiagOpJ10, OpJ100, OpJ200};
 use super::linalg::{self, Conj, EigenvalueRange, Part};
-use super::matrix::Mat;
+use super::mat::Mat;
 use super::op::{Op, VectorMut};
 use super::utils::Toler;
 

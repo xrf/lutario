@@ -1,5 +1,5 @@
 //! Block-diagonal matrices and similar things.
-use super::matrix::Mat;
+use super::mat::Mat;
 use super::op::{IndexBlockMatRef, IndexBlockMatMut, Vector, VectorMut};
 
 /// A block matrix is a vector of matrix blocks.

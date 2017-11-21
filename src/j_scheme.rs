@@ -5,7 +5,7 @@ use fnv::FnvHashMap;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, PartState};
 use super::block::Block;
-use super::matrix::Mat;
+use super::mat::Mat;
 use super::half::Half;
 use super::op::{ChartedBasis, Op, ReifiedState};
 use super::utils;

@@ -3,7 +3,7 @@
 use std::{mem, ptr, slice};
 use std::marker::PhantomData;
 use super::linalg::{self, EigenvalueRange, Gemm, Heevr, Part, Transpose};
-use super::matrix::{MatRef, MatMut, MatShape, ValidMatShape};
+use super::mat::{MatRef, MatMut, MatShape, ValidMatShape};
 use super::utils;
 
 /// A block-diagonal matrix with unspecified lifetime and unspecified type.
