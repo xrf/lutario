@@ -1,13 +1,14 @@
 use std::{f64, fmt, mem};
 use std::hash::Hash;
 use std::ops::{Add, Deref, Range};
+use std::sync::Arc;
 use fnv::FnvHashMap;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, PartState};
 use super::block::Block;
 use super::mat::Mat;
 use super::half::Half;
-use super::op::{ChartedBasis, Op, ReifiedState};
+use super::op::{ChartedBasis, Op, ReifiedState, ReifyState};
 use super::utils;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -26,7 +27,27 @@ impl<K> From<K> for JChan<K> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
+pub struct JPartedOrb {
+    pub lu: ChanState,
+    pub j: Half<i32>,
+    pub x: Occ,
+}
+
+impl fmt::Display for JPartedOrb {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{lu:{}}}", self.lu)
+    }
+}
+
+impl JPartedOrb {
+    #[inline]
+    pub fn jweight(self, exponent: i32) -> f64 {
+        self.j.weight(exponent)
+    }
+}
+
+#[derive(Debug)]
 pub struct JAtlas<K, U: Hash + Eq> { // FIXME: spurious constraints
     /// `K1 ↔ κ1`
     pub linchan1_chart: HashChart<K, u32>,
@@ -36,15 +57,22 @@ pub struct JAtlas<K, U: Hash + Eq> { // FIXME: spurious constraints
     pub aux_decoder: Box<[U]>,
     /// `(L1, υ1) → U1`
     pub aux_encoder: FnvHashMap<(u32, U), u32>,
-    pub scheme: JScheme,
+    pub scheme: Arc<JScheme>,
 }
 
-impl<K, U> JAtlas<K, U>
+impl<K, U: Hash + Eq> JAtlas<K, U> {
+    pub fn scheme(&self) -> &Arc<JScheme> {
+        &self.scheme
+    }
+}
+
+impl<K, U: Hash + Eq> JAtlas<K, U>
     where K: Add<Output = K> + Hash + Eq + Clone,
           U: Hash + Eq + Clone,
 {
-    pub fn new<I>(orbs: I) -> Self where
-        I: Iterator<Item = PartState<Occ, ChanState<JChan<K>, U>>>,
+    pub fn new(
+        orbs: &mut Iterator<Item = PartState<Occ, ChanState<JChan<K>, U>>>,
+    ) -> Self
     {
         // one-particle states
         let mut linchan1_chart = HashChart::default();
@@ -132,10 +160,10 @@ impl<K, U> JAtlas<K, U>
             linchan2_chart,
             aux_decoder: chart1.aux_decoder,
             aux_encoder: chart1.aux_encoder,
-            scheme: JScheme {
+            scheme: Arc::new(JScheme {
                 basis_10,
                 basis_20,
-            },
+            }),
         }
     }
 }
@@ -567,26 +595,6 @@ impl<'a> Iterator for CostatesJ20<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct JPartedOrb {
-    pub lu: ChanState,
-    pub j: Half<i32>,
-    pub x: Occ,
-}
-
-impl fmt::Display for JPartedOrb {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{lu:{}}}", self.lu)
-    }
-}
-
-impl JPartedOrb {
-    #[inline]
-    pub fn jweight(self, exponent: i32) -> f64 {
-        self.j.weight(exponent)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
 pub struct StateJ10<'a> {
     pub scheme: &'a JScheme,
     pub s1: JPartedOrb,
@@ -764,21 +772,27 @@ impl JScheme {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct BasisJ10<'a>(pub &'a JScheme);
+#[derive(Clone, Copy, Debug, Default)]
+pub struct BasisJ10;
 
-#[derive(Clone, Copy, Debug)]
-pub struct BasisJ20<'a>(pub &'a JScheme);
-
-impl<'a> ChartedBasis for BasisJ10<'a> {
-    type State = StateJ10<'a>;
-    fn layout(&self) -> &BasisLayout {
-        &self.0.basis_10.layout
+impl ChartedBasis for BasisJ10 {
+    type Scheme = Arc<JScheme>;
+    fn layout<'a>(&self, scheme: &'a Self::Scheme) -> &'a BasisLayout {
+        &scheme.basis_10.layout
     }
-    fn reify_state(&self, state: Self::State) -> ReifiedState {
+}
+
+impl<'a> ReifyState for StateJ10<'a> {
+    type Scheme = Arc<JScheme>;
+    type Basis = BasisJ10;
+    fn reify_state(
+        self,
+        _scheme: &Self::Scheme,
+        _basis: &Self::Basis,
+    ) -> ReifiedState {
         ReifiedState {
-            chan: state.s1.lu.l as _,
-            aux: state.s1.lu.u as _,
+            chan: self.s1.lu.l as _,
+            aux: self.s1.lu.u as _,
             get_factor: 1.0,
             set_factor: 1.0,
             add_factor: 1.0,
@@ -786,24 +800,37 @@ impl<'a> ChartedBasis for BasisJ10<'a> {
     }
 }
 
-impl<'a> ChartedBasis for BasisJ20<'a> {
-    type State = StateJ20<'a>;
-    fn layout(&self) -> &BasisLayout {
-        &self.0.basis_20.layout
+#[derive(Clone, Copy, Debug, Default)]
+pub struct BasisJ20;
+
+impl ChartedBasis for BasisJ20 {
+    type Scheme = Arc<JScheme>;
+    fn layout<'a>(&self, scheme: &'a Self::Scheme) -> &'a BasisLayout {
+        &scheme.basis_20.layout
     }
-    fn reify_state(&self, state: Self::State) -> ReifiedState {
+}
+
+impl<'a> ReifyState for StateJ20<'a> {
+    type Scheme = Arc<JScheme>;
+    type Basis = BasisJ20;
+    fn reify_state(
+        self,
+        _scheme: &Self::Scheme,
+        _basis: &Self::Basis,
+    ) -> ReifiedState {
         ReifiedState {
-            chan: state.lu12.l as _,
-            aux: state.lu12.u as _,
-            get_factor: state.get_factor,
-            set_factor: state.set_factor,
-            add_factor: state.add_factor,
+            chan: self.lu12.l as _,
+            aux: self.lu12.u as _,
+            get_factor: self.get_factor,
+            set_factor: self.set_factor,
+            add_factor: self.add_factor,
         }
     }
 }
 
-pub type DiagOpJ10<'a, T> = Op<BasisJ10<'a>, BasisJ10<'a>, Block<Vec<T>>>;
+pub type DiagOpJ10<T = f64> =
+    Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Vec<T>>>;
 
-pub type OpJ100<'a, T> = Op<BasisJ10<'a>, BasisJ10<'a>, Block<Mat<T>>>;
+pub type OpJ100<T = f64> = Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Mat<T>>>;
 
-pub type OpJ200<'a, T> = Op<BasisJ20<'a>, BasisJ20<'a>, Block<Mat<T>>>;
+pub type OpJ200<T = f64> = Op<Arc<JScheme>, BasisJ20, BasisJ20, Block<Mat<T>>>;

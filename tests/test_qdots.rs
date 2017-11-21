@@ -5,7 +5,7 @@ extern crate netlib_src;
 
 use std::fs::File;
 use lutario::{hf, qdots, qdpt};
-use lutario::j_scheme::{BasisJ10, BasisJ20, JAtlas};
+use lutario::j_scheme::JAtlas;
 use lutario::op::Op;
 use lutario::utils::Toler;
 
@@ -24,23 +24,23 @@ impl QdotTest {
         let v_elems = qdots::read_clh2_bin(
             &mut File::open("data/clh2-openfci/shells6.dat").unwrap(),
         ).unwrap();
-        let atlas = JAtlas::new(self.system.parted_orbs().into_iter());
-        let scheme = &atlas.scheme;
+        let atlas = JAtlas::new(&mut self.system.parted_orbs().into_iter());
+        let scheme = atlas.scheme();
         let h1 = qdots::make_ho2d_op(&atlas, self.omega);
         let h2 = qdots::make_v_op(&atlas, &v_elems, self.omega);
         let mut hf = hf::HfConf {
             toler: TOLER,
             .. Default::default()
-        }.new_run(h1, h2);
+        }.new_run(&h1, &h2);
         hf.do_run().unwrap();
-        let mut h1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
-        let mut h2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
-        hf::transform_h1(&hf.h1, &hf.dcoeff, &mut h1);
-        hf::transform_h2(&hf.h2, &hf.dcoeff, &mut h2);
+        let mut hh1 = Op::new(scheme.clone());
+        let mut hh2 = Op::new(scheme.clone());
+        hf::transform_h1(&h1, &hf.dcoeff, &mut hh1);
+        hf::transform_h2(&h2, &hf.dcoeff, &mut hh2);
         let mut hn0 = 0.0;
-        let mut hn1 = Op::new(BasisJ10(&scheme), BasisJ10(&scheme));
-        let mut hn2 = Op::new(BasisJ20(&scheme), BasisJ20(&scheme));
-        hf::normord(&h1, &h2, &mut hn0, &mut hn1, &mut hn2);
+        let mut hn1 = Op::new(scheme.clone());
+        let mut hn2 = Op::new(scheme.clone());
+        hf::normord(&hh1, &hh2, &mut hn0, &mut hn1, &mut hn2);
         toler_assert_eq!(TOLER, hn0, self.e_hf);
         let de_mp2 = qdpt::mp2(&hn1, &hn2);
         toler_assert_eq!(TOLER, de_mp2, self.de_mp2);

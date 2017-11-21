@@ -5,7 +5,7 @@ use fnv::FnvHashMap;
 use num::{Zero, range_step_inclusive};
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
-use super::j_scheme::{BasisJ10, BasisJ20, JAtlas, JChan, OpJ100, OpJ200};
+use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils::cast;
@@ -154,13 +154,13 @@ impl Nl2Pair {
     }
 }
 
-pub fn make_ho2d_op<'a>(
-    atlas: &'a JAtlas<Ls, i32>,
+pub fn make_ho2d_op(
+    atlas: &JAtlas<Ls, i32>,
     omega: f64,
-) -> OpJ100<'a, f64>
+) -> OpJ100<f64>
 {
-    let scheme = &atlas.scheme;
-    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
+    let scheme = atlas.scheme();
+    let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
         let sp = Nls::from(atlas.decode(p).unwrap());
         h1.add(p, p, omega * sp.osc_energy());
@@ -168,15 +168,15 @@ pub fn make_ho2d_op<'a>(
     h1
 }
 
-pub fn make_v_op<'a>(
-    atlas: &'a JAtlas<Ls, i32>,
+pub fn make_v_op(
+    atlas: &JAtlas<Ls, i32>,
     table: &FnvHashMap<Nl2Pair, f64>,
     omega: f64,
-) -> OpJ200<'a, f64>
+) -> OpJ200<f64>
 {
     let sqrt_omega = omega.sqrt();
-    let scheme = &atlas.scheme;
-    let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
+    let scheme = atlas.scheme();
+    let mut h2 = Op::new(scheme.clone());
     for pq in scheme.states_20(&occ::ALL2) {
         let (p, q) = pq.split_to_10_10();
         let p = Nls::from(atlas.decode(p).unwrap());

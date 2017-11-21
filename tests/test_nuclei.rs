@@ -1,15 +1,12 @@
-//! Integration tests for nuclei.
-
 extern crate fnv;
 #[macro_use]
 extern crate lutario;
 extern crate netlib_src;
 
 use fnv::FnvHashMap;
-use lutario::*;
-use lutario::basis::*;
-use lutario::j_scheme::*;
-use lutario::nuclei::*;
+use lutario::{hf, nuclei, qdpt};
+use lutario::basis::occ;
+use lutario::j_scheme::JAtlas;
 use lutario::op::Op;
 use lutario::utils::Toler;
 
@@ -17,27 +14,27 @@ const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
 
 #[derive(Clone, Debug)]
 pub struct Results {
-    pub de_dqdpt2: FnvHashMap<Npjw, f64>,
+    pub de_dqdpt2: FnvHashMap<nuclei::Npjw, f64>,
     pub e_hf: f64,
     pub de_mp2: f64,
 }
 
 fn calc_j(
-    nucleus: Nucleus,
+    nucleus: nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
+    two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
 ) -> Results {
-    let atlas = JAtlas::new(nucleus.jpwn_orbs().into_iter());
-    let scheme = &atlas.scheme;
-    let h1 = make_ho3d_op_j(&atlas, omega);
-    let h2 = make_v_op_j(&atlas, two_body_mat_elems);
+    let atlas = JAtlas::new(&mut nucleus.jpwn_orbs().into_iter());
+    let scheme = atlas.scheme();
+    let h1 = nuclei::make_ho3d_op_j(&atlas, omega);
+    let h2 = nuclei::make_v_op_j(&atlas, two_body_mat_elems);
 
-    let mut r = Op::new_vec(BasisJ10(scheme));
+    let mut r = Op::new_vec(scheme.clone());
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
-        let npjw = Npjw::from(atlas.decode(p).unwrap());
+        let npjw = nuclei::Npjw::from(atlas.decode(p).unwrap());
         let value = r.at(p, p);
         if !value.is_finite() {
             continue;
@@ -48,16 +45,16 @@ fn calc_j(
     let mut hf = hf::HfConf {
         toler: TOLER,
         .. Default::default()
-    }.new_run(h1, h2);
+    }.new_run(&h1, &h2);
     hf.do_run().unwrap();
-    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
-    let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
-    hf::transform_h1(&hf.h1, &hf.dcoeff, &mut h1);
-    hf::transform_h2(&hf.h2, &hf.dcoeff, &mut h2);
+    let mut hh1 = Op::new(scheme.clone());
+    let mut hh2 = Op::new(scheme.clone());
+    hf::transform_h1(&h1, &hf.dcoeff, &mut hh1);
+    hf::transform_h2(&h2, &hf.dcoeff, &mut hh2);
     let mut hn0 = 0.0;
-    let mut hn1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
-    let mut hn2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
-    hf::normord(&h1, &h2, &mut hn0, &mut hn1, &mut hn2);
+    let mut hn1 = Op::new(scheme.clone());
+    let mut hn2 = Op::new(scheme.clone());
+    hf::normord(&hh1, &hh2, &mut hn0, &mut hn1, &mut hn2);
     let de_mp2 = qdpt::mp2(&hn1, &hn2);
     Results {
         de_dqdpt2,
@@ -67,22 +64,22 @@ fn calc_j(
 }
 
 fn calc_m(
-    nucleus: Nucleus,
+    nucleus: nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
+    two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
 ) -> Results {
-    let atlas = JAtlas::new(nucleus.pmwnj_orbs().into_iter());
-    let scheme = &atlas.scheme;
-    let h1 = make_ho3d_op_m(&atlas, omega);
-    let h2 = make_v_op_m(&atlas, two_body_mat_elems);
+    let atlas = JAtlas::new(&mut nucleus.pmwnj_orbs().into_iter());
+    let scheme = atlas.scheme();
+    let h1 = nuclei::make_ho3d_op_m(&atlas, omega);
+    let h2 = nuclei::make_v_op_m(&atlas, two_body_mat_elems);
 
-    let mut r = Op::new_vec(BasisJ10(scheme));
+    let mut r = Op::new_vec(scheme.clone());
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
     qdpt::dqdpt2_term4(&h1, &h2, &mut r);
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
-        let npjmw = Npjmw::from(atlas.decode(p).unwrap());
-        let npjw = Npjw::from(npjmw);
+        let npjmw = nuclei::Npjmw::from(atlas.decode(p).unwrap());
+        let npjw = nuclei::Npjw::from(npjmw);
         let value = r.at(p, p);
         if !value.is_finite() {
             continue;
@@ -93,16 +90,16 @@ fn calc_m(
     let mut hf = hf::HfConf {
         toler: TOLER,
         .. Default::default()
-    }.new_run(h1, h2);
+    }.new_run(&h1, &h2);
     hf.do_run().unwrap();
-    let mut h1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
-    let mut h2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
-    hf::transform_h1(&hf.h1, &hf.dcoeff, &mut h1);
-    hf::transform_h2(&hf.h2, &hf.dcoeff, &mut h2);
+    let mut hh1 = Op::new(scheme.clone());
+    let mut hh2 = Op::new(scheme.clone());
+    hf::transform_h1(&h1, &hf.dcoeff, &mut hh1);
+    hf::transform_h2(&h2, &hf.dcoeff, &mut hh2);
     let mut hn0 = 0.0;
-    let mut hn1 = Op::new(BasisJ10(scheme), BasisJ10(scheme));
-    let mut hn2 = Op::new(BasisJ20(scheme), BasisJ20(scheme));
-    hf::normord(&h1, &h2, &mut hn0, &mut hn1, &mut hn2);
+    let mut hn1 = Op::new(scheme.clone());
+    let mut hn2 = Op::new(scheme.clone());
+    hf::normord(&hh1, &hh2, &mut hn0, &mut hn1, &mut hn2);
     let de_mp2 = qdpt::mp2(&hn1, &hn2);
 
     Results {
@@ -115,14 +112,14 @@ fn calc_m(
 #[test]
 fn test_nuclei() {
     let omega = 24.0;
-    let basis_spec = NucleonBasisSpec::with_e_max(2);
-    let nucleus = Nucleus {
+    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(2);
+    let nucleus = nuclei::Nucleus {
         neutron_basis_spec: basis_spec,
         proton_basis_spec: basis_spec,
         e_fermi_neutron: 2,
         e_fermi_proton: 2,
     };
-    let two_body_mat_elems = morten_vint::LoadTwoBodyMatElems {
+    let two_body_mat_elems = nuclei::morten_vint::LoadTwoBodyMatElems {
         sp_table_path: "data/cens-mbpt/spox16.dat".as_ref(),
         vint_table_path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
     }.call().unwrap();
