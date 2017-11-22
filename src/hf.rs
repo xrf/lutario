@@ -226,7 +226,7 @@ pub fn qcoeff(
 )
 {
     let scheme = d1.scheme();
-    q1.fill(&0.0);
+    q1.set_zero();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
             for i in p.costates_10(&[occ::I]) {

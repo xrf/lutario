@@ -5,6 +5,8 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut, Range};
 use num::Zero;
+use super::op::{Vector, VectorMut};
+use super::tri_mat::{Trs, TrsMat};
 use super::utils::{self, Offset, try_cast};
 
 /// The indexing convention is row-major.
@@ -298,6 +300,10 @@ impl<'a, T> MatRef<'a, T> {
     }
 }
 
+impl<'a, T> Vector for MatRef<'a, T> {
+    type Elem = T;
+}
+
 pub struct MatMut<'a, T: 'a> {
     phantom: PhantomData<&'a mut [T]>,
     ptr: *mut T,
@@ -513,6 +519,39 @@ impl<'a, T: Clone> MatMut<'a, T> {
                 self[(i, j)] = value.clone();
             }
         }
+    }
+
+    pub fn clone_from_ref(&mut self, source: MatRef<T>) {
+        assert_eq!(self.shape().num_rows, source.shape().num_rows);
+        assert_eq!(self.shape().num_cols, source.shape().num_cols);
+        for (self_row, source_row) in self.as_mut().rows().zip(source.rows()) {
+            self_row.clone_from_slice(source_row);
+        }
+    }
+}
+
+impl<'a, T: Clone> MatMut<'a, T> {
+    pub fn clone_from_trs_mat<S>(&mut self, source: &TrsMat<S, T>) where
+        S: Trs<T>,
+    {
+        let n = *source.mat.as_ref().dim();
+        assert_eq!(n, self.shape().num_rows);
+        assert_eq!(n, self.shape().num_cols);
+        for i in 0 .. self.shape().num_rows {
+            for j in 0 .. self.shape().num_cols {
+                *self.as_mut().get(i, j).unwrap() = source.get(i, j).unwrap();
+            }
+        }
+    }
+}
+
+impl<'a, T> Vector for MatMut<'a, T> {
+    type Elem = T;
+}
+
+impl<'a, T: Zero + Clone> VectorMut for MatMut<'a, T> {
+    fn set_zero(&mut self) {
+        self.fill(&Zero::zero());
     }
 }
 
@@ -767,5 +806,15 @@ impl<T> Mat<T> {
             self.into_boxed_slice().into_vec().set_len(0);
             m
         }
+    }
+}
+
+impl<T> Vector for Mat<T> {
+    type Elem = T;
+}
+
+impl<T: Zero + Clone> VectorMut for Mat<T> {
+    fn set_zero(&mut self) {
+        self.as_mut().set_zero();
     }
 }

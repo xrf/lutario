@@ -2,8 +2,10 @@
 
 use std::{mem, ptr, slice};
 use std::marker::PhantomData;
+use std::ops::AddAssign;
 use super::linalg::{self, EigenvalueRange, Gemm, Heevr, Part, Transpose};
 use super::mat::{MatRef, MatMut, MatShape, ValidMatShape};
+use super::op::{IndexBlockMatRef, IndexBlockMatMut, Vector};
 use super::utils;
 
 /// A block-diagonal matrix with unspecified lifetime and unspecified type.
@@ -215,6 +217,16 @@ impl<'a, T> BlockMatRef<'a, T> {
     }
 }
 
+impl<'a, T> Vector for BlockMatRef<'a, T> {
+    type Elem = T;
+}
+
+impl<'a, T: Clone> IndexBlockMatRef for BlockMatRef<'a, T> {
+    fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
+        self.get(l).unwrap().get(u1, u2).unwrap().clone()
+    }
+}
+
 /// A mutable block-diagonal matrix.
 pub struct BlockMatMut<'a, T: 'a> {
     raw: RawBlockMatRef,
@@ -256,6 +268,40 @@ impl<'a, T> BlockMatMut<'a, T> {
     pub unsafe fn get_unchecked(self, l: usize) -> MatMut<'a, T> {
         MatMut::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
                          self.raw.shape_at(l))
+    }
+}
+
+impl<'a, T> Vector for BlockMatMut<'a, T> {
+    type Elem = T;
+}
+
+impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {
+    fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
+        self.as_ref().get(l).unwrap().get(u1, u2).unwrap().clone()
+    }
+}
+
+impl<'a, T: AddAssign> IndexBlockMatMut for BlockMatMut<'a, T> {
+    fn set_block_mat(
+        &mut self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+        value: Self::Elem,
+    )
+    {
+        *self.as_mut().get(l).unwrap().get(u1, u2).unwrap() = value;
+    }
+
+    fn add_block_mat(
+        &mut self,
+        l: usize,
+        u1: usize,
+        u2: usize,
+        value: Self::Elem,
+    )
+    {
+        *self.as_mut().get(l).unwrap().get(u1, u2).unwrap() += value;
     }
 }
 

@@ -2,8 +2,10 @@
 
 use std::{fmt, mem, slice};
 use std::marker::PhantomData;
-use std::ops::{Deref, Index, IndexMut, Range};
-use num::Zero;
+use std::ops::{AddAssign, Deref, Index, IndexMut, Mul, Range};
+use num::{FromPrimitive, Zero};
+use super::mat::MatRef;
+use super::op::{Vector, VectorMut};
 use super::utils::{self, Offset, try_cast};
 
 /// Dimensions of a non-strict lower triangular matrix, equal to the number of
@@ -168,7 +170,7 @@ impl<'a, 'b, T: PartialEq<U>, U> PartialEq<TriMatRef<'b, U>> for TriMatRef<'a, T
             return false;
         }
         for i in 0 .. *self.dim() {
-            for j in i .. *self.dim() {
+            for j in 0 .. i + 1 {
                 if (*self).index(i, j) != (*rhs).index(i, j) {
                     return false;
                 }
@@ -251,6 +253,12 @@ impl<'a, T> TriMatRef<'a, T> {
     pub unsafe fn row_unchecked(self, i: usize) -> &'a [T] {
         let ptr = self.offset_unchecked(i, 0);
         slice::from_raw_parts(ptr, self.dim().row_width(i))
+    }
+
+    pub fn to_slice(self) -> &'a [T] {
+        unsafe {
+            slice::from_raw_parts(self.ptr, self.dim().extent())
+        }
     }
 }
 
@@ -380,6 +388,25 @@ impl<'a, T> TriMatMut<'a, T> {
     pub unsafe fn row_unchecked(mut self, i: usize) -> &'a mut [T] {
         let ptr = self.offset_unchecked(i, 0) as _;
         slice::from_raw_parts_mut(ptr, self.dim().row_width(i))
+    }
+
+    pub fn to_slice(self) -> &'a mut [T] {
+        unsafe {
+            slice::from_raw_parts_mut(self.ptr, self.dim().extent())
+        }
+    }
+}
+
+impl<'a, T: Clone> TriMatMut<'a, T> {
+    pub fn fill(&mut self, value: &T) {
+        for r in self.as_mut().to_slice() {
+            *r = value.clone();
+        }
+    }
+
+    pub fn clone_from_ref(&mut self, source: TriMatRef<T>) {
+        assert_eq!(self.dim(), source.dim());
+        self.as_mut().to_slice().clone_from_slice(source.to_slice());
     }
 }
 
@@ -590,5 +617,155 @@ impl<T> TriMat<T> {
 
     pub fn into_vec(self) -> Vec<T> {
         self.into_boxed_slice().into_vec()
+    }
+}
+
+impl<T> Vector for TriMat<T> {
+    type Elem = T;
+}
+
+impl<T: Zero + Clone> VectorMut for TriMat<T> {
+    fn set_zero(&mut self) {
+        self.as_mut().fill(&Zero::zero());
+    }
+}
+
+/// Transpose symmetry.
+pub trait Trs<T> {
+    fn trs(&self, value: T) -> T;
+}
+
+pub mod trs {
+    use std::ops::Neg;
+    use super::super::linalg::Conj;
+    use super::Trs;
+
+    /// Marks an Hermitian matrix.
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct He;
+
+    impl<T: Conj> Trs<T> for He {
+        fn trs(&self, value: T) -> T {
+            value.conj()
+        }
+    }
+
+    /// Marks an antihermitian matrix.
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct Ah;
+
+    impl<T: Conj + Neg<Output = T>> Trs<T> for Ah {
+        fn trs(&self, value: T) -> T {
+            -value.conj()
+        }
+    }
+
+    /// Marks a symmetric matrix.
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct Sy;
+
+    impl<T> Trs<T> for Sy {
+        fn trs(&self, value: T) -> T {
+            value
+        }
+    }
+
+    /// Marks an antisymmetric matrix.
+    #[derive(Clone, Copy, Debug, Default)]
+    pub struct As;
+
+    impl<T: Neg<Output = T>> Trs<T> for As {
+        fn trs(&self, value: T) -> T {
+            -value
+        }
+    }
+}
+
+/// Matrices that possess symmetry under transposition, represented as
+/// triangular matrices.
+pub struct TrsMat<S, T> {
+    pub mat: TriMat<T>,
+    pub trs: S,
+}
+
+impl<S, T> Vector for TrsMat<S, T> {
+    type Elem = T;
+}
+
+impl<S, T: Zero + Clone> VectorMut for TrsMat<S, T> {
+    fn set_zero(&mut self) {
+        self.mat.as_mut().fill(&Zero::zero());
+    }
+}
+
+impl<S: Trs<T>, T: Clone> TrsMat<S, T> {
+    pub fn get(&self, i: usize, j: usize) -> Result<T, (usize, usize)> {
+        let (i2, j2) = if i >= j {
+            (i, j)
+        } else {
+            (j, i)
+        };
+        let value = self.mat.as_ref().get(i2, j2).ok_or((i, j))?.clone();
+        Ok(if i >= j {
+            value
+        } else {
+            self.trs.trs(value)
+        })
+    }
+}
+
+impl<S: Trs<T>, T> TrsMat<S, T> {
+    pub fn set(
+        &mut self,
+        i: usize,
+        j: usize,
+        mut value: T,
+    ) -> Result<(), (usize, usize)>
+    {
+        let (i2, j2) = if i >= j {
+            (i, j)
+        } else {
+            value = self.trs.trs(value);
+            (j, i)
+        };
+        *self.mat.as_mut().get(i2, j2).ok_or((i, j))? = value;
+        Ok(())
+    }
+}
+
+impl<S: Trs<T>, T: AddAssign + Mul<Output = T> + FromPrimitive> TrsMat<S, T> {
+    pub fn add(
+        &mut self,
+        i: usize,
+        j: usize,
+        mut value: T,
+    ) -> Result<(), (usize, usize)>
+    {
+        let (i2, j2) = if i >= j {
+            (i, j)
+        } else {
+            value = self.trs.trs(value);
+            (j, i)
+        };
+        let factor = T::from_f64(if i == j { 1.0 } else { 0.5 }).unwrap();
+        *self.mat.as_mut().get(i2, j2).ok_or((i, j))? += factor * value;
+        Ok(())
+    }
+}
+
+impl<S, T> TrsMat<S, T> where
+    S: Trs<T>,
+    T: AddAssign + Mul<Output = T> + FromPrimitive + Zero + Clone,
+{
+    pub fn clone_from_mat(&mut self, source: MatRef<T>) {
+        let n = *self.mat.as_ref().dim();
+        assert_eq!(n, source.shape().num_rows);
+        assert_eq!(n, source.shape().num_cols);
+        self.set_zero();
+        for i in 0 .. source.shape().num_rows {
+            for j in 0 .. source.shape().num_cols {
+                self.add(i, j, source.get(i, j).unwrap().clone()).unwrap();
+            }
+        }
     }
 }

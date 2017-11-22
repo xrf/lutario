@@ -3,7 +3,6 @@ use std::ops::{AddAssign, Mul};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
 use super::block::Block;
-use super::block_mat::{BlockMatRef, BlockMatMut};
 use super::mat::Mat;
 
 pub trait ChartedBasis {
@@ -31,82 +30,52 @@ pub struct ReifiedState {
 }
 
 pub trait Vector {
-    type Elem: Clone;
+    type Elem;
 }
 
-impl<T: Clone> Vector for Vec<T> {
-    type Elem = T;
-}
-
-impl<T: Clone> Vector for Mat<T> {
-    type Elem = T;
-}
-
-impl<'a, T: Clone> Vector for BlockMatRef<'a, T> {
-    type Elem = T;
-}
-
-impl<'a, T: Clone> Vector for BlockMatMut<'a, T> {
+impl<T> Vector for Vec<T> {
     type Elem = T;
 }
 
 pub trait VectorMut: Vector {
-    fn fill(&mut self, value: &Self::Elem);
+    // note that we don't have "fill" because filling with an arbitrary value
+    // does not make sense for symmetry constrained matrices
+    fn set_zero(&mut self);
 }
 
-impl<T: Clone> VectorMut for Vec<T> {
-    fn fill(&mut self, value: &Self::Elem) {
+impl<T: Zero + Clone> VectorMut for Vec<T> {
+    fn set_zero(&mut self) {
         let n = self.len();
         self.clear();
-        self.resize(n, value.clone());
-    }
-}
-
-impl<T: Clone> VectorMut for Mat<T> {
-    fn fill(&mut self, value: &Self::Elem) {
-        self.as_mut().fill(value);
+        self.resize(n, Zero::zero());
     }
 }
 
 pub trait IndexBlockMatRef: Vector {
-    fn index_block_mat(
+    fn at_block_mat(
         &self,
         l: usize,
         u1: usize,
         u2: usize,
-    ) -> &Self::Elem;
+    ) -> Self::Elem;
 }
 
-impl<'a, T: Clone> IndexBlockMatRef for BlockMatRef<'a, T> {
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self.get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {
-    fn index_block_mat(&self, l: usize, u1: usize, u2: usize) -> &Self::Elem {
-        self.as_ref().get(l).unwrap().get(u1, u2).unwrap()
-    }
-}
-
-pub trait IndexBlockMatMut: IndexBlockMatRef {
-    fn index_block_mat_mut(
+pub trait IndexBlockMatMut: Vector {
+    fn set_block_mat(
         &mut self,
         l: usize,
         u1: usize,
         u2: usize,
-    ) -> &mut Self::Elem;
-}
+        value: Self::Elem,
+    );
 
-impl<'a, T: Clone> IndexBlockMatMut for BlockMatMut<'a, T> {
-    fn index_block_mat_mut(
+    fn add_block_mat(
         &mut self,
         l: usize,
         u1: usize,
         u2: usize,
-    ) -> &mut Self::Elem {
-        self.as_mut().get(l).unwrap().get(u1, u2).unwrap()
-    }
+        value: Self::Elem,
+    );
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -175,7 +144,7 @@ impl<S, B, T> Op<S, B, B, Block<Vec<T>>> where
 
 impl<S, L, R, D> Op<S, L, R, D> where
     D: IndexBlockMatRef,
-    D::Elem: FromPrimitive + Mul<Output = D::Elem> + Zero,
+    D::Elem: FromPrimitive + Mul<Output = D::Elem> + Zero + Clone,
 {
     #[inline]
     pub fn at<I, J>(&self, i: I, j: J) -> D::Elem where
@@ -187,7 +156,7 @@ impl<S, L, R, D> Op<S, L, R, D> where
         if ri.chan != rj.chan {
             return D::Elem::zero();
         }
-        self.data.index_block_mat(ri.chan, ri.aux, rj.aux).clone()
+        self.data.at_block_mat(ri.chan, ri.aux, rj.aux)
             * D::Elem::from_f64(ri.get_factor).unwrap()
             * D::Elem::from_f64(rj.get_factor).unwrap()
     }
@@ -205,10 +174,14 @@ impl<S, L, R, D> Op<S, L, R, D> where
         let ri = i.reify_state(&self.scheme, &self.left_basis);
         let rj = j.reify_state(&self.scheme, &self.right_basis);
         assert_eq!(ri.chan, rj.chan, "channels do not match");
-        *self.data.index_block_mat_mut(ri.chan, ri.aux, rj.aux) =
+        self.data.set_block_mat(
+            ri.chan,
+            ri.aux,
+            rj.aux,
             value
-            * D::Elem::from_f64(ri.set_factor).unwrap()
-            * D::Elem::from_f64(rj.set_factor).unwrap();
+                * D::Elem::from_f64(ri.set_factor).unwrap()
+                * D::Elem::from_f64(rj.set_factor).unwrap(),
+        );
     }
 }
 
@@ -224,10 +197,14 @@ impl<S, L, R, D> Op<S, L, R, D> where
         let ri = i.reify_state(&self.scheme, &self.left_basis);
         let rj = j.reify_state(&self.scheme, &self.right_basis);
         assert_eq!(ri.chan, rj.chan, "channels do not match");
-        *self.data.index_block_mat_mut(ri.chan, ri.aux, rj.aux) +=
+        self.data.add_block_mat(
+            ri.chan,
+            ri.aux,
+            rj.aux,
             value
-            * D::Elem::from_f64(ri.add_factor).unwrap()
-            * D::Elem::from_f64(rj.add_factor).unwrap();
+                * D::Elem::from_f64(ri.add_factor).unwrap()
+                * D::Elem::from_f64(rj.add_factor).unwrap(),
+        );
     }
 }
 
@@ -236,7 +213,7 @@ impl<S, L, R, D: Vector> Vector for Op<S, L, R, D> {
 }
 
 impl<S, L, R, D: VectorMut> VectorMut for Op<S, L, R, D> {
-    fn fill(&mut self, value: &Self::Elem) {
-        self.data.fill(value);
+    fn set_zero(&mut self) {
+        self.data.set_zero();
     }
 }
