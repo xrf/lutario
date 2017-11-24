@@ -2,7 +2,8 @@
 use std::ops::{Add, Rem, Sub};
 use num::{One, Zero};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
+         Serialize, Deserialize)]
 pub enum Parity {
     Even,
     Odd,

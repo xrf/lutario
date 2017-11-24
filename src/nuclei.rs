@@ -141,7 +141,8 @@ impl Npj {
 
 /// Principal quantum number, parity, total angular momentum magnitude, and
 /// isospin projection.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
+         Serialize, Deserialize)]
 pub struct Npjw {
     /// Principal quantum number (n)
     pub n: i32,

@@ -1,8 +1,12 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_yaml;
 extern crate fnv;
 #[macro_use]
 extern crate lutario;
 extern crate netlib_src;
 
+use std::fs::{self, File};
 use fnv::FnvHashMap;
 use lutario::{hf, nuclei, qdpt};
 use lutario::basis::occ;
@@ -12,7 +16,7 @@ use lutario::utils::Toler;
 
 const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Results {
     pub de_dqdpt2: FnvHashMap<nuclei::Npjw, f64>,
     pub e_hf: f64,
@@ -134,8 +138,12 @@ fn test_nuclei() {
         let xj = *j_results.de_dqdpt2.get(&npjw).unwrap();
         let xm = *m_results.de_dqdpt2.get(&npjw).unwrap();
         toler_assert_eq!(TOLER, xj, xm);
-        println!("- {} {}", npjw, xj);
     }
     toler_assert_eq!(TOLER, j_results.e_hf, m_results.e_hf);
     toler_assert_eq!(TOLER, j_results.de_mp2, m_results.de_mp2);
+    fs::create_dir_all("out").unwrap();
+    serde_yaml::to_writer(
+        File::create("out/test_nuclei").unwrap(),
+        &j_results,
+    ).unwrap();
 }

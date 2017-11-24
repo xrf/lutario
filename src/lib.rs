@@ -12,6 +12,8 @@ extern crate lazy_static;
 #[cfg(test)]
 extern crate netlib_src;
 extern crate regex;
+#[macro_use]
+extern crate serde_derive;
 extern crate siphasher;
 extern crate stable_deref_trait;
 extern crate take_mut;

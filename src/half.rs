@@ -9,7 +9,8 @@ use super::utils::RangeInclusive;
 /// stored is twice its logical value.
 ///
 /// For example, `Half(3)` represents the fraction `3/2`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
+         Serialize, Deserialize)]
 pub struct Half<T>(pub T);
 
 impl<T> fmt::Display for Half<T>
