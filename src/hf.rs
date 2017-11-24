@@ -92,8 +92,7 @@ impl<'a> HfRun<'a> {
         mem::swap(&mut self.fock_old, &mut self.fock);
 
         // compute Fock matrix
-        // TODO: use "copy_from" here
-        self.fock = self.h1.clone();
+        self.fock.clone_from(&self.h1);
         fock2(&self.h2, &self.qcoeff, &mut self.fock);
 
         // mix in a little bit of the previous matrix to dampen oscillations
@@ -356,12 +355,7 @@ pub fn normord(
     //     + ∑[i] (Jpqi/Jpq)^2 W[p q i r s i]    (NYI)
     let scheme = h1.scheme();
     *r0 += hf_energy(h1, h2);
-    // FIXME: use copy_from
-    for p in scheme.states_10(&occ::ALL1) {
-        for q in p.costates_10(&occ::ALL1) {
-            r1.add(p, q, h1.at(p, q));
-        }
-    }
+    r1.clone_from(h1);
     for pi in scheme.states_20(&[occ::II, occ::AI]) {
         let (p, i) = pi.split_to_10_10();
         for q in p.costates_10(&occ::ALL1) {
@@ -370,10 +364,5 @@ pub fn normord(
             }
         }
     }
-    // FIXME: use copy_from
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            r2.add(pq, rs, h2.at(pq, rs));
-        }
-    }
+    r2.clone_from(h2);
 }

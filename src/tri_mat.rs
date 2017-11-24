@@ -471,6 +471,17 @@ impl<T: Clone> Clone for TriMat<T> {
     fn clone(&self) -> Self {
         Self::from_vec(self.as_slice().to_vec(), *self.shape())
     }
+    fn clone_from(&mut self, source: &Self) {
+        // simplest solution that satisfies panic safety
+        if self.extent() != source.extent() {
+            *self = source.clone();
+        } else {
+            // might panic halfway, in which case the data is corrupt but
+            // there still shouldn't be any memory unsafety
+            self.as_slice_mut().clone_from_slice(source.as_slice());
+            self.shape = source.shape;
+        }
+    }
 }
 
 impl<T> Drop for TriMat<T> {

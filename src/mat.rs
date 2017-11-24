@@ -605,6 +605,18 @@ impl<T: Clone> Clone for Mat<T> {
     fn clone(&self) -> Self {
         Self::from_vec(self.as_slice().to_vec(), self.num_rows, self.num_cols)
     }
+    fn clone_from(&mut self, source: &Self) {
+        // simplest solution that satisfies panic safety
+        if self.extent() != source.extent() {
+            *self = source.clone();
+        } else {
+            // might panic halfway, in which case the data is corrupt but
+            // there still shouldn't be any memory unsafety
+            self.as_slice_mut().clone_from_slice(source.as_slice());
+            self.num_rows = source.num_rows;
+            self.num_cols = source.num_cols;
+        }
+    }
 }
 
 impl<T> Drop for Mat<T> {
