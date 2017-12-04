@@ -698,8 +698,8 @@ pub fn make_ke_op_j(
             assert_eq!(npjw1.j, npjw2.j);
             assert_eq!(npjw1.w, npjw2.w);
             if dn == 0 {
-                let e = Npj::from(npjw1).osc_energy();
-                h1.set(p, q, 0.5 * omega * (e + 1.5));
+                let energy = Npj::from(npjw1).osc_energy();
+                h1.set(p, q, 0.5 * omega * energy);
             } else if dn == 1 {
                 let nb = nb as f64;
                 let l = Npj::from(npjw1).orb_ang().0 as f64;
