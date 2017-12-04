@@ -7,6 +7,7 @@ extern crate lutario;
 extern crate netlib_src;
 
 use std::fs::{self, File};
+use std::io::Write;
 use fnv::FnvHashMap;
 use lutario::{hf, nuclei, qdpt};
 use lutario::basis::occ;
@@ -116,7 +117,8 @@ fn calc_m(
 #[test]
 fn test_nuclei() {
     let omega = 24.0;
-    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(2);
+    let e_max = 2;
+    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(e_max);
     let nucleus = nuclei::Nucleus {
         neutron_basis_spec: basis_spec,
         proton_basis_spec: basis_spec,
@@ -127,6 +129,11 @@ fn test_nuclei() {
         sp_table_path: "data/cens-mbpt/spox16.dat".as_ref(),
         vint_table_path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
     }.call().unwrap();
+    let suffix = format!("ho-n3lo_omega={}_emax={}_en={}_ep={}.txt",
+                         omega,
+                         e_max,
+                         nucleus.e_fermi_neutron,
+                         nucleus.e_fermi_proton);
     let j_results = calc_j(nucleus, omega, &two_body_mat_elems);
     let m_results = calc_m(nucleus, omega, &two_body_mat_elems);
     for npjw in nucleus.npjw_orbs() {
@@ -142,8 +149,7 @@ fn test_nuclei() {
     toler_assert_eq!(TOLER, j_results.e_hf, m_results.e_hf);
     toler_assert_eq!(TOLER, j_results.de_mp2, m_results.de_mp2);
     fs::create_dir_all("out").unwrap();
-    serde_yaml::to_writer(
-        File::create("out/test_nuclei").unwrap(),
-        &j_results,
-    ).unwrap();
+    let mut f = File::create(&format!("out/test_nuclei_{}", suffix)).unwrap();
+    serde_yaml::to_writer(&mut f, &j_results).unwrap();
+    writeln!(f, "").unwrap();
 }
