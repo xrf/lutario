@@ -947,6 +947,10 @@ pub mod morten_vint {
             let i3: usize = captures[6].parse().map_err(invalid_data)?;
             let i4: usize = captures[7].parse().map_err(invalid_data)?;
             let value: f64 = captures[8].parse().map_err(invalid_data)?;
+            // unnormalize matrix elements
+            let value = value
+                * (1.0 + (i1 == i2) as i32 as f64).sqrt()
+                * (1.0 + (i3 == i4) as i32 as f64).sqrt();
             let j12 = Half(tj12);
             let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
                 j12,
@@ -1006,6 +1010,10 @@ pub mod morten_vint {
             let i3 = reader.read_u32::<LittleEndian>()? as usize;
             let i4 = reader.read_u32::<LittleEndian>()? as usize;
             let value = reader.read_f64::<LittleEndian>()?;
+            // unnormalize matrix elements
+            let value = value
+                * (1.0 + (i1 == i2) as i32 as f64).sqrt()
+                * (1.0 + (i3 == i4) as i32 as f64).sqrt();
             let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
                 j12,
                 // convert 1-based to 0-based indices
