@@ -681,6 +681,31 @@ pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
     *cache.entry(cg).or_insert_with(|| f64::from(cg.value()))
 }
 
+/// Calculate the kinetic energy matrix element in a 3D harmonic oscillator
+/// basis:
+///
+/// ```text
+/// ⟨a| p² / (2 m) |b⟩ / ħ ω
+/// ```
+///
+/// where `m` is the mass used to generate the basis.
+pub fn kinetic_ho3d_mat_elem(a: Npj, b: Npj) -> f64 {
+    let (_, na, nb) = parity::sort2(a.n, b.n);
+    let dn = nb - na;
+    if (a.p, a.j) != (b.p, b.j) {
+        0.0
+    } else if dn == 0 {
+        let energy = a.osc_energy();
+        0.5 * energy
+    } else if dn == 1 {
+        let nb = f64::from(nb);
+        let l = f64::from(a.orb_ang().0);
+        0.5 * (nb * (nb + l + 0.5)).sqrt()
+    } else {
+        0.0
+    }
+}
+
 pub fn make_ke_op_j(
     atlas: &JAtlas<Pw, i32>,
     omega: f64,
@@ -692,18 +717,29 @@ pub fn make_ke_op_j(
         for q in p.costates_10(&occ::ALL1) {
             let npjw1 = Npjw::from(atlas.decode(p).unwrap());
             let npjw2 = Npjw::from(atlas.decode(q).unwrap());
-            let (_, na, nb) = parity::sort2(npjw1.n, npjw2.n);
-            let dn = nb - na;
-            assert_eq!(npjw1.p, npjw2.p);
-            assert_eq!(npjw1.j, npjw2.j);
-            assert_eq!(npjw1.w, npjw2.w);
-            if dn == 0 {
-                let energy = Npj::from(npjw1).osc_energy();
-                h1.set(p, q, 0.5 * omega * energy);
-            } else if dn == 1 {
-                let nb = nb as f64;
-                let l = Npj::from(npjw1).orb_ang().0 as f64;
-                h1.set(p, q, 0.5 * omega * (nb * (nb + l + 0.5)).sqrt());
+            if npjw1.w == npjw2.w {
+                let ke = kinetic_ho3d_mat_elem(npjw1.into(), npjw2.into());
+                h1.set(p, q, omega * ke);
+            }
+        }
+    }
+    h1
+}
+
+pub fn make_ke_op_m(
+    atlas: &JAtlas<Pmw, Nj>,
+    omega: f64,
+) -> OpJ100<f64>
+{
+    let scheme = atlas.scheme();
+    let mut h1 = Op::new(scheme.clone());
+    for p in scheme.states_10(&occ::ALL1) {
+        for q in p.costates_10(&occ::ALL1) {
+            let npjmw1 = Npjmw::from(atlas.decode(p).unwrap());
+            let npjmw2 = Npjmw::from(atlas.decode(q).unwrap());
+            if (npjmw1.m, npjmw1.w) == (npjmw2.m, npjmw2.w) {
+                let ke = kinetic_ho3d_mat_elem(npjmw1.into(), npjmw2.into());
+                h1.set(p, q, omega * ke);
             }
         }
     }
