@@ -92,7 +92,7 @@ pub fn open_compressed(path: &Path) -> io::Result<(&Path, Box<io::Read>)> {
     };
     Ok((rest, match ext {
         "" => Box::new(file),
-        ".gz" => Box::new(flate2::read::GzDecoder::new(file)?),
+        ".gz" => Box::new(flate2::read::GzDecoder::new(file)),
         ".xz" => Box::new(xz2::read::XzDecoder::new(file)),
         _ => return Err(invalid_data(
             format!("unrecognized compression format: {}", ext),

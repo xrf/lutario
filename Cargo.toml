@@ -9,10 +9,10 @@ byteorder = "1.1.0"
 cblas = "0.1.5"
 conv = "0.3.3"
 debugit = "0.1.2"
-flate2 = { version = "0.2.20", features = ["zlib"], default-features = false }
+flate2 = "1.0.1"
 fnv = "1.0.5"
 lapacke = "0.1.4"
-lazy_static = "0.2.9"
+lazy_static = "1.0.0"
 netlib-src = { version = "0.7.3", default-features = false, features = ["cblas", "lapacke", "system"] }
 num = "0.1.40"
 regex = "0.2.2"
