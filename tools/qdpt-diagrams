@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+import collections, fractions, re
+
+DIAGRAMS = """
++1/1 V[i p i q]
++1/1 T[p q]
++1/2 V[i p a b] V[a b i q] / D[i q a b]
+-1/2 V[i j a q] V[a p i j] / D[i j a p]
++1/4 V[i p a b] V[a b c d] V[c d i q] / D[i q a b] D[i q c d]
+-1/4 V[i j a q] V[a p b c] V[b c i j] / D[i j a p] D[i j b c]
+-1/4 V[i j a b] V[a b c q] V[c p i j] / D[i j q a b p] D[i j c p]
+-1/4 V[i j a q] V[k l i j] V[a p k l] / D[i j a p] D[k l a p]
++1/4 V[i p a b] V[j k i q] V[a b j k] / D[i q a b] D[j k a b]
++1/4 V[i j a b] V[k p i j] V[a b k q] / D[i j q a b p] D[k q a b]
+-1/2 V[i j a b] V[k p j q] V[a b i k] / D[i j q a b p] D[i k a b]
++1/2 V[i j a b] V[b p c q] V[a c i j] / D[i j q a b p] D[i j a c]
++1/2 V[i p a q] V[a j b c] V[b c i j] / D[i a] D[i j b c]
++1/2 V[i j a b] V[a b i c] V[c p j q] / D[i j q a b p] D[j q c p]
+-1/2 V[i p a q] V[j k i b] V[a b j k] / D[i a] D[j k a b]
+-1/2 V[i j a b] V[a k i j] V[b p k q] / D[i j q a b p] D[k q b p]
++1/1 V[i p a c] V[j c b q] V[a b i j] / D[i q a c] D[i j a b]
++1/1 V[i j a b] V[b p j c] V[a c i q] / D[i j q a b p] D[i q a c]
++1/1 V[i p a c] V[j a b i] V[b c j q] / D[i q a c] D[j q b c]
+-1/1 V[i k a q] V[a j i b] V[b p j k] / D[i k a p] D[j k b p]
+-1/1 V[i k a q] V[j p b k] V[a b i j] / D[i k a p] D[i j a b]
+-1/1 V[i j a b] V[b k j q] V[a p i k] / D[i j q a b p] D[i k a p]
+"""
+
+CLASS_I = 1
+CLASS_A = 2
+CLASS_P = 3
+
+def classify_line(line):
+    if line >= "p":
+        return CLASS_P
+    if line >= "i":
+        return CLASS_I
+    if line >= "a":
+        return CLASS_A
+    raise ValueError(f"invalid line name: {line}")
+
+class Elem:
+    def __init__(self, name, indices):
+        self.name = name
+        self.indices = tuple(indices)
+
+    def __repr__(self):
+        return f"Elem({self.name!r}, {self.indices!r})"
+
+    def __str__(self):
+        return f"{self.name}[{' '.join(self.indices)}]"
+
+    def to_tex(self):
+        return f"{self.name}_{{{' '.join(self.indices)}}}"
+
+    def split_indices(self):
+        k = len(self.indices)
+        assert k % 2 == 0
+        return self.indices[:k//2], self.indices[k//2:]
+
+class Prod:
+    def __init__(self, *elems):
+        self.elems = tuple(elems)
+        self.assert_valid()
+
+    def __repr__(self):
+        return f"Prod({', '.join(map(repr, self))})"
+
+    def __str__(self):
+        return " ".join(map(str, self)) or "1"
+
+    def __len__(self):
+        return len(self.elems)
+
+    def __iter__(self):
+        return iter(self.elems)
+
+    def __getitem__(self, key):
+        return self.elems[key]
+
+    def to_tex(self):
+        return " ".join(elem.to_tex() for elem in self) or "1"
+
+    @staticmethod
+    def parse(s):
+        s = s.strip()
+        if s == "1":
+            return []
+        elems = []
+        while True:
+            s = s.lstrip()
+            if not s:
+                break
+            name, indices, s = re.match("(\w+)\[([^]]*)\](.*)", s).groups()
+            elems.append(Elem(name, indices.split()))
+        return Prod(*elems)
+
+    def indices(self):
+        '''List of all indices.'''
+        return [index for elem in self for index in elem.indices]
+
+    def frees(self):
+        '''List of all free indices.'''
+        return [index for index in self.indices()
+                if classify_line(index) == CLASS_P]
+
+    def bounds(self):
+        '''List of all bound indices.'''
+        return [index for index in self.indices()
+                if classify_line(index) != CLASS_P]
+
+    def assert_valid(self):
+        for elem in self.elems:
+            assert isinstance(elem, Elem)
+
+    def assert_valid_contractions(self):
+        bounds = collections.Counter(self.bounds())
+        for n in bounds.values():
+            assert n == 2
+        frees = collections.Counter(self.frees())
+        for n in frees.values():
+            assert n == 1
+
+    def sign(self, free_pairs):
+        '''
+        free_pairs: [(index1, index2), ...]
+        '''
+        self.assert_valid_contractions()
+        frees = frozenset(self.frees())
+
+        # convert free_pairs list into free_pairings dict
+        free_pairings = {}
+        for x, y in free_pairs:
+            assert x != y
+            assert x in frees
+            assert y in frees
+            free_pairings[x] = y
+            free_pairings[y] = x
+        for x in frees:
+            if x not in free_pairings:
+                raise ValueError(f"no pairing established for {x!r}")
+
+        creats = []
+        annihs = []
+        for elem in self:
+            lefts, rights = elem.split_indices()
+            creats.extend(lefts)
+            annihs.extend(rights)
+        candidates = set(range(len(creats)))
+        annih_finder = {line: pos for pos, line in enumerate(annihs)}
+        sign = 1
+        while candidates:
+            pos = candidates.pop()
+            # chase the loop
+            sign *= -1 # a loop costs a sign
+            while True:
+                line = creats[pos]
+                cls = classify_line(line)
+                if cls == CLASS_P:
+                    line = free_pairings[line]
+                    sign *= -1 # connecting a free line costs a sign
+                elif cls == CLASS_I:
+                    sign *= -1 # an internal hole line costs a sign
+                pos = annih_finder[line]
+                if pos in candidates:
+                    candidates.remove(pos)
+                else:
+                    break
+        return sign
+
+class Diagram:
+    def __init__(self, coeff, numer, denom):
+        self.coeff = coeff
+        self.numer = numer
+        self.denom = denom
+
+    def __repr__(self):
+        return f"Diagram({self.coeff!r}, {self.numer!r}, {self.denom!r})"
+
+    def __str__(self):
+        return f"{self.coeff} {self.numer} / {self.denom}"
+
+    def to_tex(self):
+        if abs(self.coeff) == 1:
+            coeff = ""
+        elif self.coeff.denominator == 1:
+            coeff = f"{abs(self.coeff.numerator)} "
+        else:
+            coeff = (f"\\frac{{{abs(self.coeff.numerator)}}}"
+                     f"{{{self.coeff.denominator}}} ")
+        coeff = f"{'+' if self.coeff >= 0 else '-'} {coeff}"
+        bounds = sorted(set(self.numer.bounds()))
+        if not bounds:
+            bounds = ""
+        else:
+            ibounds = [x for x in bounds if classify_line(x) == CLASS_I]
+            abounds = [x for x in bounds if classify_line(x) == CLASS_A]
+            bounds = " ".join(ibounds + ["\\backslash"] + abounds)
+            bounds = f"\\sum_{{{bounds}}} "
+        rest = self.numer.to_tex()
+        if len(self.denom):
+            rest = f"\\frac{{{rest}}}{{{self.denom.to_tex()}}}"
+        return coeff + bounds + rest
+
+    @staticmethod
+    def parse(diagram):
+        coeff, rest = re.match("([+-]?[\d/]+)\s+(.*)", diagram).groups()
+        coeff = fractions.Fraction(coeff)
+        frac = rest.split("/")
+        if len(frac) == 1:
+            frac = [rest, "1"]
+        return Diagram(coeff,
+                       Prod.parse(frac[0]),
+                       Prod.parse(frac[1]))
+
+    def sign(self, free_pairs):
+        return self.numer.sign(free_pairs)
+
+    def render_coupling(self):
+        return "\n".join("rel ({}) ({})".format(
+            *map(" + ".join, elem.split_indices())
+        ) for elem in self.numer)
+
+def diagrams_to_tex(diagrams):
+    rendered = [""] + [diagram.to_tex().replace("D_{", "\\Delta_{")
+                       for diagram in diagrams]
+    s = []
+    s.append("$$")
+    s.append(" \\\\\n".join([
+        "  W^{(2)}_{p q} =" + " ".join([rendered[3], rendered[4]]),
+    ]))
+    s.append("$$")
+    s.append("$$\\begin{aligned}")
+    s.append(" \\\\\n  &\\quad ".join([
+        "  &W^{(3)}_{p q} =",
+        " ".join([rendered[5], rendered[6], rendered[7]]),
+        " ".join([rendered[8], rendered[9], rendered[10]]),
+        " ".join([rendered[11], rendered[12], rendered[13]]),
+        " ".join([rendered[14], rendered[15], rendered[16]]),
+        " ".join([rendered[17], rendered[18], rendered[19]]),
+        " ".join([rendered[20], rendered[21], rendered[22]]),
+    ]))
+    s.append("\\end{aligned}$$")
+    return "".join(s)
+
+diagrams = []
+for diagram_id, diagram in enumerate(DIAGRAMS.split("\n")):
+    if not diagram:
+        continue
+    diagram = Diagram.parse(diagram)
+    assert (diagram.sign([("p", "q")]) >= 0) == (diagram.coeff >= 0)
+    print(f"# {diagram_id}")
+    print(diagram.render_coupling())
+    print("rec p q")
+    print()
+    diagrams.append(diagram)
