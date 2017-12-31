@@ -1,0 +1,27 @@
+Matrix elements for testing
+===========================
+
+Basis type: Fock–Darwin (circular harmonic oscillator)
+Conserved quantities: angular momentum (ml), spin (ms)
+Number of shells: 3 total shells, 2 filled shells
+
+        n       ml      ms
+0       0        0      −½
+1       0        0      +½
+2       0       −1      −½
+3       0       −1      +½
+4       0        1      −½
+5       0        1      +½
+6       0       −2      −½
+7       0       −2      +½
+8       1        0      −½
+9       1        0      +½
+10      0        2      −½
+11      0        2      +½
+
+  - a.txt:   random antihermitian matrix A
+  - b.txt:   random hermitian matrix B
+  - c.txt:   commutator [A, B]
+  - c*.txt:  commutator, split into individual term(s)
+  - no.txt:  normal ordering of B relative to Fermi vacuum
+  - wh.txt:  White generator of B with Epstein–Nesbet denominators

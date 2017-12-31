@@ -1,17 +1,19 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_yaml;
 extern crate fnv;
 #[macro_use]
 extern crate lutario;
 extern crate netlib_src;
+extern crate rand;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_yaml;
 
 use std::fs::{self, File};
 use std::io::Write;
 use fnv::FnvHashMap;
-use lutario::{hf, nuclei, qdpt};
+use lutario::{hf, imsrg, nuclei, qdpt};
 use lutario::basis::occ;
-use lutario::j_scheme::JAtlas;
+use lutario::j_scheme::{JAtlas, MopJ012, new_mop_j012,
+                        check_eq_mop_j012, rand_mop_j012};
 use lutario::op::Op;
 use lutario::utils::Toler;
 
@@ -29,7 +31,7 @@ fn calc_j(
     omega: f64,
     two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
 ) -> Results {
-    let atlas = JAtlas::new(&mut nucleus.jpwn_orbs().into_iter());
+    let atlas = JAtlas::new(&nucleus.jpwn_orbs());
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ho3d_op_j(&atlas, omega);
     let h2 = nuclei::make_v_op_j(&atlas, two_body_mat_elems);
@@ -47,23 +49,20 @@ fn calc_j(
         assert!(de_dqdpt2.insert(npjw, value).is_none());
     }
 
-    let mut hf = hf::HfConf {
+    let mut hf = hf::Conf {
         toler: TOLER,
         .. Default::default()
-    }.new_run(&h1, &h2);
+    }.make_run(&h1, &h2);
     hf.do_run().unwrap();
-    let mut hh1 = Op::new(scheme.clone());
-    let mut hh2 = Op::new(scheme.clone());
-    hf::transform_h1(&h1, &hf.dcoeff, &mut hh1);
-    hf::transform_h2(&h2, &hf.dcoeff, &mut hh2);
-    let mut hn0 = 0.0;
-    let mut hn1 = Op::new(scheme.clone());
-    let mut hn2 = Op::new(scheme.clone());
-    hf::normord(&hh1, &hh2, &mut hn0, &mut hn1, &mut hn2);
-    let de_mp2 = qdpt::mp2(&hn1, &hn2);
+    let mut hh = new_mop_j012(scheme);
+    hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
+    hf::transform_h2(&h2, &hf.dcoeff, &mut hh.2);
+    let mut hn = new_mop_j012(scheme);
+    hf::normord(&hh, &mut hn);
+    let de_mp2 = qdpt::mp2(&hn.1, &hn.2);
     Results {
         de_dqdpt2,
-        e_hf: hn0,
+        e_hf: hn.0,
         de_mp2,
     }
 }
@@ -73,10 +72,13 @@ fn calc_m(
     omega: f64,
     two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
 ) -> Results {
-    let atlas = JAtlas::new(&mut nucleus.pmwnj_orbs().into_iter());
+    let j_atlas = JAtlas::new(&nucleus.jpwn_orbs());
+    let atlas = JAtlas::new(&nucleus.pmwnj_orbs());
     let scheme = atlas.scheme();
-    let h1 = nuclei::make_ho3d_op_m(&atlas, omega);
-    let h2 = nuclei::make_v_op_m(&atlas, two_body_mat_elems);
+    let h1j = nuclei::make_ho3d_op_j(&j_atlas, omega);
+    let h2j = nuclei::make_v_op_j(&j_atlas, two_body_mat_elems);
+    let h1 = nuclei::op1_j_to_m(&j_atlas, &atlas, &h1j);
+    let h2 = nuclei::op2_j_to_m(&j_atlas, &atlas, &h2j);
 
     let mut r = Op::new_vec(scheme.clone());
     qdpt::dqdpt2_term3(&h1, &h2, &mut r);
@@ -92,24 +94,21 @@ fn calc_m(
         toler_assert_eq!(TOLER, *de_dqdpt2.entry(npjw).or_insert(value), value);
     }
 
-    let mut hf = hf::HfConf {
+    let mut hf = hf::Conf {
         toler: TOLER,
         .. Default::default()
-    }.new_run(&h1, &h2);
+    }.make_run(&h1, &h2);
     hf.do_run().unwrap();
-    let mut hh1 = Op::new(scheme.clone());
-    let mut hh2 = Op::new(scheme.clone());
-    hf::transform_h1(&h1, &hf.dcoeff, &mut hh1);
-    hf::transform_h2(&h2, &hf.dcoeff, &mut hh2);
-    let mut hn0 = 0.0;
-    let mut hn1 = Op::new(scheme.clone());
-    let mut hn2 = Op::new(scheme.clone());
-    hf::normord(&hh1, &hh2, &mut hn0, &mut hn1, &mut hn2);
-    let de_mp2 = qdpt::mp2(&hn1, &hn2);
+    let mut hh = new_mop_j012(scheme);
+    hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
+    hf::transform_h2(&h2, &hf.dcoeff, &mut hh.2);
+    let mut hn = new_mop_j012(scheme);
+    hf::normord(&hh, &mut hn);
+    let de_mp2 = qdpt::mp2(&hn.1, &hn.2);
 
     Results {
         de_dqdpt2,
-        e_hf: hn0,
+        e_hf: hn.0,
         de_mp2,
     }
 }
@@ -152,4 +151,55 @@ fn test_nuclei() {
     let mut f = File::create(&format!("out/test_nuclei_{}", suffix)).unwrap();
     serde_yaml::to_writer(&mut f, &j_results).unwrap();
     writeln!(f, "").unwrap();
+}
+
+// cross-check commutator in J-scheme with M-scheme
+#[test]
+fn test_commut_nuclei() {
+    use rand::SeedableRng;
+    let mut rng = rand::XorShiftRng::from_seed([
+        0x193a6754,
+        0xa8a7d469,
+        0x97830e05,
+        0x113ba7bb,
+    ]);
+    let toler = Toler { relerr: 1e-12, abserr: 1e-12 };
+    let e_max = 2;
+    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(e_max);
+    let nucleus = nuclei::Nucleus {
+        neutron_basis_spec: basis_spec,
+        proton_basis_spec: basis_spec,
+        e_fermi_neutron: 2,
+        e_fermi_proton: 2,
+    };
+    let mut w6j_ctx = Default::default();
+    let j_atlas = JAtlas::new(&nucleus.jpwn_orbs());
+    let m_atlas = JAtlas::new(&nucleus.pmwnj_orbs());
+    let j_scheme = j_atlas.scheme();
+    let m_scheme = m_atlas.scheme();
+    let mop_j_to_m = |cj: &MopJ012<f64>| (
+        cj.0,
+        nuclei::op1_j_to_m(&j_atlas, &m_atlas, &cj.1),
+        nuclei::op2_j_to_m(&j_atlas, &m_atlas, &cj.2),
+    );
+    let aj = rand_mop_j012(j_scheme, &mut rng);
+    let bj = rand_mop_j012(j_scheme, &mut rng);
+
+    // commutator
+    let mut cj = new_mop_j012(j_scheme);
+    imsrg::commut(&mut w6j_ctx, 1.0, &aj, &bj, &mut cj);
+    let am = mop_j_to_m(&aj);
+    let bm = mop_j_to_m(&bj);
+    let mut cm = new_mop_j012(m_scheme);
+    imsrg::commut(&mut w6j_ctx, 1.0, &am, &bm, &mut cm);
+    let cjm = mop_j_to_m(&cj);
+    check_eq_mop_j012(toler, &cjm, &cm).unwrap();
+
+    // White generator (can only compare Møller–Plesset denominators)
+    let mut whj = new_mop_j012(j_scheme);
+    imsrg::white_gen(imsrg::DenomType::MoellerPlesset, 1.0, &bj, &mut whj);
+    let mut whm = new_mop_j012(m_scheme);
+    imsrg::white_gen(imsrg::DenomType::MoellerPlesset, 1.0, &bm, &mut whm);
+    let whjm = mop_j_to_m(&whj);
+    check_eq_mop_j012(toler, &whjm, &whm).unwrap();
 }

@@ -8,12 +8,12 @@ use std::path::Path;
 use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
+use super::ang_mom::Wigner3jmCtx;
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
 use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
-use super::utils;
 
 /// Orbital angular momentum (l)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -462,9 +462,9 @@ impl<'a> DarmstadtMe2j<'a> {
                         if p12 != npj3.p + npj4.p {
                             continue;
                         }
-                        for j12 in utils::intersect_range_inclusive(
-                            Half::tri_range(npj1.j, npj2.j),
-                            Half::tri_range(npj3.j, npj4.j),
+                        for j12 in Half::tri_range_2(
+                            (npj1.j, npj2.j),
+                            (npj3.j, npj4.j),
                         ) {
                             f(Pj { p: p12, j: j12 }, npj1, npj2, npj3, npj4)?;
                         }
@@ -676,11 +676,6 @@ impl<'a> DoLoadMe2jFile<'a> {
     }
 }
 
-pub fn clebsch_gordan(cache: &mut FnvHashMap<ClebschGordan, f64>,
-                  cg: ClebschGordan) -> f64 {
-    *cache.entry(cg).or_insert_with(|| f64::from(cg.value()))
-}
-
 /// Calculate the kinetic energy matrix element in a 3D harmonic oscillator
 /// basis:
 ///
@@ -816,7 +811,7 @@ pub fn make_v_op_m(
 {
     let scheme = atlas.scheme();
     let mut h2 = Op::new(scheme.clone());
-    let mut cg_cache = FnvHashMap::default();
+    let mut w3jm_ctx = Wigner3jmCtx::default();
     for pq in scheme.states_20(&occ::ALL2) {
         let (p, q) = pq.split_to_10_10();
         let p = Npjmw::from(atlas.decode(p).unwrap());
@@ -825,9 +820,9 @@ pub fn make_v_op_m(
             let (r, s) = rs.split_to_10_10();
             let r = Npjmw::from(atlas.decode(r).unwrap());
             let s = Npjmw::from(atlas.decode(s).unwrap());
-            h2.add(pq, rs, utils::intersect_range_inclusive(
-                Half::tri_range(p.j, q.j),
-                Half::tri_range(r.j, s.j),
+            h2.add(pq, rs, Half::tri_range_2(
+                (p.j, q.j),
+                (r.j, s.j),
             ).map(|j12| {
                 let (sign, _, key) = JNpjw2Pair {
                     j12,
@@ -847,7 +842,7 @@ pub fn make_v_op_m(
                         panic!("matrix element not found: {}", key)
                     })
                     * sign
-                    * clebsch_gordan(&mut cg_cache, ClebschGordan {
+                    * w3jm_ctx.cg(ClebschGordan {
                         tj1: p.j.twice(),
                         tj2: q.j.twice(),
                         tj12: j12.twice(),
@@ -855,7 +850,7 @@ pub fn make_v_op_m(
                         tm2: q.m.twice(),
                         tm12: (p.m + q.m).twice(),
                     })
-                    * clebsch_gordan(&mut cg_cache, ClebschGordan {
+                    * w3jm_ctx.cg(ClebschGordan {
                         tj1: r.j.twice(),
                         tj2: s.j.twice(),
                         tj12: j12.twice(),
@@ -867,6 +862,92 @@ pub fn make_v_op_m(
         }
     }
     h2
+}
+
+// (this could be made more general / not specific to nuclei)
+pub fn op1_j_to_m(
+    j_atlas: &JAtlas<Pw, i32>,
+    m_atlas: &JAtlas<Pmw, Nj>,
+    a1: &OpJ100<f64>,
+) -> OpJ100<f64>
+{
+    let m_scheme = m_atlas.scheme();
+    let unveil = |pm| {
+        let npjmw = Npjmw::from(m_atlas.decode(pm).unwrap());
+        let pj = j_atlas.encode(&Npjw::from(npjmw).into()).unwrap();
+        (npjmw.m, pj)
+    };
+    let mut b1 = Op::new(m_scheme.clone());
+    for pm in m_scheme.states_10(&occ::ALL1) {
+        let (_, pj) = unveil(pm);
+        for qm in pm.costates_10(&occ::ALL1) {
+            let (_, qj) = unveil(qm);
+            b1.add(pm, qm, a1.at(pj, qj));
+        }
+    }
+    b1
+}
+
+// (this could be made more general / not specific to nuclei)
+pub fn op2_j_to_m(
+    j_atlas: &JAtlas<Pw, i32>,
+    m_atlas: &JAtlas<Pmw, Nj>,
+    a2: &OpJ200<f64>,
+) -> OpJ200<f64>
+{
+    let m_scheme = m_atlas.scheme();
+    let unveil = |pm| {
+        let npjmw = Npjmw::from(m_atlas.decode(pm).unwrap());
+        let pj = j_atlas.encode(&Npjw::from(npjmw).into()).unwrap();
+        (npjmw.m, pj)
+    };
+    let mut b2 = Op::new(m_scheme.clone());
+    let mut w3jm_ctx = Wigner3jmCtx::default();
+    for pqm in m_scheme.states_20(&occ::ALL2) {
+        let (pm, qm) = pqm.split_to_10_10();
+        let (mp, pj) = unveil(pm);
+        let (mq, qj) = unveil(qm);
+        let mpq = mp + mq;
+        let jp = pj.j();
+        let jq = qj.j();
+        for rsm in pqm.costates_20(&occ::ALL2) {
+            let (rm, sm) = rsm.split_to_10_10();
+            let (mr, rj) = unveil(rm);
+            let (ms, sj) = unveil(sm);
+            let jr = rj.j();
+            let js = sj.j();
+            debug_assert_eq!(mpq, mr + ms);
+            b2.add(pqm, rsm, Half::tri_range_2((jp, jq), (jr, js)).map(|jpq| {
+                // handle forbidden states
+                let pqj = match pj.combine_with_10(qj, jpq) {
+                    None => return 0.0,
+                    Some(x) => x,
+                };
+                let rsj = match rj.combine_with_10(sj, jpq) {
+                    None => return 0.0,
+                    Some(x) => x,
+                };
+                a2.at(pqj, rsj)
+                    * w3jm_ctx.cg(ClebschGordan {
+                        tj1: jp.twice(),
+                        tj2: jq.twice(),
+                        tj12: jpq.twice(),
+                        tm1: mp.twice(),
+                        tm2: mq.twice(),
+                        tm12: mpq.twice(),
+                    })
+                    * w3jm_ctx.cg(ClebschGordan {
+                        tj1: jr.twice(),
+                        tj2: js.twice(),
+                        tj12: jpq.twice(),
+                        tm1: mr.twice(),
+                        tm2: ms.twice(),
+                        tm12: mpq.twice(),
+                    })
+            }).sum());
+        }
+    }
+    b2
 }
 
 pub mod morten_vint {

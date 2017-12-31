@@ -3,7 +3,7 @@ use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use debugit::DebugIt;
 use num::{One, Signed, ToPrimitive, Zero};
-use super::utils::RangeInclusive;
+use super::utils::{self, RangeInclusive};
 
 /// Type that logically behaves like half-integers, but what is actually
 /// stored is twice its logical value.
@@ -37,6 +37,13 @@ impl<T> Half<T> {
     #[inline]
     pub fn twice(self) -> T {
         self.0
+    }
+}
+
+impl<T: Add<Output = T> + Clone> Half<T> {
+    #[inline]
+    pub fn double(self) -> Self {
+        self.clone() + self
     }
 }
 
@@ -98,6 +105,17 @@ impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
             start: Half::abs_diff(self.clone(), other.clone()),
             end: self + other + Half(One::one()),
         }
+    }
+
+    #[inline]
+    pub fn tri_range_2(
+        (j1, j2): (Half<T>, Half<T>),
+        (j3, j4): (Half<T>, Half<T>),
+    ) -> RangeInclusive<Half<T>> {
+        utils::intersect_range_inclusive(
+            Half::tri_range(j1, j2),
+            Half::tri_range(j3, j4),
+        )
     }
 }
 

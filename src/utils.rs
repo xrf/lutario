@@ -1,8 +1,9 @@
-use std::{ascii, cmp, fmt, mem, ptr};
+use std::{ascii, cmp, fmt, mem, panic, ptr, process};
+use std::ops::{Add, Range};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
-use num::{One, ToPrimitive, Zero};
+use num::{Bounded, One, ToPrimitive, Zero};
 use take_mut;
 
 /// Helper struct for writing `Debug` implementations.
@@ -32,6 +33,29 @@ impl<T> Offset for *const T {
 impl<T> Offset for *mut T {
     unsafe fn offset(self, count: isize) -> Self {
         self.offset(count)
+    }
+}
+
+/// Maximum possible `Range`, which necessarily excludes the maximum value.
+pub fn max_range<T: Bounded>() -> Range<T> {
+    Bounded::min_value() .. Bounded::max_value()
+}
+
+pub fn cast_range<T: ValueInto<U>, U>(r: Range<T>) -> Range<U> {
+    cast(r.start) .. cast(r.end)
+}
+
+/// A more sanely defined addition trait to avoid throwing the compiler into
+/// an infinite loop.
+pub trait RefAdd {
+    fn ref_add(&self, rhs: &Self) -> Self;
+}
+
+impl<T> RefAdd for T where
+    for<'a, 'b> &'a T: Add<&'b T, Output = Self>,
+{
+    fn ref_add(&self, rhs: &Self) -> Self {
+        self + rhs
     }
 }
 
@@ -236,7 +260,7 @@ pub struct Toler {
     pub abserr: f64,
 }
 
-/// Default is (1e-15, 1e-15)
+/// Default is `(1e-15, 1e-15)`.
 impl Default for Toler {
     fn default() -> Self {
         Self {
@@ -248,6 +272,7 @@ impl Default for Toler {
 
 impl Toler {
     pub fn check(self, error: f64, value: f64) -> bool {
+        error.is_finite() && // avoid "inf <= inf"
         error.abs() <= value.abs() * self.relerr + self.abserr
     }
 
@@ -284,6 +309,25 @@ impl From<Zigzag<u32>> for i32 {
     fn from(Zigzag(i): Zigzag<u32>) -> Self {
         (i >> 1) as i32 ^ -((i & 1) as i32)
     }
+}
+
+// Remove this when feature(from_ref) stabilizes
+pub mod slice {
+    use std::slice;
+    pub fn from_ref<T>(s: &T) -> &[T] {
+        unsafe { slice::from_raw_parts(s, 1) }
+    }
+    pub fn from_ref_mut<T>(s: &mut T) -> &mut [T] {
+        unsafe { slice::from_raw_parts_mut(s, 1) }
+    }
+}
+
+/// Prevent unwinding in foreign code (which is undefined behavior).
+pub fn abort_on_unwind<F, R>(f: F) -> R where
+    F: FnOnce() -> R,
+{
+    panic::catch_unwind(panic::AssertUnwindSafe(f))
+        .unwrap_or_else(|_| process::abort())
 }
 
 #[cfg(test)]

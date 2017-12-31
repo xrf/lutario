@@ -1,7 +1,7 @@
 use std::{f64, mem};
 use std::ops::{Add, Mul};
 use super::basis::occ;
-use super::j_scheme::{DiagOpJ10, OpJ100, OpJ200};
+use super::j_scheme::{DiagOpJ10, MopJ012, OpJ100, OpJ200};
 use super::linalg::{self, Conj, EigenvalueRange, Part};
 use super::mat::Mat;
 use super::op::{Op, VectorMut};
@@ -9,14 +9,14 @@ use super::utils::Toler;
 
 /// Hartree–Fock with ad hoc linear mixing.
 #[derive(Clone, Copy, Debug)]
-pub struct HfConf {
+pub struct Conf {
     pub init_mix_factor: f64,
     pub mix_modifier: f64,
     pub toler: Toler,
     pub heevr_abstol: f64,
 }
 
-impl Default for HfConf {
+impl Default for Conf {
     fn default() -> Self {
         Self {
             init_mix_factor: 0.5,
@@ -27,18 +27,18 @@ impl Default for HfConf {
     }
 }
 
-impl HfConf {
-    pub fn new_run<'a>(
+impl Conf {
+    pub fn make_run<'a>(
         self,
         h1: &'a OpJ100<f64>,
         h2: &'a OpJ200<f64>,
-    ) -> HfRun<'a> {
+    ) -> Run<'a> {
         let scheme = h1.scheme();
         let mut dcoeff = Op::new(scheme.clone());
         for p in scheme.states_10(&occ::ALL1) {
             dcoeff.set(p, p, 1.0);
         }
-        HfRun {
+        Run {
             conf: self,
             h1,
             h2,
@@ -54,7 +54,12 @@ impl HfConf {
         }
     }
 
-    pub fn adjust_mix_factor(&self, de: f64, de_new: f64, mix_factor: &mut f64) {
+    pub fn adjust_mix_factor(
+        &self,
+        de: f64,
+        de_new: f64,
+        mix_factor: &mut f64,
+    ) {
         if de == 0.0 {
             return;
         }
@@ -69,8 +74,8 @@ impl HfConf {
     }
 }
 
-pub struct HfRun<'a> {
-    pub conf: HfConf,
+pub struct Run<'a> {
+    pub conf: Conf,
     pub h1: &'a OpJ100<f64>,
     pub h2: &'a OpJ200<f64>,
     pub energies: DiagOpJ10<f64>,
@@ -84,7 +89,7 @@ pub struct HfRun<'a> {
     pub first: bool,
 }
 
-impl<'a> HfRun<'a> {
+impl<'a> Run<'a> {
     pub fn step(&mut self) -> Result<(), ()> {
         // Q[λ; v x] = ∑[i] D[λ; x i] D†[λ; i v]
         qcoeff(&self.dcoeff, &mut self.qcoeff);
@@ -323,7 +328,7 @@ pub fn hf_energy(
 ) -> f64
 {
     // ZN[p q] =
-    //     ∑[i] Ji^2 U[i i]
+    //     ∑[i] Ji² U[i i]
     //     + 1/2 ∑[i j] Jij^2 V[i j i j]
     //     + 1/6 ∑[i j k] Jijk^2 W[i j k i j k]    (NYI)
     let scheme = h1.scheme();
@@ -338,31 +343,28 @@ pub fn hf_energy(
 }
 
 pub fn normord(
-    h1: &OpJ100<f64>,
-    h2: &OpJ200<f64>,
-    r0: &mut f64,
-    r1: &mut OpJ100<f64>,
-    r2: &mut OpJ200<f64>,
+    h: &MopJ012<f64>,
+    r: &mut MopJ012<f64>,
 )
 {
     // UN[p q] =
     //     U[p q]
-    //     + ∑[i] (Jpi/Jp)^2 V[p i q i]
-    //     + 1/2 ∑[i j] (Jpij/Jp)^2 W[p i j q i j]    (NYI)
+    //     + ∑[i] (Jpi / Jp)² V[p i q i]
+    //     + 1/2 ∑[i j] (Jpij/Jp)² W[p i j q i j]    (NYI)
     //
     // VN[p q r s] =
     //     V[p q r s]
-    //     + ∑[i] (Jpqi/Jpq)^2 W[p q i r s i]    (NYI)
-    let scheme = h1.scheme();
-    *r0 += hf_energy(h1, h2);
-    r1.clone_from(h1);
+    //     + ∑[i] (Jpqi / Jpq)² W[p q i r s i]    (NYI)
+    let scheme = h.1.scheme();
+    r.0 += h.0 + hf_energy(&h.1, &h.2);
+    r.1.clone_from(&h.1);
     for pi in scheme.states_20(&[occ::II, occ::AI]) {
         let (p, i) = pi.split_to_10_10();
         for q in p.costates_10(&occ::ALL1) {
             for qi in q.combine_with_10(i, pi.j()) {
-                r1.add(p, q, pi.jweight(2) / p.jweight(2) * h2.at(pi, qi));
+                r.1.add(p, q, pi.jweight(2) / p.jweight(2) * h.2.at(pi, qi));
             }
         }
     }
-    r2.clone_from(h2);
+    r.2.clone_from(&h.2);
 }

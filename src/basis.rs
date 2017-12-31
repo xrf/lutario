@@ -27,7 +27,8 @@
 //!   - `l` = channel (in text, `λ` is sometimes used)
 //!   - `u` = auxiliary
 //!   - `x` = part ("eXcitation" / unoccupancy)
-//!   - `p` = state, isomorphic to `(l, u)`
+//!   - `p` = state index, isomorphic to `(l, u)`
+//!   - `i` = state ID, isomorphic to state index but in channelized order
 //!
 //! These letters could refer to either indices or the concrete objects.  When
 //! there is ambiguity, indicial variables are prefixed with `i`.
@@ -325,10 +326,14 @@ impl BasisLayout {
 pub struct BasisChart<L, X, U> {
     pub chan_chart: HashChart<L, u32>,
     pub part_chart: HashChart<X, u32>,
-    /// `aux_encoder[(l, μ)] == u`
+    /// `(l, μ) → u`
     pub aux_encoder: FnvHashMap<(u32, U), u32>,
-    /// `aux_decoder[chan_offset(l) + u] == (L, U)`
+    /// `(p ≡ chan_offset(l) + u) → μ`
     pub aux_decoder: Box<[U]>,
+    /// `p → i`
+    pub orb_from_ix: Box<[Orb]>,
+    /// `i → p`
+    pub orb_to_ix: Box<[OrbIx]>,
     pub layout: BasisLayout,
 }
 
@@ -339,6 +344,8 @@ impl<L, X, U> Default for BasisChart<L, X, U> {
             part_chart: Default::default(),
             aux_encoder: utils::default_hash_map(),
             aux_decoder: Default::default(),
+            orb_from_ix: Default::default(),
+            orb_to_ix: Default::default(),
             layout: Default::default(),
         }
     }
@@ -399,6 +406,8 @@ impl<L, X, U> BasisChart<L, X, U>
         Self::new_with(states, Default::default(), Default::default())
     }
 
+    /// Create a `BasisChart` with the given states, using the provided charts
+    /// as a starting point.  The charts will be augmented if necessary.
     pub fn new_with<I>(
         states: I,
         mut chan_chart: HashChart<L, u32>,
@@ -425,18 +434,21 @@ impl<L, X, U> BasisChart<L, X, U>
         let mut aux_encoder = FnvHashMap::default();
         let mut aux_decoder = Vec::default();
         let mut lxps = lxps.iter();
+        let mut orb_ix_table = Vec::default();
         for l in 0 .. num_chans {
             let mut u = 0;
             for x in 0 .. num_parts {
                 loop {
                     let mut lxps_i = lxps.clone();
                     match lxps_i.next() {
-                        Some(&(l_i, x_i, p_i)) if l == l_i && x == x_i => {
+                        Some(&(l_i, x_i, p)) if l == l_i && x == x_i => {
                             lxps = lxps_i;
-                            let state = state_chart.decode(p_i).unwrap().clone();
-                            aux_decoder.push(state.1.clone());
-                            aux_encoder.insert(state, u);
-                            state_chans.push(l_i);
+                            let s = state_chart.decode(p).unwrap().clone();
+                            let i = aux_decoder.len() as _;
+                            orb_ix_table.push((OrbIx(p), Orb(i)));
+                            aux_decoder.push(s.1.clone());
+                            aux_encoder.insert(s, u);
+                            state_chans.push(l);
                             u += 1;
                         }
                         _ => break,
@@ -448,11 +460,16 @@ impl<L, X, U> BasisChart<L, X, U>
             }
             chan_offsets.push(utils::cast(aux_decoder.len()));
         }
+        let orb_to_ix: Vec<_> = orb_ix_table.iter().map(|x| x.0).collect();
+        orb_ix_table.sort_unstable();
+        let orb_from_ix: Vec<_> = orb_ix_table.iter().map(|x| x.1).collect();
         Self {
             chan_chart,
             part_chart,
             aux_encoder,
             aux_decoder: aux_decoder.into_boxed_slice(),
+            orb_to_ix: orb_to_ix.into_boxed_slice(),
+            orb_from_ix: orb_from_ix.into_boxed_slice(),
             layout: BasisLayout {
                 num_parts,
                 part_offsets: part_offsets.into_boxed_slice(),
@@ -571,9 +588,15 @@ impl<'a, L, X1, X2, U1, U2> MatChart<'a, L, X1, X2, U1, U2>
     }
 }
 
-/// Orbital index.
+/// Orbital ID `i`, in channelized order.  Not to be confused with orbital
+/// index.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Orb(pub u32);
+
+/// Orbital index `p`, in the original basis order.  Not to be confused with
+/// orbital ID.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct OrbIx(pub u32);
 
 /// Channelized state index.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -672,6 +695,10 @@ impl Occ {
         occ::ALL1.iter().cloned().collect()
     }
 
+    pub fn chart2() -> HashChart<[Self; 2], u32> {
+        occ::ALL2.iter().cloned().collect()
+    }
+
     pub fn from_usize(x: usize) -> Option<Self> {
         use self::Occ::*;
         match x {
@@ -679,6 +706,10 @@ impl Occ {
             1 => Some(A),
             _ => None,
         }
+    }
+
+    pub fn occ2_to_usize(x: [Occ; 2]) -> usize {
+        usize::from(x[0]) + 2 * usize::from(x[1])
     }
 }
 

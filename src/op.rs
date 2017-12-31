@@ -4,6 +4,7 @@ use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
 use super::block::Block;
 use super::mat::Mat;
+use super::utils::RefAdd;
 
 pub trait ChartedBasis {
     type Scheme;
@@ -31,10 +32,14 @@ pub struct ReifiedState {
 
 pub trait Vector {
     type Elem;
+    fn len(&self) -> usize;
 }
 
 impl<T> Vector for Vec<T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 pub trait VectorMut: Vector {
@@ -89,6 +94,18 @@ pub struct Op<S, L, R, D> {
 impl<S, L, R, D> Op<S, L, R, D> {
     pub fn scheme(&self) -> &S {
         &self.scheme
+    }
+}
+
+impl<S: Clone, L: Clone, R: Clone, D: RefAdd> RefAdd for Op<S, L, R, D> {
+    fn ref_add(&self, rhs: &Self) -> Self {
+        // (assuming that the schemes and bases are equal on both sides)
+        Op {
+            scheme: self.scheme.clone(),
+            left_basis: self.left_basis.clone(),
+            right_basis: self.right_basis.clone(),
+            data: self.data.ref_add(&rhs.data),
+        }
     }
 }
 
@@ -210,6 +227,9 @@ impl<S, L, R, D> Op<S, L, R, D> where
 
 impl<S, L, R, D: Vector> Vector for Op<S, L, R, D> {
     type Elem = D::Elem;
+    fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 impl<S, L, R, D: VectorMut> VectorMut for Op<S, L, R, D> {

@@ -622,6 +622,9 @@ impl<T> TriMat<T> {
 
 impl<T> Vector for TriMat<T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        self.extent()
+    }
 }
 
 impl<T: Zero + Clone> VectorMut for TriMat<T> {
@@ -690,6 +693,9 @@ pub struct TrsMat<S, T> {
 
 impl<S, T> Vector for TrsMat<S, T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        Vector::len(&self.mat)
+    }
 }
 
 impl<S, T: Zero + Clone> VectorMut for TrsMat<S, T> {

@@ -219,6 +219,11 @@ impl<'a, T> BlockMatRef<'a, T> {
 
 impl<'a, T> Vector for BlockMatRef<'a, T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        (0 .. self.num_blocks())
+            .map(|l| Vector::len(&self.get(l).unwrap()))
+            .sum()
+    }
 }
 
 impl<'a, T: Clone> IndexBlockMatRef for BlockMatRef<'a, T> {
@@ -273,6 +278,11 @@ impl<'a, T> BlockMatMut<'a, T> {
 
 impl<'a, T> Vector for BlockMatMut<'a, T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        (0 .. self.as_ref().num_blocks())
+            .map(|l| Vector::len(&self.as_ref().get(l).unwrap()))
+            .sum()
+    }
 }
 
 impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {

@@ -13,7 +13,13 @@ addons:
 cache: cargo
 before_install:
 # on Ubuntu, blas includes cblas, and libcblas.so doesn't exist
-- export LIBRARY_PATH=.local/lib:$LIBRARY_PATH
-- export LD_LIBRARY_PATH=.local/lib:$LD_LIBRARY_PATH
+- export LIBRARY_PATH=".local/lib:$LIBRARY_PATH"
+- export LD_LIBRARY_PATH=".local/lib:$LD_LIBRARY_PATH"
 - mkdir -p .local/lib
 - ln -s /usr/lib/libblas.so .local/lib/libcblas.so
+install:
+- curl -fsLS https://github.com/xrf/sg-ode/archive/v2.tar.gz | tar xz
+- make -C sg-ode-2 PREFIX=../.local install
+script:
+- cargo build --verbose
+- cargo test --verbose -- --nocapture

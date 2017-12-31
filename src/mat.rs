@@ -6,8 +6,8 @@ use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut, Range};
 use num::Zero;
 use super::op::{Vector, VectorMut};
-use super::tri_mat::{Trs, TrsMat};
-use super::utils::{self, Offset, try_cast};
+use super::tri_mat::{TriMatDim, Trs, TrsMat};
+use super::utils::{self, RefAdd, Offset, try_cast};
 
 /// The indexing convention is row-major.
 ///
@@ -90,6 +90,22 @@ impl ValidMatShape {
 
     pub fn row_width(&self) -> usize {
         self.num_cols
+    }
+
+    pub fn slice(
+        &self,
+        is: Range<usize>,
+        js: Range<usize>,
+    ) -> ((usize, usize), Self) {
+        let i = min(is.start, self.num_rows);
+        let j = min(js.start, self.num_cols);
+        let shape = MatShape {
+            num_rows: min(is.end, self.num_rows).saturating_sub(i),
+            num_cols: min(js.end, self.num_cols).saturating_sub(j),
+            .. **self
+        };
+        let i = if i == self.num_rows { i.saturating_sub(1) } else { i };
+        ((i, j), unsafe { shape.assert_valid() })
     }
 }
 
@@ -240,15 +256,9 @@ impl<'a, T> MatRef<'a, T> {
     }
 
     pub fn slice(self, is: Range<usize>, js: Range<usize>) -> Self {
+        let ((i, j), shape) = self.shape().slice(is, js);
         unsafe {
-            let shape = MatShape {
-                num_rows: min(is.end, self.num_rows())
-                        - min(is.start, self.num_rows()),
-                num_cols: min(js.end, self.num_cols())
-                        - min(js.start, self.num_cols()),
-                .. *self.shape()
-            }.assert_valid();
-            let ptr = self.offset_unchecked(is.start, js.start);
+            let ptr = self.offset_unchecked(i, j);
             Self::from_raw(ptr, shape)
         }
     }
@@ -298,10 +308,35 @@ impl<'a, T> MatRef<'a, T> {
             )
         }
     }
+
+    pub fn extent_as_tri(&self) -> usize {
+        let n = self.shape().num_rows;
+        assert_eq!(n, self.shape().num_cols);
+        TriMatDim::new(n).unwrap().extent()
+    }
+}
+
+impl<'m, T: Clone> MatRef<'m, T> {
+    /// Clone the lower triangle of the matrix into the given array and then
+    /// return the remaining part of the array.
+    pub fn clone_to_tri_slice<'a>(self, mut a: &'a mut [T]) -> &'a mut [T] {
+        let n = self.shape().num_rows;
+        assert_eq!(n, self.shape().num_cols);
+        for i in 0 .. n {
+            let row = &self.row(i).unwrap()[.. i + 1];
+            let (a_chunk, a_rest) = move_ref!(a).split_at_mut(row.len());
+            a_chunk.clone_from_slice(row);
+            a = a_rest;
+        }
+        a
+    }
 }
 
 impl<'a, T> Vector for MatRef<'a, T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        self.extent()
+    }
 }
 
 pub struct MatMut<'a, T: 'a> {
@@ -452,15 +487,9 @@ impl<'a, T> MatMut<'a, T> {
     }
 
     pub fn slice(mut self, is: Range<usize>, js: Range<usize>) -> Self {
+        let ((i, j), shape) = self.shape().slice(is, js);
         unsafe {
-            let shape = MatShape {
-                num_rows: min(is.end, self.num_rows())
-                        - min(is.start, self.num_rows()),
-                num_cols: min(js.end, self.num_cols())
-                        - min(js.start, self.num_cols()),
-                .. *self.shape()
-            }.assert_valid();
-            let ptr = self.offset_unchecked(is.start, js.start);
+            let ptr = self.offset_unchecked(i, j);
             Self::from_raw(ptr, shape)
         }
     }
@@ -512,7 +541,7 @@ impl<'a, T> MatMut<'a, T> {
     }
 }
 
-impl<'a, T: Clone> MatMut<'a, T> {
+impl<'m, T: Clone> MatMut<'m, T> {
     pub fn fill(&mut self, value: &T) {
         for i in 0 .. self.num_rows() {
             for j in 0 .. self.num_cols() {
@@ -527,6 +556,25 @@ impl<'a, T: Clone> MatMut<'a, T> {
         for (self_row, source_row) in self.as_mut().rows().zip(source.rows()) {
             self_row.clone_from_slice(source_row);
         }
+    }
+
+    pub fn clone_from_tri_slice<'a, S: Trs<T>>(
+        &mut self,
+        trs: &S,
+        mut a: &'a [T],
+    ) -> &'a [T]
+    {
+        let n = self.shape().num_rows;
+        assert_eq!(n, self.shape().num_cols);
+        for i in 0 .. n {
+            let (a_chunk, a_rest) = a.split_at(i + 1);
+            a = a_rest;
+            self.as_mut().row(i).unwrap()[.. i + 1].clone_from_slice(a_chunk);
+            for j in 0 .. i {
+                self[(j, i)] = trs.trs(a_chunk[j].clone());
+            }
+        }
+        a
     }
 }
 
@@ -547,6 +595,9 @@ impl<'a, T: Clone> MatMut<'a, T> {
 
 impl<'a, T> Vector for MatMut<'a, T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        Vector::len(&self.as_ref())
+    }
 }
 
 impl<'a, T: Zero + Clone> VectorMut for MatMut<'a, T> {
@@ -728,8 +779,11 @@ impl<T> Mat<T> {
         }
     }
 
-    pub unsafe fn from_vec_unchecked(mut vec: Vec<T>,
-                                     num_rows: usize, num_cols: usize) -> Self {
+    pub unsafe fn from_vec_unchecked(
+        mut vec: Vec<T>,
+        num_rows: usize,
+        num_cols: usize,
+    ) -> Self {
         // in order to reconstruct the vector correctly during Drop,
         // we need to ensure capacity == num_rows * num_cols
         debug_assert_eq!(vec.capacity(), num_rows * num_cols);
@@ -754,7 +808,7 @@ impl<T> Mat<T> {
     }
 
     pub fn extent(&self) -> usize {
-        self.num_rows * self.num_cols
+        self.shape().extent()
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -809,8 +863,25 @@ impl<T> Mat<T> {
     }
 }
 
+impl<T: RefAdd> RefAdd for Mat<T> {
+    fn ref_add(&self, rhs: &Self) -> Self {
+        Mat::from_vec(
+            self.as_slice()
+                .into_iter()
+                .zip(rhs.as_slice())
+                .map(|(x, y)| x.ref_add(y))
+                .collect(),
+            self.shape().num_rows,
+            self.shape().num_cols,
+        )
+    }
+}
+
 impl<T> Vector for Mat<T> {
     type Elem = T;
+    fn len(&self) -> usize {
+        Vector::len(&self.as_ref())
+    }
 }
 
 impl<T: Zero + Clone> VectorMut for Mat<T> {

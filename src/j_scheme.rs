@@ -1,15 +1,17 @@
-use std::{f64, fmt, mem};
+use std::{f64, fmt, io, mem};
 use std::hash::Hash;
-use std::ops::{Add, Deref, Range};
+use std::ops::{Add, Deref, Range, Sub};
 use std::sync::Arc;
 use fnv::FnvHashMap;
+use rand;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
-                   Occ, Occ20, Orb, PartState};
+                   Occ, Occ20, Orb, OrbIx, PartState};
 use super::block::Block;
-use super::mat::Mat;
 use super::half::Half;
+use super::mat::Mat;
 use super::op::{ChartedBasis, Op, ReifiedState, ReifyState};
-use super::utils;
+use super::tri_mat::Trs;
+use super::utils::{self, Toler};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct JChan<K = u32> {
@@ -49,14 +51,14 @@ impl JPartedOrb {
 
 #[derive(Debug)]
 pub struct JAtlas<K, U: Hash + Eq> { // FIXME: spurious constraints
-    /// `K1 ↔ κ1`
+    /// `k1 ↔ κ1`
     pub linchan1_chart: HashChart<K, u32>,
-    /// `K2 ↔ κ2`
+    /// `k2 ↔ κ2`
     pub linchan2_chart: HashChart<K, u32>,
-    /// `P1 → υ1`
-    pub aux_decoder: Box<[U]>,
-    /// `(L1, υ1) → U1`
+    /// `(l1, μ1) → u1`
     pub aux_encoder: FnvHashMap<(u32, U), u32>,
+    /// `i1 → μ1`
+    pub aux_decoder: Box<[U]>,
     pub scheme: Arc<JScheme>,
 }
 
@@ -67,102 +69,35 @@ impl<K, U: Hash + Eq> JAtlas<K, U> {
 }
 
 impl<K, U: Hash + Eq> JAtlas<K, U>
-    where K: Add<Output = K> + Hash + Eq + Clone,
+    where K: Add<Output = K> + Sub<Output = K> + Hash + Eq + Clone,
           U: Hash + Eq + Clone,
 {
-    pub fn new(
-        orbs: &mut Iterator<Item = PartState<Occ, ChanState<JChan<K>, U>>>,
-    ) -> Self
-    {
-        // one-particle states
+    pub fn new(orbs: &[PartState<Occ, ChanState<JChan<K>, U>>]) -> Self {
         let mut linchan1_chart = HashChart::default();
-        let chart1 = BasisChart::new_with(orbs.map(|state| {
-            PartState {
-                x: state.x,
-                p: ChanState {
-                    l: JChan {
-                        j: state.p.l.j,
-                        k: linchan1_chart.insert(state.p.l.k).index,
-                    },
-                    u: state.p.u,
-                },
-            }
-        }), Default::default(), Occ::chart());
-
-        let basis_10 = BasisSchemeJ10 {
-            layout: chart1.layout,
-            chan_chart: chart1.chan_chart,
-        };
-
-        // two-particle states
         let mut linchan2_chart = HashChart::default();
-        let mut states2 = Vec::default();
-        for l1 in 0 .. basis_10.num_chans() {
-            for l2 in 0 .. basis_10.num_chans() {
-                for u1 in basis_10.auxs(l1, Occ::I, Occ::A) {
-                    for u2 in basis_10.auxs(l2, Occ::I, Occ::A) {
-                        let lu1 = ChanState { l: l1, u: u1 };
-                        let lu2 = ChanState { l: l2, u: u2 };
-                        let p1 = basis_10.decode(lu1);
-                        let p2 = basis_10.decode(lu2);
-                        if p1 < p2 {
-                            continue;
-                        }
-                        let jk1 = basis_10.j_chan(l1);
-                        let jk2 = basis_10.j_chan(l2);
-                        let k12 =
-                            linchan1_chart.decode(jk1.k).unwrap().clone()
-                            + linchan1_chart.decode(jk2.k).unwrap().clone();
-                        let k12 = linchan2_chart.insert(k12).index as _;
-                        let x12 = Occ20::from_usize(
-                            usize::from(basis_10.occ(lu1))
-                                + usize::from(basis_10.occ(lu2))).unwrap();
-                        let j1_j2 = jk1.j + jk2.j;
-                        for j12 in Half::tri_range(jk1.j, jk2.j) {
-                            if p1 == p2
-                                && j1_j2.abs_diff(j12).unwrap() % 2 == 0
-                            {
-                                // forbidden by antisymmetry
-                                continue;
-                            }
-                            states2.push(PartState {
-                                x: x12,
-                                p: ChanState {
-                                    l: JChan { j: j12, k: k12 },
-                                    u: (p1, p2),
-                                },
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        let chart2 = BasisChart::new_with(
-            states2.into_iter(),
-            Default::default(),
-            Occ20::chart(),
+        let (basis_10, aux_encoder, aux_decoder) = BasisSchemeJ10::new(
+            orbs,
+            &mut linchan1_chart,
         );
-        let aux_encoder2 = chart2.aux_encoder.iter()
-            .map(|(&(l, (p1, p2)), &u)| {
-                let j = chart2.decode_chan(l).unwrap().j;
-                ((j, p1, p2), ChanState { l, u })
-            })
-            .collect();
-        let basis_20 = BasisSchemeJ20 {
-            layout: chart2.layout,
-            chan_chart: chart2.chan_chart,
-            aux_encoder: aux_encoder2,
-            aux_decoder: chart2.aux_decoder,
-        };
-
+        let basis_20 = BasisSchemeJ20::new(
+            &basis_10,
+            &linchan1_chart,
+            &mut linchan2_chart,
+        );
+        let basis_21 = BasisSchemeJ21::new(
+            &basis_10,
+            &linchan1_chart,
+            &mut linchan2_chart,
+        );
         Self {
             linchan1_chart,
             linchan2_chart,
-            aux_decoder: chart1.aux_decoder,
-            aux_encoder: chart1.aux_encoder,
+            aux_encoder,
+            aux_decoder,
             scheme: Arc::new(JScheme {
                 basis_10,
                 basis_20,
+                basis_21,
             }),
         }
     }
@@ -210,9 +145,42 @@ impl<K, U> JAtlas<K, U> where
 pub struct BasisSchemeJ10 {
     pub layout: BasisLayout,
     pub chan_chart: HashChart<JChan, u32>,
+    /// `p → i`
+    pub orb_from_ix: Box<[Orb]>,
+    /// `i → p`
+    pub orb_to_ix: Box<[OrbIx]>,
 }
 
 impl BasisSchemeJ10 {
+    pub fn new<K: Add<Output = K> + Hash + Eq + Clone, U: Hash + Eq + Clone>(
+        orbs: &[PartState<Occ, ChanState<JChan<K>, U>>],
+        linchan1_chart: &mut HashChart<K, u32>,
+    ) -> (Self, FnvHashMap<(u32, U), u32>, Box<[U]>)
+    {
+        let chart1 = BasisChart::new_with(orbs.iter().map(|state| {
+            PartState {
+                x: state.x,
+                p: ChanState {
+                    l: JChan {
+                        j: state.p.l.j,
+                        k: linchan1_chart.insert(state.p.l.k.clone()).index,
+                    },
+                    u: state.p.u.clone(),
+                },
+            }
+        }), Default::default(), Occ::chart());
+        (
+            Self {
+                layout: chart1.layout,
+                chan_chart: chart1.chan_chart,
+                orb_from_ix: chart1.orb_from_ix,
+                orb_to_ix: chart1.orb_to_ix,
+            },
+            chart1.aux_encoder,
+            chart1.aux_decoder,
+        )
+    }
+
     #[inline]
     pub fn num_chans(&self) -> u32 {
         self.chan_chart.len() as _
@@ -256,8 +224,20 @@ impl BasisSchemeJ10 {
     }
 
     #[inline]
-    pub fn encode(&self, p: Orb) -> ChanState {
-        self.layout.channelize(p.0)
+    pub fn encode(&self, i: Orb) -> ChanState {
+        self.layout.channelize(i.0)
+    }
+
+    /// Panics if the argument is invalid.
+    #[inline]
+    pub fn orb_from_ix(&self, p: OrbIx) -> Orb {
+        self.orb_from_ix[p.0 as usize]
+    }
+
+    /// Panics if the argument is invalid.
+    #[inline]
+    pub fn orb_to_ix(&self, i: Orb) -> OrbIx {
+        self.orb_to_ix[i.0 as usize]
     }
 }
 
@@ -265,13 +245,79 @@ impl BasisSchemeJ10 {
 pub struct BasisSchemeJ20 {
     pub layout: BasisLayout,
     pub chan_chart: HashChart<JChan, u32>,
-    /// `(j12, p1, p2) → (l12, u12)`
+    /// `(j12, i1, i2) → (l12, u12)`
     pub aux_encoder: FnvHashMap<(Half<i32>, Orb, Orb), ChanState>,
-    /// `p12 → (p1, p2)`
+    /// `i12 → (i1, i2)`
     pub aux_decoder: Box<[(Orb, Orb)]>,
 }
 
 impl BasisSchemeJ20 {
+    pub fn new<K: Add<Output = K> + Hash + Eq + Clone>(
+        basis_10: &BasisSchemeJ10,
+        linchan1_chart: &HashChart<K, u32>,
+        linchan2_chart: &mut HashChart<K, u32>,
+    ) -> Self
+    {
+        let mut states2 = Vec::default();
+        for l1 in 0 .. basis_10.num_chans() {
+            for l2 in 0 .. basis_10.num_chans() {
+                for u1 in basis_10.auxs(l1, Occ::I, Occ::A) {
+                    for u2 in basis_10.auxs(l2, Occ::I, Occ::A) {
+                        let lu1 = ChanState { l: l1, u: u1 };
+                        let lu2 = ChanState { l: l2, u: u2 };
+                        let p1 = basis_10.decode(lu1);
+                        let p2 = basis_10.decode(lu2);
+                        if p1 < p2 {
+                            continue;
+                        }
+                        let jk1 = basis_10.j_chan(l1);
+                        let jk2 = basis_10.j_chan(l2);
+                        let k12 =
+                            linchan1_chart.decode(jk1.k).unwrap().clone()
+                            + linchan1_chart.decode(jk2.k).unwrap().clone();
+                        let k12 = linchan2_chart.insert(k12).index;
+                        let x12 = Occ20::from_usize(
+                            usize::from(basis_10.occ(lu1))
+                                + usize::from(basis_10.occ(lu2))).unwrap();
+                        let j1_j2 = jk1.j + jk2.j;
+                        for j12 in Half::tri_range(jk1.j, jk2.j) {
+                            if p1 == p2
+                                && j1_j2.abs_diff(j12).unwrap() % 2 == 0
+                            {
+                                // forbidden by antisymmetry
+                                continue;
+                            }
+                            states2.push(PartState {
+                                x: x12,
+                                p: ChanState {
+                                    l: JChan { j: j12, k: k12 },
+                                    u: (p1, p2),
+                                },
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        let chart2 = BasisChart::new_with(
+            states2.into_iter(),
+            Default::default(),
+            Occ20::chart(),
+        );
+        let aux_encoder2 = chart2.aux_encoder.iter()
+            .map(|(&(l, (p1, p2)), &u)| {
+                let j = chart2.decode_chan(l).unwrap().j;
+                ((j, p1, p2), ChanState { l, u })
+            })
+            .collect();
+        Self {
+            layout: chart2.layout,
+            chan_chart: chart2.chan_chart,
+            aux_encoder: aux_encoder2,
+            aux_decoder: chart2.aux_decoder,
+        }
+    }
+
     #[inline]
     pub fn num_chans(&self) -> u32 {
         self.layout.num_chans()
@@ -303,6 +349,112 @@ impl BasisSchemeJ20 {
     #[inline]
     pub fn encode(&self, j12: Half<i32>, s1: Orb, s2: Orb) -> Option<ChanState> {
         self.aux_encoder.get(&(j12, s1, s2)).cloned()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct BasisSchemeJ21 {
+    pub layout: BasisLayout,
+    pub chan_chart: HashChart<JChan, u32>,
+    /// `(j12, p1, p2) → (l12, u12)`
+    pub aux_encoder: FnvHashMap<(Half<i32>, Orb, Orb), ChanState>,
+    /// `p12 → (p1, p2)`
+    pub aux_decoder: Box<[(Orb, Orb)]>,
+}
+
+impl BasisSchemeJ21 {
+    pub fn new<K: Sub<Output = K> + Hash + Eq + Clone>(
+        basis_10: &BasisSchemeJ10,
+        linchan1_chart: &HashChart<K, u32>,
+        linchan2_chart: &mut HashChart<K, u32>,
+    ) -> Self
+    {
+        let mut states2 = Vec::default();
+        for l1 in 0 .. basis_10.num_chans() {
+            for l2 in 0 .. basis_10.num_chans() {
+                for u1 in basis_10.auxs(l1, Occ::I, Occ::A) {
+                    for u2 in basis_10.auxs(l2, Occ::I, Occ::A) {
+                        let lu1 = ChanState { l: l1, u: u1 };
+                        let lu2 = ChanState { l: l2, u: u2 };
+                        let p1 = basis_10.decode(lu1);
+                        let p2 = basis_10.decode(lu2);
+                        let jk1 = basis_10.j_chan(l1);
+                        let jk2 = basis_10.j_chan(l2);
+                        let k12 =
+                            linchan1_chart.decode(jk1.k).unwrap().clone()
+                            - linchan1_chart.decode(jk2.k).unwrap().clone();
+                        let k12 = linchan2_chart.insert(k12).index;
+                        let x12 = [Occ::from(basis_10.occ(lu1)),
+                                   Occ::from(basis_10.occ(lu2))];
+                        for j12 in Half::tri_range(jk1.j, jk2.j) {
+                            states2.push(PartState {
+                                x: x12,
+                                p: ChanState {
+                                    l: JChan { j: j12, k: k12 },
+                                    u: (p1, p2),
+                                },
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        let chart2 = BasisChart::new_with(
+            states2.into_iter(),
+            Default::default(),
+            Occ::chart2(),
+        );
+        let aux_encoder2 = chart2.aux_encoder.iter()
+            .map(|(&(l, (p1, p2)), &u)| {
+                let j = chart2.decode_chan(l).unwrap().j;
+                ((j, p1, p2), ChanState { l, u })
+            })
+            .collect();
+        Self {
+            layout: chart2.layout,
+            chan_chart: chart2.chan_chart,
+            aux_encoder: aux_encoder2,
+            aux_decoder: chart2.aux_decoder,
+        }
+    }
+
+    #[inline]
+    pub fn num_chans(&self) -> u32 {
+        self.layout.num_chans()
+    }
+
+    #[inline]
+    pub fn auxs(&self, l: u32, x1: [Occ; 2], x2: [Occ; 2]) -> Range<u32> {
+        Range {
+            start: self.layout.part_offset(l, Occ::occ2_to_usize(x1) as u32),
+            end: self.layout.part_offset(l, Occ::occ2_to_usize(x2) as u32 + 1),
+        }
+    }
+
+    #[inline]
+    pub fn aux_range(&self, l: u32, x: [Occ; 2]) -> Range<u32> {
+        self.auxs(l, x, x)
+    }
+
+    #[inline]
+    pub fn j_chan(&self, l: u32) -> JChan {
+        *self.chan_chart.decode(l).unwrap()
+    }
+
+    #[inline]
+    pub fn decode(&self, lu: ChanState) -> (Orb, Orb) {
+        self.aux_decoder[self.layout.dechannelize(lu) as usize]
+    }
+
+    #[inline]
+    pub fn encode(
+        &self,
+        j12: Half<i32>,
+        i1: Orb,
+        i2: Orb,
+    ) -> Option<ChanState>
+    {
+        self.aux_encoder.get(&(j12, i1, i2)).cloned()
     }
 }
 
@@ -616,6 +768,11 @@ impl<'a> Deref for StateJ10<'a> {
 
 impl<'a> StateJ10<'a> {
     #[inline]
+    pub fn j(self) -> Half<i32> {
+        self.s1.j
+    }
+
+    #[inline]
     pub fn costates_10(self, xs: &[Occ]) -> CostatesJ10<'a> {
         CostatesJ10::new(self.scheme, self.s1.lu.l, StateMask10::new(xs))
     }
@@ -645,6 +802,23 @@ impl<'a> StateJ10<'a> {
         } else {
             s12
         })
+    }
+
+    #[inline]
+    pub fn combine_with_10_to_21(
+        &self,
+        s2: Self,
+        j12: Half<i32>,
+    ) -> Option<StateJ21<'a>> {
+        let p1 = self.scheme.basis_10.decode(self.s1.lu);
+        let p2 = self.scheme.basis_10.decode(s2.s1.lu);
+        let s12 = self.scheme.state_21(
+            match self.scheme.basis_21.encode(j12, p1, p2) {
+                None => return None,
+                Some(lu12) => lu12,
+            },
+        );
+        Some(s12)
     }
 }
 
@@ -719,10 +893,38 @@ impl<'a> StateJ20<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct StateJ21<'a> {
+    pub scheme: &'a JScheme,
+    pub lu12: ChanState,
+    pub j12: Half<i32>,
+    pub s1: JPartedOrb,
+    pub s2: JPartedOrb,
+}
+
+impl<'a> fmt::Display for StateJ21<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{lu12:{}}}", self.lu12)
+    }
+}
+
+impl<'a> StateJ21<'a> {
+    #[inline]
+    pub fn j(self) -> Half<i32> {
+        self.j12
+    }
+
+    #[inline]
+    pub fn jweight(self, exponent: i32) -> f64 {
+        self.j12.weight(exponent)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct JScheme {
     pub basis_10: BasisSchemeJ10,
     pub basis_20: BasisSchemeJ20,
+    pub basis_21: BasisSchemeJ21,
 }
 
 impl JScheme {
@@ -758,6 +960,18 @@ impl JScheme {
             get_factor: 1.0,
             set_factor: 1.0,
             add_factor: 1.0 / num_permut as f64,
+        }
+    }
+
+    #[inline]
+    pub fn state_21(&self, lu12: ChanState) -> StateJ21 {
+        let (s1, s2) = self.basis_21.decode(lu12);
+        StateJ21 {
+            scheme: self,
+            lu12,
+            j12: self.basis_21.j_chan(lu12.l).j,
+            s1: self.parted_orb(self.basis_10.encode(s1)),
+            s2: self.parted_orb(self.basis_10.encode(s2)),
         }
     }
 
@@ -828,9 +1042,222 @@ impl<'a> ReifyState for StateJ20<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct BasisJ21;
+
+impl ChartedBasis for BasisJ21 {
+    type Scheme = Arc<JScheme>;
+    fn layout<'a>(&self, scheme: &'a Self::Scheme) -> &'a BasisLayout {
+        &scheme.basis_21.layout
+    }
+}
+
+impl<'a> ReifyState for StateJ21<'a> {
+    type Scheme = Arc<JScheme>;
+    type Basis = BasisJ21;
+    fn reify_state(
+        self,
+        _scheme: &Self::Scheme,
+        _basis: &Self::Basis,
+    ) -> ReifiedState {
+        ReifiedState {
+            chan: self.lu12.l as _,
+            aux: self.lu12.u as _,
+            get_factor: 1.0,
+            set_factor: 1.0,
+            add_factor: 1.0,
+        }
+    }
+}
+
 pub type DiagOpJ10<T = f64> =
     Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Vec<T>>>;
 
 pub type OpJ100<T = f64> = Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Mat<T>>>;
 
 pub type OpJ200<T = f64> = Op<Arc<JScheme>, BasisJ20, BasisJ20, Block<Mat<T>>>;
+
+pub type OpJ211<T = f64> = Op<Arc<JScheme>, BasisJ21, BasisJ21, Block<Mat<T>>>;
+
+pub type OrbToChanState = Fn(u64) -> ChanState;
+
+pub type MopJ012<T> = (T, OpJ100<T>, OpJ200<T>);
+
+pub fn new_mop_j012<T: Default + Clone>(scheme: &Arc<JScheme>) -> MopJ012<T> {
+    (
+        Default::default(),
+        Op::new(scheme.clone()),
+        Op::new(scheme.clone()),
+    )
+}
+
+pub fn rand_mop_j012(
+    scheme: &Arc<JScheme>,
+    mut rng: &mut rand::Rng,
+) -> MopJ012<f64> {
+    use rand::Rand;
+    use rand::distributions::normal::StandardNormal;
+    let mut a = new_mop_j012(scheme);
+    a.0 = StandardNormal::rand(&mut rng).0;
+    for p in scheme.states_10(&occ::ALL1) {
+        for q in p.costates_10(&occ::ALL1) {
+            a.1.set(p, q, StandardNormal::rand(&mut rng).0);
+        }
+    }
+    for pq in scheme.states_20(&occ::ALL2) {
+        for rs in pq.costates_20(&occ::ALL2) {
+            a.2.set(pq, rs, StandardNormal::rand(&mut rng).0);
+        }
+    }
+    a
+}
+
+/// Read M-scheme matrix elements of a (0, 1, 2)-body operator from a text
+/// file, where states are encoded as orbital indices.
+pub fn read_mop_j012_txt(
+    scheme: &Arc<JScheme>,
+    reader: &mut io::BufRead,
+) -> io::Result<MopJ012<f64>>
+{
+    use std::io::BufRead;
+    let convert = |p: &str| -> StateJ10 {
+        let p = OrbIx(p.parse().expect("cannot parse index of matrix element"));
+        scheme.state_10(scheme.basis_10.encode(scheme.basis_10.orb_from_ix(p)))
+    };
+    let mut a = new_mop_j012(scheme);
+    for line in reader.lines() {
+        let line = line?;
+        let words: Vec<_> = line.split_whitespace().collect();
+        let first = match words.first() {
+            Some(first) => first,
+            None => continue,
+        };
+        if first.starts_with('#') {
+            continue;
+        }
+        let value: f64 = words.last().unwrap().parse()
+            .expect("cannot parse value of matrix element");
+        match words.len() {
+            1 => {
+                a.0 = value;
+            }
+            3 => {
+                let p = convert(words[0]);
+                let q = convert(words[1]);
+                a.1.set(p, q, value);
+            }
+            5 => {
+                let p = convert(words[0]);
+                let q = convert(words[1]);
+                let r = convert(words[2]);
+                let s = convert(words[3]);
+                if p.lu == q.lu || r.lu == s.lu {
+                    // if we don't catch it here, combine_with_10 will fail
+                    panic!("Pauli violation");
+                }
+                let pq = p.combine_with_10(q, Half(0))
+                    .expect("basis is not M-scheme");
+                let rs = r.combine_with_10(s, Half(0))
+                    .expect("basis is not M-scheme");
+                a.2.set(pq, rs, value);
+            }
+            _ => panic!("line has incorrect number of fields"),
+        }
+    }
+    Ok(a)
+}
+
+// FIXME: I think it's high time we created a dedicated MopJ012 type
+
+pub fn extent_mop_j012_as_tri<'a, T: Clone>(m: &MopJ012<T>) -> usize {
+    1
+        + m.1.data.extent_mat_as_tri()
+        + m.2.data.extent_mat_as_tri()
+}
+
+pub fn clone_mop_j012_to_tri_slice<'a, T: Clone>(
+    m: &MopJ012<T>,
+    mut a: &'a mut [T],
+) -> &'a mut [T]
+{
+    a[0] = m.0.clone();
+    a = &mut move_ref!(a)[1 ..];
+    a = m.1.data.clone_mat_to_tri_slice(move_ref!(a));
+    a = m.2.data.clone_mat_to_tri_slice(move_ref!(a));
+    a
+}
+
+pub fn clone_mop_j012_from_tri_slice<'a, S: Trs<T>, T: Clone>(
+    m: &mut MopJ012<T>,
+    trs: &S,
+    mut a: &'a [T],
+) -> &'a [T]
+{
+    m.0 = a[0].clone();
+    a = &a[1 ..];
+    a = m.1.data.clone_mat_from_tri_slice(trs, a);
+    a = m.2.data.clone_mat_from_tri_slice(trs, a);
+    a
+}
+
+pub fn check_eq_op_j100(
+    toler: Toler,
+    a1: &OpJ100,
+    b1: &OpJ100,
+) -> Result<(), String> {
+    let scheme = a1.scheme();
+    let mut status = Ok(());
+    for p in scheme.states_10(&occ::ALL1) {
+        for q in p.costates_10(&occ::ALL1) {
+            let left = a1.at(p, q);
+            let right = b1.at(p, q);
+            if !toler.is_eq(left, right) {
+                let err = format!("{},{}: {} != {} within {:?}",
+                                  p.s1.lu, q.s1.lu, left, right, toler);
+                eprintln!("{}", err);
+                status = status.and(Err(err));
+            }
+        }
+    }
+    status
+}
+
+pub fn check_eq_op_j200(
+    toler: Toler,
+    a2: &OpJ200,
+    b2: &OpJ200,
+) -> Result<(), String> {
+    let scheme = a2.scheme();
+    let mut status = Ok(());
+    for pq in scheme.states_20(&occ::ALL2) {
+        let (p, q) = pq.split_to_10_10();
+        for rs in pq.costates_20(&occ::ALL2) {
+            let (r, s) = rs.split_to_10_10();
+            let left = a2.at(pq, rs);
+            let right = b2.at(pq, rs);
+            if !toler.is_eq(left, right) {
+                let err = format!("{},{},{},{}: {} != {} within {:?}",
+                                  p.s1.lu, q.s1.lu, r.s1.lu, s.s1.lu,
+                                  left, right, toler);
+                eprintln!("{}", err);
+                status = status.and(Err(err));
+            }
+        }
+    }
+    status
+}
+
+pub fn check_eq_mop_j012(
+    toler: Toler,
+    a: &MopJ012<f64>,
+    b: &MopJ012<f64>,
+) -> Result<(), String> {
+    if toler.is_eq(a.0, b.0) {
+        Ok(())
+    } else {
+        let err = format!("{} != {} within {:?}", a.0, b.0, toler);
+        eprintln!("{}", err);
+        Err(err)
+    }   .and(check_eq_op_j100(toler, &a.1, &b.1))
+        .and(check_eq_op_j200(toler, &a.2, &b.2))
+}
