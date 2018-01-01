@@ -6,8 +6,10 @@ extern crate netlib_src;
 use std::io::{self, BufReader};
 use std::fs::File;
 use lutario::{hf, imsrg, qdots, qdpt, sg_ode};
+use lutario::basis::OrbIx;
 use lutario::j_scheme::{JAtlas, new_mop_j012, read_mop_j012_txt,
-                        check_eq_op_j100, check_eq_op_j200, check_eq_mop_j012};
+                        check_eq_op_j100, check_eq_op_j200, check_eq_mop_j012,
+                        op200_to_op211};
 use lutario::op::Op;
 use lutario::utils::Toler;
 
@@ -15,17 +17,20 @@ fn open(path: &str) -> io::Result<BufReader<File>> {
     Ok(BufReader::new(File::open(path)?))
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct QdotTest {
     pub system: qdots::Qdot,
     pub omega: f64,
     pub e_hf: f64,
     pub de_mp2: f64,
     pub e_imsrg: f64,
+    pub qdpt: String,
 }
 
 impl QdotTest {
     fn run(self) {
+        use std::io::BufRead;
+
         let toler = Toler { relerr: 1e-8, abserr: 1e-8 };
         let v_elems = qdots::read_clh2_bin(
             &mut File::open("data/clh2-openfci/shells6.dat").unwrap(),
@@ -34,6 +39,8 @@ impl QdotTest {
         let scheme = atlas.scheme();
         let h1 = qdots::make_ho2d_op(&atlas, self.omega);
         let h2 = qdots::make_v_op(&atlas, &v_elems, self.omega);
+
+        // test HF
         let mut hf = hf::Conf {
             toler: toler,
             .. Default::default()
@@ -45,8 +52,35 @@ impl QdotTest {
         let mut hn = new_mop_j012(scheme);
         hf::normord(&hh, &mut hn);
         toler_assert_eq!(toler, hn.0, self.e_hf);
+
+        // test MP2
         let de_mp2 = qdpt::mp2(&hn.1, &hn.2);
         toler_assert_eq!(toler, de_mp2, self.de_mp2);
+
+        // test QDPT
+        let mut w6j_ctx = Default::default();
+        let mut hn2p = Op::new(scheme.clone());
+        op200_to_op211(&mut w6j_ctx, 1.0, &hn.2, &mut hn2p);
+        for line in open(&self.qdpt).unwrap().lines() {
+            let line = line.unwrap();
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let fields: Vec<_> = line.split_whitespace().collect();
+            let orbital = OrbIx(fields[0].parse().unwrap());
+            let term = fields[1].parse().unwrap();
+            let energy = fields[2].parse().unwrap();
+            let p = scheme.state_10(
+                scheme.basis_10.encode(
+                    scheme.basis_10.orb_from_ix(orbital),
+                ),
+            );
+            let de = qdpt::qdpt_term(term, &hn.1, &hn.2, Some(&hn2p), p, p);
+            toler_assert_eq!(toler, energy, de);
+        }
+
+        // test IMSRG
         let imsrg_toler = Toler { relerr: 1e-6, abserr: 1e-5 };
         let mut irun = imsrg::Conf {
             toler: imsrg_toler,
@@ -72,6 +106,7 @@ fn test_qdots_3_2_1() {
         e_hf: 21.593198476284833,
         de_mp2: -0.15975791887897517,
         e_imsrg: 21.412110,
+        qdpt: "data/clh2-openfci/qdpt_3_2_1.txt".into(),
     }.run()
 }
 
@@ -87,6 +122,7 @@ fn test_qdots_4_2_d28() {
         e_hf: 8.1397185533436094,
         de_mp2: -0.23476770967641344,
         e_imsrg: 7.839145241377399,
+        qdpt: "data/clh2-openfci/qdpt_4_2_d28.txt".into(),
     }.run()
 }
 
@@ -103,6 +139,7 @@ fn test_qdots_5_3_1() {
         e_hf: 67.569930237865776,
         de_mp2: -0.5483183431301903,
         e_imsrg: 67.005660,
+        qdpt: "data/clh2-openfci/qdpt_5_3_1.txt".into(),
     }.run()
 }
 

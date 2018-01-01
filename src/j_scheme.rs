@@ -1,9 +1,20 @@
+//! Implementation of the J-scheme abstraction.
+//!
+//! In our J-scheme, we classify states according to channels.  Unlike
+//! M-scheme, however, we also track the angular momentum magnitude (J) of
+//! each channel.
+//!
+//! J-scheme is strictly more general than M-scheme and can be used to emulate
+//! M-scheme simply by treating all J's as zero.
+
 use std::{f64, fmt, io, mem};
 use std::hash::Hash;
 use std::ops::{Add, Deref, Range, Sub};
 use std::sync::Arc;
 use fnv::FnvHashMap;
 use rand;
+use wigner_symbols::Wigner6j;
+use super::ang_mom::Wigner6jCtx;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, OrbIx, PartState};
 use super::block::Block;
@@ -500,7 +511,7 @@ impl StateMask20 {
         let ai = xs.contains(&occ::AI);
         let ia = xs.contains(&occ::IA);
         let aa = xs.contains(&occ::AA);
-        StateMask20 {
+        Self {
             x_mask: [ii, ai || ia, aa],
             xx_mask: [ii, ai, ia, aa],
         }
@@ -512,13 +523,47 @@ impl StateMask20 {
     }
 
     #[inline]
-    pub fn test_occ_occ(self, occ1: Occ, occ2: Occ) -> bool {
-        self.xx_mask[usize::from(occ1) + usize::from(occ2) * 2]
+    pub fn test_occ(self, occ: [Occ; 2]) -> bool {
+        self.xx_mask[Occ::occ2_to_usize(occ)]
     }
 
     pub fn next_occ20(self, occ: &mut Fence<Option<Occ20>>) -> Option<Occ20> {
         while let Some(x) = occ.next() {
             if self.test_occ20(x) {
+                return Some(x);
+            }
+        }
+        None
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StateMask21 {
+    /// `(occ1 + occ2 * 2) -> needed`
+    pub x_mask: [bool; 4],
+}
+
+impl StateMask21 {
+    #[inline]
+    pub fn new(xs: &[[Occ; 2]]) -> Self {
+        Self {
+            x_mask: [
+                xs.contains(&occ::II),
+                xs.contains(&occ::AI),
+                xs.contains(&occ::IA),
+                xs.contains(&occ::AA),
+            ],
+        }
+    }
+
+    #[inline]
+    pub fn test_occ(self, occ: [Occ; 2]) -> bool {
+        self.x_mask[Occ::occ2_to_usize(occ)]
+    }
+
+    pub fn next_occ(self, occ: &mut Option<[Occ; 2]>) -> Option<[Occ; 2]> {
+        while let Some(x) = Occ::next_occ2(occ) {
+            if self.test_occ(x) {
                 return Some(x);
             }
         }
@@ -717,7 +762,7 @@ impl<'a> Iterator for CostatesJ20<'a> {
         loop {
             // next permut
             while let Some(state) = StateJ20::next(&mut self.state) {
-                if self.mask.test_occ_occ(state.s1.x, state.s2.x) {
+                if self.mask.test_occ([state.s1.x, state.s2.x]) {
                     return Some(state);
                 }
             }
@@ -746,6 +791,67 @@ impl<'a> Iterator for CostatesJ20<'a> {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct CostatesJ21<'a> {
+    pub scheme: &'a JScheme,
+    pub u_range: Range<u32>,
+    pub x: Option<[Occ; 2]>,
+    pub l: u32,
+    pub mask: StateMask21,
+}
+
+impl<'a> CostatesJ21<'a> {
+    #[inline]
+    pub fn new(scheme: &'a JScheme, l: u32, mask: StateMask21) -> Self {
+        Self {
+            scheme,
+            u_range: 0 .. 0,
+            x: Some(occ::II),
+            l,
+            mask,
+        }
+    }
+
+    #[inline]
+    pub fn scheme(&self) -> &'a JScheme {
+        self.scheme
+    }
+
+    #[inline]
+    pub fn mask(&self) -> StateMask21 {
+        self.mask
+    }
+}
+
+impl<'a> Iterator for CostatesJ21<'a> {
+    type Item = StateJ21<'a>;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        // for x in unmasked_occs(mask) {
+        //     for u in aux_range(l, x) {
+        //         yield state_21(l, u);
+        //     }
+        // }
+        loop {
+            // next u
+            if let Some(u) = self.u_range.next() {
+                return Some(self.scheme.state_21(ChanState { l: self.l, u }));
+            }
+
+            // next x
+            if let Some(x) = self.mask.next_occ(&mut self.x) {
+                self.u_range = self.scheme().basis_21.aux_range(
+                    self.l,
+                    x,
+                );
+                continue;
+            }
+
+            return None;
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct StateJ10<'a> {
     pub scheme: &'a JScheme,
@@ -770,6 +876,11 @@ impl<'a> StateJ10<'a> {
     #[inline]
     pub fn j(self) -> Half<i32> {
         self.s1.j
+    }
+
+    #[inline]
+    pub fn lu(self) -> ChanState {
+        self.s1.lu
     }
 
     #[inline]
@@ -875,6 +986,11 @@ impl<'a> StateJ20<'a> {
     }
 
     #[inline]
+    pub fn lu(self) -> ChanState {
+        self.lu12
+    }
+
+    #[inline]
     pub fn jweight(self, exponent: i32) -> f64 {
         self.j12.weight(exponent)
     }
@@ -915,8 +1031,26 @@ impl<'a> StateJ21<'a> {
     }
 
     #[inline]
+    pub fn lu(self) -> ChanState {
+        self.lu12
+    }
+
+    #[inline]
     pub fn jweight(self, exponent: i32) -> f64 {
         self.j12.weight(exponent)
+    }
+
+    #[inline]
+    pub fn costates_21(self, xs: &[[Occ; 2]]) -> CostatesJ21<'a> {
+        CostatesJ21::new(self.scheme, self.lu12.l, StateMask21::new(xs))
+    }
+
+    #[inline]
+    pub fn split_to_10_10(self) -> (StateJ10<'a>, StateJ10<'a>) {
+        (
+            StateJ10 { scheme: self.scheme, s1: self.s1 },
+            StateJ10 { scheme: self.scheme, s1: self.s2 },
+        )
     }
 }
 
@@ -1004,9 +1138,10 @@ impl<'a> ReifyState for StateJ10<'a> {
         _scheme: &Self::Scheme,
         _basis: &Self::Basis,
     ) -> ReifiedState {
+        let lu = self.lu();
         ReifiedState {
-            chan: self.s1.lu.l as _,
-            aux: self.s1.lu.u as _,
+            chan: lu.l as _,
+            aux: lu.u as _,
             get_factor: 1.0,
             set_factor: 1.0,
             add_factor: 1.0,
@@ -1032,9 +1167,10 @@ impl<'a> ReifyState for StateJ20<'a> {
         _scheme: &Self::Scheme,
         _basis: &Self::Basis,
     ) -> ReifiedState {
+        let lu = self.lu();
         ReifiedState {
-            chan: self.lu12.l as _,
-            aux: self.lu12.u as _,
+            chan: lu.l as _,
+            aux: lu.u as _,
             get_factor: self.get_factor,
             set_factor: self.set_factor,
             add_factor: self.add_factor,
@@ -1060,9 +1196,10 @@ impl<'a> ReifyState for StateJ21<'a> {
         _scheme: &Self::Scheme,
         _basis: &Self::Basis,
     ) -> ReifiedState {
+        let lu = self.lu();
         ReifiedState {
-            chan: self.lu12.l as _,
-            aux: self.lu12.u as _,
+            chan: lu.l as _,
+            aux: lu.u as _,
             get_factor: 1.0,
             set_factor: 1.0,
             add_factor: 1.0,
@@ -1070,17 +1207,20 @@ impl<'a> ReifyState for StateJ21<'a> {
     }
 }
 
+/// A diagonal standard-coupled one-body matrix.
 pub type DiagOpJ10<T = f64> =
     Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Vec<T>>>;
 
+/// A standard-coupled one-body matrix.
 pub type OpJ100<T = f64> = Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Mat<T>>>;
 
+/// A standard-coupled two-body matrix.
 pub type OpJ200<T = f64> = Op<Arc<JScheme>, BasisJ20, BasisJ20, Block<Mat<T>>>;
 
+/// A Pandya-coupled two-body matrix.
 pub type OpJ211<T = f64> = Op<Arc<JScheme>, BasisJ21, BasisJ21, Block<Mat<T>>>;
 
-pub type OrbToChanState = Fn(u64) -> ChanState;
-
+/// A standard-coupled (0, 1, 2)-body matrix.
 pub type MopJ012<T> = (T, OpJ100<T>, OpJ200<T>);
 
 pub fn new_mop_j012<T: Default + Clone>(scheme: &Arc<JScheme>) -> MopJ012<T> {
@@ -1260,4 +1400,92 @@ pub fn check_eq_mop_j012(
         Err(err)
     }   .and(check_eq_op_j100(toler, &a.1, &b.1))
         .and(check_eq_op_j200(toler, &a.2, &b.2))
+}
+
+/// Pandya transformation.
+///
+/// ```text
+/// B[p s r q] ←+ −α ∑[Jpq] { Jp Jq Jpq; Jr Js Jps } (−)^(2 Jpq) Jpq^2 A[p q r s]
+/// ```
+pub fn op200_to_op211(
+    w6j_ctx: &mut Wigner6jCtx,
+    alpha: f64,
+    a2: &OpJ200<f64>,
+    b2: &mut OpJ211<f64>,
+)
+{
+    let scheme = a2.scheme();
+    for pq in scheme.states_20(&occ::ALL2) {
+        for rs in pq.costates_20(&occ::ALL2) {
+            let (p, q) = pq.split_to_10_10();
+            let (r, s) = rs.split_to_10_10();
+            for jps in Half::tri_range_2(
+                (p.j(), s.j()),
+                (r.j(), q.j()),
+            ) {
+                let ps = p.combine_with_10_to_21(s, jps).unwrap();
+                let rq = r.combine_with_10_to_21(q, jps).unwrap();
+                b2.add(
+                    ps,
+                    rq,
+                    -alpha
+                        * w6j_ctx.get(Wigner6j {
+                            tj1: p.j().twice(),
+                            tj2: q.j().twice(),
+                            tj3: pq.j().twice(),
+                            tj4: r.j().twice(),
+                            tj5: s.j().twice(),
+                            tj6: ps.j().twice(),
+                        })
+                        * pq.j().double().phase()
+                        * pq.jweight(2)
+                        * a2.at(pq, rs)
+                );
+            }
+        }
+    }
+}
+
+/// Inverse Pandya transformation.
+///
+/// ```text
+/// B[p q r s] ←+ −α ∑[Jpq] { Jp Jq Jpq; Jr Js Jps } (−)^(2 Jpq) Jps^2 A[p s r q]
+/// ```
+pub fn op211_to_op200(
+    w6j_ctx: &mut Wigner6jCtx,
+    alpha: f64,
+    a2: &OpJ211<f64>,
+    b2: &mut OpJ200<f64>,
+)
+{
+    let scheme = a2.scheme();
+    for pq in scheme.states_20(&occ::ALL2) {
+        for rs in pq.costates_20(&occ::ALL2) {
+            let (p, q) = pq.split_to_10_10();
+            let (r, s) = rs.split_to_10_10();
+            for jps in Half::tri_range_2(
+                (p.j(), s.j()),
+                (r.j(), q.j()),
+            ) {
+                let ps = p.combine_with_10_to_21(s, jps).unwrap();
+                let rq = r.combine_with_10_to_21(q, jps).unwrap();
+                b2.add(
+                    pq,
+                    rs,
+                    -alpha
+                        * w6j_ctx.get(Wigner6j {
+                            tj1: p.j().twice(),
+                            tj2: q.j().twice(),
+                            tj3: pq.j().twice(),
+                            tj4: r.j().twice(),
+                            tj5: s.j().twice(),
+                            tj6: ps.j().twice(),
+                        })
+                        * pq.j().double().phase()
+                        * ps.jweight(2)
+                        * a2.at(ps, rq)
+                );
+            }
+        }
+    }
 }

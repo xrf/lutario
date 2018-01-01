@@ -1,13 +1,13 @@
 use std::f64;
 use std::sync::Arc;
-use wigner_symbols::Wigner6j;
 use super::ang_mom::Wigner6jCtx;
 use super::basis::occ;
 use super::half::Half;
-use super::j_scheme::{JScheme, MopJ012, OpJ100, OpJ200, OpJ211, StateJ10,
+use super::j_scheme::{JScheme, MopJ012, OpJ100, OpJ200, StateJ10,
                       clone_mop_j012_from_tri_slice,
                       clone_mop_j012_to_tri_slice,
-                      extent_mop_j012_as_tri, new_mop_j012};
+                      extent_mop_j012_as_tri, new_mop_j012,
+                      op200_to_op211, op211_to_op200};
 use super::linalg::{self, Transpose};
 use super::op::Op;
 use super::sg_ode;
@@ -306,91 +306,7 @@ pub fn c2222(
     }
 }
 
-/// ```text
-/// B[p s r q] ←+ α ∑[Jpq] { Jp Jq Jpq; Jr Js Jps } (−)^(2 Jpq) Jpq^2 A[p q r s]
-/// ```
-pub fn op200_to_op211(
-    w6j_ctx: &mut Wigner6jCtx,
-    alpha: f64,
-    a2: &OpJ200<f64>,
-    b2: &mut OpJ211<f64>,
-)
-{
-    let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (p, q) = pq.split_to_10_10();
-            let (r, s) = rs.split_to_10_10();
-            for jps in Half::tri_range_2(
-                (p.j(), s.j()),
-                (r.j(), q.j()),
-            ) {
-                let ps = p.combine_with_10_to_21(s, jps).unwrap();
-                let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                b2.add(
-                    ps,
-                    rq,
-                    alpha
-                        * w6j_ctx.get(Wigner6j {
-                            tj1: p.j().twice(),
-                            tj2: q.j().twice(),
-                            tj3: pq.j().twice(),
-                            tj4: r.j().twice(),
-                            tj5: s.j().twice(),
-                            tj6: ps.j().twice(),
-                        })
-                        * pq.j().double().phase()
-                        * pq.jweight(2)
-                        * a2.at(pq, rs)
-                );
-            }
-        }
-    }
-}
-
-/// ```text
-/// B[p q r s] ←+ α ∑[Jpq] { Jp Jq Jpq; Jr Js Jps } (−)^(2 Jpq) Jps^2 A[p s r q]
-/// ```
-pub fn op211_to_op200(
-    w6j_ctx: &mut Wigner6jCtx,
-    alpha: f64,
-    a2: &OpJ211<f64>,
-    b2: &mut OpJ200<f64>,
-)
-{
-    let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (p, q) = pq.split_to_10_10();
-            let (r, s) = rs.split_to_10_10();
-            for jps in Half::tri_range_2(
-                (p.j(), s.j()),
-                (r.j(), q.j()),
-            ) {
-                let ps = p.combine_with_10_to_21(s, jps).unwrap();
-                let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                b2.add(
-                    pq,
-                    rs,
-                    alpha
-                        * w6j_ctx.get(Wigner6j {
-                            tj1: p.j().twice(),
-                            tj2: q.j().twice(),
-                            tj3: pq.j().twice(),
-                            tj4: r.j().twice(),
-                            tj5: s.j().twice(),
-                            tj6: ps.j().twice(),
-                        })
-                        * pq.j().double().phase()
-                        * ps.jweight(2)
-                        * a2.at(ps, rq)
-                );
-            }
-        }
-    }
-}
-
-/// ```text
+ /// ```text
 /// C[p q r s] ←+ 4 α 𝒜[p q] 𝒜[r s] ∑[i a] A[i p a r] B[a q i s]
 /// ```
 pub fn c2221(
@@ -411,7 +327,7 @@ pub fn c2221(
         linalg::gemm(
             Transpose::None,
             Transpose::None,
-            -4.0 * alpha,
+            4.0 * alpha,
             bc2.data.0[l as usize].as_ref().slice(
                 utils::max_range(),
                 utils::cast_range(scheme.basis_21.aux_range(l, occ::IA)),

@@ -708,8 +708,26 @@ impl Occ {
         }
     }
 
-    pub fn occ2_to_usize(x: [Occ; 2]) -> usize {
+    pub fn occ2_from_usize(x: usize) -> Option<[Self; 2]> {
+        if x < (1 << 2) {
+            Some([
+                Self::from(((x >> 0) & 1) != 0),
+                Self::from(((x >> 1) & 1) != 0),
+            ])
+        } else {
+            None
+        }
+    }
+
+    pub fn occ2_to_usize(x: [Self; 2]) -> usize {
         usize::from(x[0]) + 2 * usize::from(x[1])
+    }
+
+    pub fn next_occ2(occ: &mut Option<[Self; 2]>) -> Option<[Self; 2]> {
+        occ.map(|old_occ| {
+            *occ = Self::occ2_from_usize(Self::occ2_to_usize(old_occ) + 1);
+            old_occ
+        })
     }
 }
 

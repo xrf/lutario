@@ -12,8 +12,8 @@ use std::io::Write;
 use fnv::FnvHashMap;
 use lutario::{hf, imsrg, nuclei, qdpt};
 use lutario::basis::occ;
-use lutario::j_scheme::{JAtlas, MopJ012, new_mop_j012,
-                        check_eq_mop_j012, rand_mop_j012};
+use lutario::j_scheme::{JAtlas, MopJ012, check_eq_mop_j012, new_mop_j012,
+                        op200_to_op211, rand_mop_j012};
 use lutario::op::Op;
 use lutario::utils::Toler;
 
@@ -35,10 +35,15 @@ fn calc_j(
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ho3d_op_j(&atlas, omega);
     let h2 = nuclei::make_v_op_j(&atlas, two_body_mat_elems);
+    let mut w6j_ctx = Default::default();
+    let mut h2p = Op::new(scheme.clone());
+    op200_to_op211(&mut w6j_ctx, 1.0, &h2, &mut h2p);
 
     let mut r = Op::new_vec(scheme.clone());
-    qdpt::dqdpt2_term3(&h1, &h2, &mut r);
-    qdpt::dqdpt2_term4(&h1, &h2, &mut r);
+    for p in scheme.states_10(&occ::ALL1) {
+        r.add(p, p, qdpt::qdpt2_terms(&h1, &h2, p, p));
+        r.add(p, p, qdpt::qdpt3_terms(&h1, &h2, &h2p, p, p));
+    }
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
         let npjw = nuclei::Npjw::from(atlas.decode(p).unwrap());
@@ -79,10 +84,15 @@ fn calc_m(
     let h2j = nuclei::make_v_op_j(&j_atlas, two_body_mat_elems);
     let h1 = nuclei::op1_j_to_m(&j_atlas, &atlas, &h1j);
     let h2 = nuclei::op2_j_to_m(&j_atlas, &atlas, &h2j);
+    let mut w6j_ctx = Default::default();
+    let mut h2p = Op::new(scheme.clone());
+    op200_to_op211(&mut w6j_ctx, 1.0, &h2, &mut h2p);
 
     let mut r = Op::new_vec(scheme.clone());
-    qdpt::dqdpt2_term3(&h1, &h2, &mut r);
-    qdpt::dqdpt2_term4(&h1, &h2, &mut r);
+    for p in scheme.states_10(&occ::ALL1) {
+        r.add(p, p, qdpt::qdpt2_terms(&h1, &h2, p, p));
+        r.add(p, p, qdpt::qdpt3_terms(&h1, &h2, &h2p, p, p));
+    }
     let mut de_dqdpt2 = FnvHashMap::default();
     for p in scheme.states_10(&occ::ALL1) {
         let npjmw = nuclei::Npjmw::from(atlas.decode(p).unwrap());
