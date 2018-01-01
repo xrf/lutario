@@ -16,10 +16,10 @@ before_install:
 - export LIBRARY_PATH=".local/lib:$LIBRARY_PATH"
 - export LD_LIBRARY_PATH=".local/lib:$LD_LIBRARY_PATH"
 - mkdir -p .local/lib
-- ln -s /usr/lib/libblas.so .local/lib/libcblas.so
+- ln -fs /usr/lib/libblas.so .local/lib/libcblas.so
 install:
-- curl -fsLS https://github.com/xrf/sg-ode/archive/v2.tar.gz | tar xz
-- make -C sg-ode-2 PREFIX=../.local install
+- curl -fsLS https://github.com/xrf/sg-ode/archive/2.0.0.tar.gz | tar xz
+- make -C sg-ode-* PREFIX=../.local install
 script:
 - cargo build --verbose
 - cargo test --verbose -- --nocapture --skip slowtest_
