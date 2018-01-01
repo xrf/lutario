@@ -22,4 +22,4 @@ install:
 - make -C sg-ode-2 PREFIX=../.local install
 script:
 - cargo build --verbose
-- cargo test --verbose -- --nocapture
+- cargo test --verbose -- --nocapture --skip slowtest_
