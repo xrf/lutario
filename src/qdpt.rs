@@ -41,7 +41,7 @@ pub fn qdpt_term_a<F>(
 ) -> f64 where
     F: Fn(StateJ10, StateJ10, StateJ10) -> f64,
 {
-    debug_assert_eq!(p.lu().l, q.lu().l);
+    assert_eq!(p.lu().l, q.lu().l);
     let scheme = h1.scheme();
     let mut result = 0.0;
     for r in scheme.states_10(&[r_occ]) {
@@ -85,7 +85,7 @@ pub fn qdpt_term_b<F>(
 ) -> f64 where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
-    debug_assert_eq!(p.lu().l, q.lu().l);
+    assert_eq!(p.lu().l, q.lu().l);
     let scheme = h1.scheme();
     let mut result = 0.0;
     for r in scheme.states_10(&[r_occ]) {
@@ -135,7 +135,7 @@ pub fn qdpt_term_c<F>(
 ) -> f64 where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
-    debug_assert_eq!(p.lu().l, q.lu().l);
+    assert_eq!(p.lu().l, q.lu().l);
     let scheme = h1.scheme();
     let mut result = 0.0;
     for r in scheme.states_10(&[r_occ]) {
@@ -197,7 +197,7 @@ pub fn qdpt_term_d<F>(
 ) -> f64 where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
-    debug_assert_eq!(p.lu().l, q.lu().l);
+    assert_eq!(p.lu().l, q.lu().l);
     let scheme = h1.scheme();
     let mut result = 0.0;
     for r in scheme.states_10(&[r_occ]) {
@@ -243,7 +243,7 @@ pub fn qdpt_term(
     q: StateJ10,
 ) -> f64
 {
-    debug_assert_eq!(p.lu().l, q.lu().l);
+    assert_eq!(p.lu().l, q.lu().l);
     let hd = |p: StateJ10| h1.at(p, p);
     let get_h2p = || h2p.expect("Pandya transformed matrix needed for this term");
     match term {

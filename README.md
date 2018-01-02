@@ -1,4 +1,4 @@
-# `lutario`
+# `lutario` [![Build status](https://travis-ci.org/xrf/lutario.svg)](https://travis-ci.org/xrf/lutario)
 
 ## External dependencies
 

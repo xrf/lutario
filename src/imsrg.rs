@@ -306,7 +306,7 @@ pub fn c2222(
     }
 }
 
- /// ```text
+/// ```text
 /// C[p q r s] ←+ 4 α 𝒜[p q] 𝒜[r s] ∑[i a] A[i p a r] B[a q i s]
 /// ```
 pub fn c2221(
