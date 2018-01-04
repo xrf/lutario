@@ -1,7 +1,7 @@
 use std::f64;
 use std::sync::Arc;
 use super::ang_mom::Wigner6jCtx;
-use super::basis::occ;
+use super::basis::{occ, Occ, Occ20};
 use super::half::Half;
 use super::j_scheme::{JScheme, MopJ012, OpJ100, OpJ200, StateJ10,
                       clone_mop_j012_from_tri_slice,
@@ -267,6 +267,54 @@ pub fn c221(
 }
 
 /// ```text
+/// C[p q r s] ←+ α/2 ∑[t u] A[p q t u] B[t u r s]
+/// ```
+pub fn c2222_base(
+    t_or_u_occ: Occ,
+    alpha: f64,
+    a2: &OpJ200<f64>,
+    b2: &OpJ200<f64>,
+    c2: &mut OpJ200<f64>,
+)
+{
+    let scheme = a2.scheme();
+    let tu_occ = match t_or_u_occ {
+        Occ::I => Occ20::II,
+        Occ::A => Occ20::AA,
+    };
+    for l in 0 .. scheme.basis_20.num_chans() {
+        linalg::gemm(
+            Transpose::None,
+            Transpose::None,
+            alpha,
+            a2.data.0[l as usize].as_ref().slice(
+                utils::max_range(),
+                utils::cast_range(scheme.basis_20.aux_range(l, tu_occ)),
+            ),
+            b2.data.0[l as usize].as_ref().slice(
+                utils::cast_range(scheme.basis_20.aux_range(l, tu_occ)),
+                utils::max_range(),
+            ),
+            1.0,
+            c2.data.0[l as usize].as_mut(),
+        );
+    }
+    for pq in scheme.states_20(&occ::ALL2) {
+        for rs in pq.costates_20(&occ::ALL2) {
+            for t in scheme.states_10(&[t_or_u_occ]) {
+                for tt in t.combine_with_10(t, pq.j()) {
+                    c2.add(
+                        pq,
+                        rs,
+                        -alpha / 2.0 * a2.at(pq, tt) * b2.at(tt, rs),
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// ```text
 /// C[p q r s] ←+ α/2 ∑[i j] A[i j r s] B[p q i j]
 /// ```
 pub fn c2220(
@@ -276,14 +324,7 @@ pub fn c2220(
     c2: &mut OpJ200<f64>,
 )
 {
-    let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            for ij in pq.costates_20(&[occ::II]) {
-                c2.add(pq, rs, alpha / 2.0 * a2.at(ij, rs) * b2.at(pq, ij));
-            }
-        }
-    }
+    c2222_base(Occ::I, alpha, b2, a2, c2);
 }
 
 /// ```text
@@ -296,14 +337,7 @@ pub fn c2222(
     c2: &mut OpJ200<f64>,
 )
 {
-    let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            for ab in pq.costates_20(&[occ::AA]) {
-                c2.add(pq, rs, alpha / 2.0 * a2.at(pq, ab) * b2.at(ab, rs));
-            }
-        }
-    }
+    c2222_base(Occ::A, alpha, a2, b2, c2);
 }
 
 /// ```text
