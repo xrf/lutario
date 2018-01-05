@@ -29,7 +29,7 @@ pub struct Results {
 fn calc_j(
     nucleus: nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
+    two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
     let atlas = JAtlas::new(&nucleus.jpwn_orbs());
     let scheme = atlas.scheme();
@@ -75,7 +75,7 @@ fn calc_j(
 fn calc_m(
     nucleus: nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<nuclei::JNpjw2Pair, f64>,
+    two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
     let j_atlas = JAtlas::new(&nucleus.jpwn_orbs());
     let atlas = JAtlas::new(&nucleus.pmwnj_orbs());
@@ -136,10 +136,10 @@ fn test_nuclei() {
         e_fermi_neutron: 2,
         e_fermi_proton: 2,
     };
-    let two_body_mat_elems = nuclei::morten_vint::LoadTwoBodyMatElems {
-        sp_table_path: "data/cens-mbpt/spox16.dat".as_ref(),
-        vint_table_path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
-    }.call().unwrap();
+    let two_body_mat_elems = nuclei::vrenorm::VintLoader {
+        path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
+        sp: "data/cens-mbpt/spox16.dat".as_ref(),
+    }.load().unwrap();
     let suffix = format!("ho-n3lo_omega={}_emax={}_en={}_ep={}.txt",
                          omega,
                          trunc.e_max,

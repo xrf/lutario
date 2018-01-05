@@ -1,15 +1,17 @@
 //! Nuclei systems.
 //!
 //! Here we use the particle physics convention of proton = +½, neutron = −½.
-use std::{fmt, io, str};
+
+pub mod darmstadt;
+pub mod vrenorm;
+
+use std::{fmt, str};
 use std::cmp::min;
 use std::ops::{Add, Sub};
-use std::path::Path;
 use fnv::FnvHashMap;
-use num::{Zero, range_inclusive, range_step_inclusive};
+use num::{Zero, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
-use super::ang_mom::{Coupled2HalfSpinsBlock, Uncoupled2HalfSpinsBlock,
-                     Wigner3jmCtx};
+use super::ang_mom::Wigner3jmCtx;
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
 use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
@@ -449,71 +451,8 @@ impl Nucleus {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct DarmstadtMe2j<'a> {
-    pub npjs: &'a [Npj],
-    pub e12_max: i32,
-}
-
-impl<'a> DarmstadtMe2j<'a> {
-    pub fn foreach_isospin_block<F, E>(self, mut f: F) -> Result<(), E>
-        where F: FnMut(Pj, Npj, Npj, Npj, Npj) -> Result<(), E>,
-    {
-        let e12_max = self.e12_max;
-        let npjs = self.npjs;
-        for i1 in 0 .. npjs.len() {
-            let npj1 = self.npjs[i1];
-            for i2 in range_inclusive(0, i1) {
-                let npj2 = self.npjs[i2];
-                if npj1.shell() + npj2.shell() > e12_max {
-                    break;
-                }
-                for i3 in range_inclusive(0, i1) {
-                    let npj3 = npjs[i3];
-                    let i4_max = if i3 == i1 { i2 } else { i3 };
-                    for i4 in range_inclusive(0, i4_max) {
-                        let npj4 = npjs[i4];
-                        if npj3.shell() + npj4.shell() > e12_max {
-                            break;
-                        }
-                        let p12 = npj1.p + npj2.p;
-                        if p12 != npj3.p + npj4.p {
-                            continue;
-                        }
-                        for j12 in Half::tri_range_2(
-                            (npj1.j, npj2.j),
-                            (npj3.j, npj4.j),
-                        ) {
-                            f(Pj { p: p12, j: j12 }, npj1, npj2, npj3, npj4)?;
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn foreach_elem<F, E>(self, mut f: F) -> Result<(), E>
-        where F: FnMut(Pjtw, Npj, Npj, Npj, Npj) -> Result<(), E>,
-    {
-        self.foreach_isospin_block(|pj12, npj1, npj2, npj3, npj4| {
-            for t12 in Half::tri_range(Half(1), Half(1)) {
-                for w12 in t12.multiplet() {
-                    f(Pjtw {
-                        p: pj12.p,
-                        j: pj12.j,
-                        t: t12,
-                        w: w12,
-                    }, npj1, npj2, npj3, npj4)?;
-                }
-            }
-            Ok(())
-        })
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct JtwNpj2Pair {
+pub struct JtwNpjKey {
     pub j12: Half<i32>,
     pub t12: Half<i32>,
     pub w12: Half<i32>,
@@ -523,7 +462,7 @@ pub struct JtwNpj2Pair {
     pub npj4: Npj,
 }
 
-impl JtwNpj2Pair {
+impl JtwNpjKey {
     pub fn canonicalize(self) -> (f64, bool, Self) {
         let (f12, npj1, npj2) = parity::sort2(self.npj1, self.npj2);
         let f12 = if f12 == Parity::Odd {
@@ -556,7 +495,7 @@ impl JtwNpj2Pair {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct JNpjw2Pair {
+pub struct JNpjwKey {
     pub j12: Half<i32>,
     pub npjw1: Npjw,
     pub npjw2: Npjw,
@@ -564,14 +503,14 @@ pub struct JNpjw2Pair {
     pub npjw4: Npjw,
 }
 
-impl fmt::Display for JNpjw2Pair {
+impl fmt::Display for JNpjwKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "J={} {} {} {} {}",
                self.j12, self.npjw1, self.npjw2, self.npjw3, self.npjw4)
     }
 }
 
-impl JNpjw2Pair {
+impl JNpjwKey {
     pub fn canonicalize(self) -> (f64, bool, Self) {
         let (f12, npjw1, npjw2) = parity::sort2(self.npjw1, self.npjw2);
         let f12 = if f12 == Parity::Odd {
@@ -592,196 +531,6 @@ impl JNpjw2Pair {
             adj == Parity::Odd,
             Self { j12: self.j12, npjw1, npjw2, npjw3, npjw4 },
         )
-    }
-}
-
-pub fn load_me2j_j(
-    elems: &mut Iterator<Item = f64>,
-    table: &[Npj],
-    e12_max: i32,
-    e_max: i32,
-) -> io::Result<FnvHashMap<JNpjw2Pair, f64>> {
-    fn unexpected_eof() -> io::Result<()> {
-        Err(io::Error::new(
-            io::ErrorKind::UnexpectedEof,
-            "unexpected EOF",
-        ))
-    }
-
-    if let Some(npj) = table.last() {
-        assert!(npj.shell() >= e_max, "table is inadequate for this e_max");
-    }
-    let mut map = FnvHashMap::default();
-    DarmstadtMe2j {
-        npjs: &table,
-        e12_max,
-    }.foreach_isospin_block(|pj12, npj1, npj2, npj3, npj4| {
-        let z00 = elems.next().ok_or_else(unexpected_eof)?;
-        let m11 = elems.next().ok_or_else(unexpected_eof)?;
-        let z10 = elems.next().ok_or_else(unexpected_eof)?;
-        let p11 = elems.next().ok_or_else(unexpected_eof)?;
-        if npj1.shell() > e_max {
-            // npj1 is the slowest index, so if it exceeds the
-            // shell index we are completely done here
-            return Err(Ok(()));
-        }
-        if
-            npj2.shell() > e_max
-            || npj3.shell() > e_max
-            || npj4.shell() > e_max
-        {
-            return Ok(());
-        }
-        let coupled = Coupled2HalfSpinsBlock { z00, z10 };
-        let uncoupled = Uncoupled2HalfSpinsBlock::from(coupled);
-        for &(w12, w1, w3, value) in &[
-            (Half(0), Half(-1), Half(-1), uncoupled.mpmp),
-            (Half(0), Half(-1), Half(1), uncoupled.mppm),
-            (Half(0), Half(1), Half(-1), uncoupled.pmmp),
-            (Half(0), Half(1), Half(1), uncoupled.pmpm),
-            (Half(-2), Half(-1), Half(-1), m11),
-            (Half(2), Half(1), Half(1), p11),
-        ] {
-            let npjw1 = npj1.and_w(w1);
-            let npjw2 = npj2.and_w(w12 - w1);
-            let npjw3 = npj3.and_w(w3);
-            let npjw4 = npj4.and_w(w12 - w3);
-            let f12 = pj12.j.abs_diff(npjw1.j + npjw2.j);
-            let f34 = pj12.j.abs_diff(npjw3.j + npjw4.j);
-            if
-                (npjw1 == npjw2 && f12.unwrap() % 2 == 0)
-                || (npjw3 == npjw4 && f34.unwrap() % 2 == 0)
-            {
-                if value != 0.0 {
-                    return Err(Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "matrix elements of forbidden states must be zero",
-                    )));
-                }
-                continue;
-            }
-            let (sign, _, key) = JNpjw2Pair {
-                j12: pj12.j,
-                npjw1,
-                npjw2,
-                npjw3,
-                npjw4,
-            }.canonicalize();
-            map.insert(key, sign * value);
-        }
-        Ok(())
-    }).or_else(|x| x)?;
-    Ok(map)
-}
-
-pub fn load_me2j_jt(
-    elems: &mut Iterator<Item = f64>,
-    table: &[Npj],
-    e12_max: i32,
-    e_max: i32,
-) -> io::Result<FnvHashMap<JtwNpj2Pair, f64>> {
-    if let Some(npj) = table.last() {
-        assert!(npj.shell() >= e_max, "table is inadequate for this e_max");
-    }
-    let mut map = FnvHashMap::default();
-    DarmstadtMe2j {
-        npjs: &table,
-        e12_max,
-    }.foreach_elem(|pjtw12, npj1, npj2, npj3, npj4| {
-        let value = elems.next().ok_or(Err(io::Error::new(
-            io::ErrorKind::UnexpectedEof,
-            "unexpected EOF",
-        )))?;
-        let ft12 = pjtw12.t.abs_diff(Half(1) + Half(1));
-        let f12 = pjtw12.j.abs_diff(npj1.j + npj2.j) + ft12;
-        let f34 = pjtw12.j.abs_diff(npj3.j + npj4.j) + ft12;
-        if
-            (npj1 == npj2 && f12.unwrap() % 2 == 0)
-            || (npj3 == npj4 && f34.unwrap() % 2 == 0)
-        {
-            if value != 0.0 {
-                return Err(Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "matrix elements of forbidden states must be zero",
-                )));
-            }
-        } else {
-            if npj1.shell() > e_max {
-                // npj1 is the slowest index, so if it exceeds the
-                // shell index we are completely done here
-                return Err(Ok(()));
-            } else if
-                npj2.shell() > e_max
-                || npj3.shell() > e_max
-                || npj4.shell() > e_max
-            {
-                return Ok(());
-            }
-            let (sign, _, key) = JtwNpj2Pair {
-                j12: pjtw12.j,
-                t12: pjtw12.t,
-                w12: pjtw12.w,
-                npj1,
-                npj2,
-                npj3,
-                npj4,
-            }.canonicalize();
-            map.insert(key, sign * value);
-        }
-        Ok(())
-    }).or_else(|x| x)?;
-    Ok(map)
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Me2jLoader<'a> {
-    pub path: &'a Path,
-    pub trunc: Ho3dTrunc,
-    pub e12_max: i32,
-}
-
-impl<'a> Default for Me2jLoader<'a> {
-    fn default() -> Self {
-        Self {
-            path: "/dev/null".as_ref(),
-            trunc: Default::default(),
-            e12_max: i32::max_value(),
-        }
-    }
-}
-
-impl<'a> Me2jLoader<'a> {
-    pub fn load(
-        self,
-        target_e_max: i32,
-    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
-    {
-        use byteorder::LittleEndian;
-        use super::io as lio;
-
-        if self.trunc.is_empty() {
-            return Ok(Default::default())
-        }
-        let (subpath, file) = lio::open_compressed(self.path)?;
-        let ext = subpath.extension().unwrap_or("".as_ref());
-        let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
-            Some("dat") => Box::new(
-                lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
-                    .map(|x| {
-                        // don't invert this or you'll change the numbers!
-                        let precision = 1e7;
-                        (x as f64 * precision).round() / precision
-                    })),
-            Some("me2j") => Box::new(lio::MapleTableParser::new(
-                io::BufReader::new(file),
-            )),
-            _ => return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("unknown format: .{}", ext.to_string_lossy()),
-            )),
-        };
-        let table = self.trunc.npj_states();
-        load_me2j_j(&mut elems, &table, self.e12_max, target_e_max)
     }
 }
 
@@ -880,9 +629,11 @@ pub fn make_ho3d_op_m(
     h1
 }
 
+/// Load two-body matrix elements from the given hash table.  Note that this
+/// function only uses canonicalized keys.
 pub fn make_v_op_j(
     atlas: &JAtlas<Pw, i32>,
-    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
+    two_body_mat_elems: &FnvHashMap<JNpjwKey, f64>,
 ) -> OpJ200<f64>
 {
     let scheme = atlas.scheme();
@@ -895,7 +646,7 @@ pub fn make_v_op_j(
             let (r, s) = rs.split_to_10_10();
             let r = Npjw::from(atlas.decode(r).unwrap());
             let s = Npjw::from(atlas.decode(s).unwrap());
-            let (sign, _, key) = JNpjw2Pair {
+            let (sign, _, key) = JNpjwKey {
                 j12: pq.j(),
                 npjw1: p,
                 npjw2: q,
@@ -997,212 +748,4 @@ pub fn op2_j_to_m(
         }
     }
     b2
-}
-
-pub mod morten_vint {
-    use std::io;
-    use std::fs::File;
-    use std::path::Path;
-    use byteorder::{LittleEndian, ReadBytesExt};
-    use fnv::FnvHashMap;
-    use regex::Regex;
-    use super::super::half::Half;
-    use super::super::io::{Parser, invalid_data};
-    use super::super::parity::Parity;
-    use super::{JNpjw2Pair, Npjw};
-
-    pub fn load_sp_table(reader: &mut io::Read) -> io::Result<Vec<Npjw>> {
-        let mut p = Parser::new(reader);
-        let mut line_num = 1;
-
-        // make sure the file looks sane (might be binary / have long lines)
-        p.munch_space()?;
-        if !p.match_bytes(b"----> Oscillator parameters, Model space and single-particle data")? {
-            return Err(invalid_data("line 1 is invalid"));
-        }
-
-        // locate the legend line
-        let mut line = String::default();
-        loop {
-            p.next_line(&mut line, &mut line_num)?;
-            if line.is_empty() {
-                return Err(invalid_data("can't find legend"));
-            }
-            if re!(r"^\s*Legend:").is_match(&line) {
-                break;
-            }
-        }
-        if !re!(r"^\s*Legend:\s+n\s+l\s+2j\s+tz\s+2n\+l\s+HO-energy\s+evalence\s+particle/hole  inside/outside").is_match(&line) {
-            return Err(invalid_data("unsupported legend"));
-        }
-
-        // read the table
-        let mut table = Vec::default();
-        loop {
-            p.next_line(&mut line, &mut line_num)?;
-            if line.is_empty() {
-                break;
-            }
-            if line.trim().is_empty() {
-                continue;
-            }
-            let captures = match re!(r"^\s*Number:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$").captures(&line) {
-                None => return Err(invalid_data(
-                    format!("invalid line {}", line_num))),
-                Some(x) => x,
-            };
-            let n = captures[2].parse().map_err(invalid_data)?;
-            let l: i32 = captures[3].parse().map_err(invalid_data)?;
-            let tj = captures[4].parse().map_err(invalid_data)?;
-            let w_nucl: i32 = captures[5].parse().map_err(invalid_data)?;
-            let p = Parity::of(l);
-            let j = Half(tj);
-            let w = Half(-w_nucl);      // convert nuclear → HEP convention
-            table.push(Npjw { n, p, j, w });
-        }
-        Ok(table)
-    }
-
-    pub fn load_vint_table(
-        reader: &mut io::Read,
-        sp_table: &[Npjw],
-    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
-    {
-        let mut p = Parser::new(reader);
-        let mut line_num = 1;
-
-        // make sure the file looks sane (might be binary / have long lines)
-        p.munch_space()?;
-        if !p.match_bytes(b"----> Interaction part")? {
-            return Err(invalid_data("line 1 is invalid"));
-        }
-
-        // locate the legend line
-        let mut line = String::default();
-        loop {
-            p.next_line(&mut line, &mut line_num)?;
-            if line.is_empty() {
-                return Err(invalid_data("can't find legend"));
-            }
-            if re!(r"^\s*Tz\s+").is_match(&line) {
-                break;
-            }
-        }
-        if !re!(r"^\s*Tz\s+Par\s+2J\s+a\s+b\s+c\s+d\s+<ab|V|cd>\s+<ab\|Hcom\|cd>\s+<ab\|r_ir_j\|cd>\s+<ab\|p_ip_j\|cd>").is_match(&line) {
-            return Err(invalid_data("unsupported legend"));
-        }
-
-        // read the table
-        let mut table = FnvHashMap::default();
-        loop {
-            p.next_line(&mut line, &mut line_num)?;
-            if line.is_empty() {
-                break;
-            }
-            if line.trim().is_empty() {
-                continue;
-            }
-            let captures = match re!(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*$").captures(&line) {
-                None => return Err(invalid_data(
-                    format!("invalid line {}", line_num))),
-                Some(x) => x,
-            };
-            let tj12 = captures[3].parse().map_err(invalid_data)?;
-            let i1: usize = captures[4].parse().map_err(invalid_data)?;
-            let i2: usize = captures[5].parse().map_err(invalid_data)?;
-            let i3: usize = captures[6].parse().map_err(invalid_data)?;
-            let i4: usize = captures[7].parse().map_err(invalid_data)?;
-            let value: f64 = captures[8].parse().map_err(invalid_data)?;
-            // unnormalize matrix elements
-            let value = value
-                * (1.0 + (i1 == i2) as i32 as f64).sqrt()
-                * (1.0 + (i3 == i4) as i32 as f64).sqrt();
-            let j12 = Half(tj12);
-            let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
-                j12,
-                // convert 1-based to 0-based indices
-                npjw1: sp_table[i1 - 1],
-                npjw2: sp_table[i2 - 1],
-                npjw3: sp_table[i3 - 1],
-                npjw4: sp_table[i4 - 1],
-            }.canonicalize();
-            table.insert(key, sign * value);
-        }
-        Ok(table)
-    }
-
-    pub fn load_sp_table_bin(
-        reader: &mut io::Read,
-    ) -> io::Result<Box<[Npjw]>>
-    {
-        let mut table = Vec::default();
-        loop {
-            let n = match reader.read_i32::<LittleEndian>() {
-                Err(e) => {
-                    if e.kind() != io::ErrorKind::UnexpectedEof {
-                        return Err(e);
-                    }
-                    break;
-                }
-                Ok(x) => x,
-            };
-            let p = Parity::of(reader.read_i32::<LittleEndian>()?);
-            let j = Half(reader.read_i32::<LittleEndian>()?);
-            // convert nuclear -> HEP convention
-            let w = Half(-reader.read_i32::<LittleEndian>()?);
-            table.push(Npjw { n, p, j, w });
-        }
-        Ok(table.into_boxed_slice())
-    }
-
-    pub fn load_vint_table_bin(
-        reader: &mut io::Read,
-        sp_table: &[Npjw],
-    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
-    {
-        let mut table = FnvHashMap::default();
-        loop {
-            let j12 = Half(match reader.read_i32::<LittleEndian>() {
-                Err(e) => {
-                    if e.kind() != io::ErrorKind::UnexpectedEof {
-                        return Err(e);
-                    }
-                    break;
-                }
-                Ok(x) => x,
-            });
-            let i1 = reader.read_u32::<LittleEndian>()? as usize;
-            let i2 = reader.read_u32::<LittleEndian>()? as usize;
-            let i3 = reader.read_u32::<LittleEndian>()? as usize;
-            let i4 = reader.read_u32::<LittleEndian>()? as usize;
-            let value = reader.read_f64::<LittleEndian>()?;
-            // unnormalize matrix elements
-            let value = value
-                * (1.0 + (i1 == i2) as i32 as f64).sqrt()
-                * (1.0 + (i3 == i4) as i32 as f64).sqrt();
-            let (sign, _, key) = JNpjw2Pair { // hermitian → symmetric
-                j12,
-                // convert 1-based to 0-based indices
-                npjw1: sp_table[i1 - 1],
-                npjw2: sp_table[i2 - 1],
-                npjw3: sp_table[i3 - 1],
-                npjw4: sp_table[i4 - 1],
-            }.canonicalize();
-            table.insert(key, sign * value);
-        }
-        Ok(table)
-    }
-
-    #[derive(Clone, Copy, Debug)]
-    pub struct LoadTwoBodyMatElems<'a> {
-        pub sp_table_path: &'a Path,
-        pub vint_table_path: &'a Path,
-    }
-
-    impl<'a> LoadTwoBodyMatElems<'a> {
-        pub fn call(self) -> io::Result<FnvHashMap<JNpjw2Pair, f64>> {
-            let sp_table = load_sp_table(&mut File::open(self.sp_table_path)?)?;
-            load_vint_table(&mut File::open(self.vint_table_path)?, &sp_table)
-        }
-    }
 }
