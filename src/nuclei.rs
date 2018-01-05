@@ -8,7 +8,8 @@ use std::path::Path;
 use fnv::FnvHashMap;
 use num::{Zero, range_inclusive, range_step_inclusive};
 use wigner_symbols::ClebschGordan;
-use super::ang_mom::Wigner3jmCtx;
+use super::ang_mom::{Coupled2HalfSpinsBlock, Uncoupled2HalfSpinsBlock,
+                     Wigner3jmCtx};
 use super::basis::{occ, ChanState, Occ, PartState};
 use super::half::Half;
 use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
@@ -136,6 +137,15 @@ impl Npj {
         debug_assert!(self.j.try_get().is_err());
         let a = self.j.twice() / 2;     // intentional integer division
         OrbAng(a + (a + i32::from(self.p)) % 2)
+    }
+
+    pub fn and_w(self, w: Half<i32>) -> Npjw {
+        Npjw {
+            n: self.n,
+            p: self.p,
+            j: self.j,
+            w,
+        }
     }
 }
 
@@ -326,7 +336,7 @@ pub struct Pj {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct NucleonBasisSpec {
+pub struct Ho3dTrunc {
     /// Maximum shell index
     pub e_max: i32,
     /// Maximum principal quantum number
@@ -335,13 +345,21 @@ pub struct NucleonBasisSpec {
     pub l_max: i32,
 }
 
-impl NucleonBasisSpec {
-    pub fn with_e_max(e_max: i32) -> Self {
+/// The default truncation sets `e_max` to `-1` and everything else to
+/// `i32::max_value()`.
+impl Default for Ho3dTrunc {
+    fn default() -> Self {
         Self {
-            e_max,
+            e_max: -1,
             n_max: i32::max_value(),
             l_max: i32::max_value(),
         }
+    }
+}
+
+impl Ho3dTrunc {
+    pub fn is_empty(self) -> bool {
+        self.e_max < 0 || self.n_max < 0 || self.l_max < 0
     }
 
     /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
@@ -373,8 +391,8 @@ impl NucleonBasisSpec {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Nucleus {
-    pub neutron_basis_spec: NucleonBasisSpec,
-    pub proton_basis_spec: NucleonBasisSpec,
+    pub neutron_trunc: Ho3dTrunc,
+    pub proton_trunc: Ho3dTrunc,
     pub e_fermi_neutron: i32,
     pub e_fermi_proton: i32,
 }
@@ -382,8 +400,8 @@ pub struct Nucleus {
 impl Nucleus {
     pub fn npjw_orbs(self) -> Vec<Npjw> {
         let mut states = Vec::default();
-        let mut ns = self.neutron_basis_spec.npjw_states(Half(-1)).into_iter();
-        let mut ps = self.proton_basis_spec.npjw_states(Half(1)).into_iter();
+        let mut ns = self.neutron_trunc.npjw_states(Half(-1)).into_iter();
+        let mut ps = self.proton_trunc.npjw_states(Half(1)).into_iter();
         // interleave the neutron and proton states
         loop {
             let mut found = false;
@@ -577,21 +595,100 @@ impl JNpjw2Pair {
     }
 }
 
-pub fn load_me2j(
+pub fn load_me2j_j(
+    elems: &mut Iterator<Item = f64>,
+    table: &[Npj],
+    e12_max: i32,
+    e_max: i32,
+) -> io::Result<FnvHashMap<JNpjw2Pair, f64>> {
+    fn unexpected_eof() -> io::Result<()> {
+        Err(io::Error::new(
+            io::ErrorKind::UnexpectedEof,
+            "unexpected EOF",
+        ))
+    }
+
+    if let Some(npj) = table.last() {
+        assert!(npj.shell() >= e_max, "table is inadequate for this e_max");
+    }
+    let mut map = FnvHashMap::default();
+    DarmstadtMe2j {
+        npjs: &table,
+        e12_max,
+    }.foreach_isospin_block(|pj12, npj1, npj2, npj3, npj4| {
+        let z00 = elems.next().ok_or_else(unexpected_eof)?;
+        let m11 = elems.next().ok_or_else(unexpected_eof)?;
+        let z10 = elems.next().ok_or_else(unexpected_eof)?;
+        let p11 = elems.next().ok_or_else(unexpected_eof)?;
+        if npj1.shell() > e_max {
+            // npj1 is the slowest index, so if it exceeds the
+            // shell index we are completely done here
+            return Err(Ok(()));
+        }
+        if
+            npj2.shell() > e_max
+            || npj3.shell() > e_max
+            || npj4.shell() > e_max
+        {
+            return Ok(());
+        }
+        let coupled = Coupled2HalfSpinsBlock { z00, z10 };
+        let uncoupled = Uncoupled2HalfSpinsBlock::from(coupled);
+        for &(w12, w1, w3, value) in &[
+            (Half(0), Half(-1), Half(-1), uncoupled.mpmp),
+            (Half(0), Half(-1), Half(1), uncoupled.mppm),
+            (Half(0), Half(1), Half(-1), uncoupled.pmmp),
+            (Half(0), Half(1), Half(1), uncoupled.pmpm),
+            (Half(-2), Half(-1), Half(-1), m11),
+            (Half(2), Half(1), Half(1), p11),
+        ] {
+            let npjw1 = npj1.and_w(w1);
+            let npjw2 = npj2.and_w(w12 - w1);
+            let npjw3 = npj3.and_w(w3);
+            let npjw4 = npj4.and_w(w12 - w3);
+            let f12 = pj12.j.abs_diff(npjw1.j + npjw2.j);
+            let f34 = pj12.j.abs_diff(npjw3.j + npjw4.j);
+            if
+                (npjw1 == npjw2 && f12.unwrap() % 2 == 0)
+                || (npjw3 == npjw4 && f34.unwrap() % 2 == 0)
+            {
+                if value != 0.0 {
+                    return Err(Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "matrix elements of forbidden states must be zero",
+                    )));
+                }
+                continue;
+            }
+            let (sign, _, key) = JNpjw2Pair {
+                j12: pj12.j,
+                npjw1,
+                npjw2,
+                npjw3,
+                npjw4,
+            }.canonicalize();
+            map.insert(key, sign * value);
+        }
+        Ok(())
+    }).or_else(|x| x)?;
+    Ok(map)
+}
+
+pub fn load_me2j_jt(
     elems: &mut Iterator<Item = f64>,
     table: &[Npj],
     e12_max: i32,
     e_max: i32,
 ) -> io::Result<FnvHashMap<JtwNpj2Pair, f64>> {
     if let Some(npj) = table.last() {
-        assert!(npj.shell() >= e_max, "table is too inadequate for this e_max");
+        assert!(npj.shell() >= e_max, "table is inadequate for this e_max");
     }
     let mut map = FnvHashMap::default();
     DarmstadtMe2j {
         npjs: &table,
         e12_max,
     }.foreach_elem(|pjtw12, npj1, npj2, npj3, npj4| {
-        let x = elems.next().ok_or(Err(io::Error::new(
+        let value = elems.next().ok_or(Err(io::Error::new(
             io::ErrorKind::UnexpectedEof,
             "unexpected EOF",
         )))?;
@@ -602,7 +699,7 @@ pub fn load_me2j(
             (npj1 == npj2 && f12.unwrap() % 2 == 0)
             || (npj3 == npj4 && f34.unwrap() % 2 == 0)
         {
-            if x != 0.0 {
+            if value != 0.0 {
                 return Err(Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "matrix elements of forbidden states must be zero",
@@ -620,7 +717,7 @@ pub fn load_me2j(
             {
                 return Ok(());
             }
-            map.insert(JtwNpj2Pair {
+            let (sign, _, key) = JtwNpj2Pair {
                 j12: pjtw12.j,
                 t12: pjtw12.t,
                 w12: pjtw12.w,
@@ -628,7 +725,8 @@ pub fn load_me2j(
                 npj2,
                 npj3,
                 npj4,
-            }, x);
+            }.canonicalize();
+            map.insert(key, sign * value);
         }
         Ok(())
     }).or_else(|x| x)?;
@@ -636,18 +734,34 @@ pub fn load_me2j(
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct DoLoadMe2jFile<'a> {
+pub struct Me2jLoader<'a> {
     pub path: &'a Path,
-    pub table_basis_spec: NucleonBasisSpec,
-    pub table_e12_max: i32,
-    pub e_max: i32,
+    pub trunc: Ho3dTrunc,
+    pub e12_max: i32,
 }
 
-impl<'a> DoLoadMe2jFile<'a> {
-    pub fn call(self) -> io::Result<FnvHashMap<JtwNpj2Pair, f64>> {
+impl<'a> Default for Me2jLoader<'a> {
+    fn default() -> Self {
+        Self {
+            path: "/dev/null".as_ref(),
+            trunc: Default::default(),
+            e12_max: i32::max_value(),
+        }
+    }
+}
+
+impl<'a> Me2jLoader<'a> {
+    pub fn load(
+        self,
+        target_e_max: i32,
+    ) -> io::Result<FnvHashMap<JNpjw2Pair, f64>>
+    {
         use byteorder::LittleEndian;
         use super::io as lio;
 
+        if self.trunc.is_empty() {
+            return Ok(Default::default())
+        }
         let (subpath, file) = lio::open_compressed(self.path)?;
         let ext = subpath.extension().unwrap_or("".as_ref());
         let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
@@ -666,13 +780,8 @@ impl<'a> DoLoadMe2jFile<'a> {
                 format!("unknown format: .{}", ext.to_string_lossy()),
             )),
         };
-        let table = self.table_basis_spec.npj_states();
-        load_me2j(
-            &mut elems,
-            &table,
-            self.table_e12_max,
-            self.e_max,
-        )
+        let table = self.trunc.npj_states();
+        load_me2j_j(&mut elems, &table, self.e12_max, target_e_max)
     }
 }
 

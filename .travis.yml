@@ -21,5 +21,8 @@ install:
 - curl -fsLS https://github.com/xrf/sg-ode/archive/2.0.0.tar.gz | tar xz
 - make -C sg-ode-* PREFIX=../.local install
 script:
-- cargo build --verbose
+- case `rustc --version` in
+      *nightly*) cargo build --verbose --all-targets;;
+      *)         cargo build --verbose --lib --bins --examples --tests;;
+  esac
 - cargo test --verbose -- --nocapture --skip slowtest_

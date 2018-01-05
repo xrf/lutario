@@ -25,6 +25,40 @@ pub fn reflect_16th<T>(x: T, y: T) -> (T, T) where
 }
 
 #[derive(Clone, Copy, Debug)]
+pub struct Coupled2HalfSpinsBlock {
+    /// `j=0 m=0`
+    pub z00: f64,
+    /// `j=1 m=0`
+    pub z10: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Uncoupled2HalfSpinsBlock {
+    /// ↓↑ | ↓↑
+    pub mpmp: f64,
+    /// ↓↑ | ↑↓
+    pub mppm: f64,
+    /// ↑↓ | ↓↑
+    pub pmmp: f64,
+    /// ↑↓ | ↑↓
+    pub pmpm: f64,
+}
+
+impl From<Coupled2HalfSpinsBlock> for Uncoupled2HalfSpinsBlock {
+    #[inline]
+    fn from(v: Coupled2HalfSpinsBlock) -> Self {
+        let same = 0.5 * (v.z10 + v.z00);
+        let diff = 0.5 * (v.z10 - v.z00);
+        Self {
+            mpmp: same,
+            mppm: diff,
+            pmmp: diff,
+            pmpm: same,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub struct Coupled2HalfSpins<T> {
     /// `j=0 m=0`
     pub z00: T,

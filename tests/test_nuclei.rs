@@ -126,11 +126,13 @@ fn calc_m(
 #[test]
 fn test_nuclei() {
     let omega = 24.0;
-    let e_max = 2;
-    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(e_max);
+    let trunc = nuclei::Ho3dTrunc {
+        e_max: 2,
+        .. Default::default()
+    };
     let nucleus = nuclei::Nucleus {
-        neutron_basis_spec: basis_spec,
-        proton_basis_spec: basis_spec,
+        neutron_trunc: trunc,
+        proton_trunc: trunc,
         e_fermi_neutron: 2,
         e_fermi_proton: 2,
     };
@@ -140,7 +142,7 @@ fn test_nuclei() {
     }.call().unwrap();
     let suffix = format!("ho-n3lo_omega={}_emax={}_en={}_ep={}.txt",
                          omega,
-                         e_max,
+                         trunc.e_max,
                          nucleus.e_fermi_neutron,
                          nucleus.e_fermi_proton);
     let j_results = calc_j(nucleus, omega, &two_body_mat_elems);
@@ -174,11 +176,13 @@ fn test_commut_nuclei() {
         0x113ba7bb,
     ]);
     let toler = Toler { relerr: 1e-12, abserr: 1e-12 };
-    let e_max = 2;
-    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(e_max);
+    let trunc = nuclei::Ho3dTrunc {
+        e_max: 2,
+        .. Default::default()
+    };
     let nucleus = nuclei::Nucleus {
-        neutron_basis_spec: basis_spec,
-        proton_basis_spec: basis_spec,
+        neutron_trunc: trunc,
+        proton_trunc: trunc,
         e_fermi_neutron: 2,
         e_fermi_proton: 2,
     };

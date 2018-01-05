@@ -20,13 +20,15 @@ const RNG_SEED: [u32; 4] = [
 ];
 
 fn scheme_o16() -> Arc<JScheme> {
-    let e_max = env::var("LT_EMAX")
-        .map(|s| s.parse().unwrap())
-        .unwrap_or(4);
-    let basis_spec = nuclei::NucleonBasisSpec::with_e_max(e_max);
+    let trunc = nuclei::Ho3dTrunc {
+        e_max: env::var("LT_EMAX")
+            .map(|s| s.parse().unwrap())
+            .unwrap_or(4),
+        .. Default::default()
+    };
     JAtlas::new(&nuclei::Nucleus {
-        neutron_basis_spec: basis_spec,
-        proton_basis_spec: basis_spec,
+        neutron_trunc: trunc,
+        proton_trunc: trunc,
         e_fermi_neutron: 2,
         e_fermi_proton: 2,
     }.jpwn_orbs()).scheme().clone()
