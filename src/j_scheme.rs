@@ -12,6 +12,7 @@ use std::hash::Hash;
 use std::ops::{Add, Deref, Range, Sub};
 use std::sync::Arc;
 use fnv::FnvHashMap;
+use num::Zero;
 use rand;
 use wigner_symbols::Wigner6j;
 use super::ang_mom::Wigner6jCtx;
@@ -20,7 +21,7 @@ use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
 use super::block::Block;
 use super::half::Half;
 use super::mat::Mat;
-use super::op::{ChartedBasis, Op, ReifiedState, ReifyState};
+use super::op::{ChartedBasis, Op, ReifiedState, ReifyState, VectorMut};
 use super::tri_mat::Trs;
 use super::utils::{self, Toler};
 
@@ -1229,6 +1230,12 @@ pub fn new_mop_j012<T: Default + Clone>(scheme: &Arc<JScheme>) -> MopJ012<T> {
         Op::new(scheme.clone()),
         Op::new(scheme.clone()),
     )
+}
+
+pub fn set_zero_mop_j012<T: Zero + Clone>(m: &mut MopJ012<T>) {
+    m.0 = Zero::zero();
+    m.1.set_zero();
+    m.2.set_zero();
 }
 
 pub fn rand_mop_j012(

@@ -169,11 +169,9 @@ impl<'a, T> MatRef<'a, T> {
     /// while the second part is stored back in `slice`.  If the slice is too
     /// short, `None` is returned.
     pub fn new(slice: &mut &'a [T], shape: ValidMatShape) -> Option<Self> {
-        unsafe {
-            utils::chop_slice(slice, shape.extent()).map(|slice| {
-                Self::from_raw(slice.as_ptr(), shape)
-            })
-        }
+        utils::chop_slice(slice, shape.extent()).map(|slice| {
+            unsafe { Self::from_raw(slice.as_ptr(), shape) }
+        })
     }
 
     pub unsafe fn from_raw(ptr: *const T, shape: ValidMatShape) -> Self {
