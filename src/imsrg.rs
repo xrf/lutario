@@ -1,7 +1,7 @@
 use std::f64;
 use std::sync::Arc;
 use super::ang_mom::Wigner6jCtx;
-use super::basis::{occ, Occ, Occ20};
+use super::basis::{occ, ChanState, Occ, Occ20};
 use super::half::Half;
 use super::j_scheme::{JScheme, MopJ012, OpJ100, OpJ200, StateJ10,
                       clone_mop_j012_from_tri_slice,
@@ -9,6 +9,7 @@ use super::j_scheme::{JScheme, MopJ012, OpJ100, OpJ200, StateJ10,
                       extent_mop_j012_as_tri, new_mop_j012,
                       op200_to_op211, op211_to_op200};
 use super::linalg::{self, Transpose};
+use super::mat::Mat;
 use super::op::Op;
 use super::sg_ode;
 use super::tri_mat::trs;
@@ -283,6 +284,16 @@ pub fn c2222_base(
         Occ::A => Occ20::AA,
     };
     for l in 0 .. scheme.basis_20.num_chans() {
+        let b2_l = b2.data.0[l as usize].as_ref();
+        let mut wb2_l = Vec::default();
+        for (utu, b2_ltu) in b2_l.rows().enumerate() {
+            let (t, u) = scheme.basis_20.decode(ChanState { l, u: utu as _ });
+            let weight = if t == u { 0.5 } else { 1.0 };
+            for &b2_lturs in b2_ltu {
+                wb2_l.push(weight * b2_lturs);
+            }
+        }
+        let wb2_l = Mat::from_vec(wb2_l, b2_l.num_rows(), b2_l.num_cols());
         linalg::gemm(
             Transpose::None,
             Transpose::None,
@@ -291,26 +302,13 @@ pub fn c2222_base(
                 utils::max_range(),
                 utils::cast_range(scheme.basis_20.aux_range(l, tu_occ)),
             ),
-            b2.data.0[l as usize].as_ref().slice(
+            wb2_l.as_ref().slice(
                 utils::cast_range(scheme.basis_20.aux_range(l, tu_occ)),
                 utils::max_range(),
             ),
             1.0,
             c2.data.0[l as usize].as_mut(),
         );
-    }
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            for t in scheme.states_10(&[t_or_u_occ]) {
-                for tt in t.combine_with_10(t, pq.j()) {
-                    c2.add(
-                        pq,
-                        rs,
-                        -alpha / 2.0 * a2.at(pq, tt) * b2.at(tt, rs),
-                    );
-                }
-            }
-        }
     }
 }
 
