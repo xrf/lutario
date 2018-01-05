@@ -1,7 +1,6 @@
 //! Half-integers for angular momentum quantities.
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
-use debugit::DebugIt;
 use num::{One, Signed, ToPrimitive, Zero};
 use super::utils::{self, RangeInclusive};
 
@@ -171,9 +170,9 @@ impl<T> Mul for Half<T>
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self::Output {
-        Half(Half(self.0 * other.0).try_get()
-             .map_err(DebugIt)
-             .expect("cannot multiply two half-odd integers"))
+        Half(Half(self.0 * other.0).try_get().unwrap_or_else(|_| {
+            panic!("cannot multiply two half-odd integers")
+        }))
     }
 }
 

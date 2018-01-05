@@ -3,7 +3,6 @@ extern crate bincode;
 extern crate byteorder;
 extern crate cblas;
 extern crate conv;
-extern crate debugit;
 extern crate flate2;
 extern crate fnv;
 extern crate num;
