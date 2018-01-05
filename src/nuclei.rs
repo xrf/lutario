@@ -804,66 +804,6 @@ pub fn make_v_op_j(
     h2
 }
 
-pub fn make_v_op_m(
-    atlas: &JAtlas<Pmw, Nj>,
-    two_body_mat_elems: &FnvHashMap<JNpjw2Pair, f64>,
-) -> OpJ200<f64>
-{
-    let scheme = atlas.scheme();
-    let mut h2 = Op::new(scheme.clone());
-    let mut w3jm_ctx = Wigner3jmCtx::default();
-    for pq in scheme.states_20(&occ::ALL2) {
-        let (p, q) = pq.split_to_10_10();
-        let p = Npjmw::from(atlas.decode(p).unwrap());
-        let q = Npjmw::from(atlas.decode(q).unwrap());
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (r, s) = rs.split_to_10_10();
-            let r = Npjmw::from(atlas.decode(r).unwrap());
-            let s = Npjmw::from(atlas.decode(s).unwrap());
-            h2.add(pq, rs, Half::tri_range_2(
-                (p.j, q.j),
-                (r.j, s.j),
-            ).map(|j12| {
-                let (sign, _, key) = JNpjw2Pair {
-                    j12,
-                    npjw1: p.into(),
-                    npjw2: q.into(),
-                    npjw3: r.into(),
-                    npjw4: s.into(),
-                }.canonicalize();
-                if j12.unwrap() % 2 == 1
-                    && (key.npjw1 == key.npjw2
-                        || key.npjw3 == key.npjw4)
-                {
-                    return 0.0;
-                }
-                *two_body_mat_elems.get(&key)
-                    .unwrap_or_else(|| {
-                        panic!("matrix element not found: {}", key)
-                    })
-                    * sign
-                    * w3jm_ctx.cg(ClebschGordan {
-                        tj1: p.j.twice(),
-                        tj2: q.j.twice(),
-                        tj12: j12.twice(),
-                        tm1: p.m.twice(),
-                        tm2: q.m.twice(),
-                        tm12: (p.m + q.m).twice(),
-                    })
-                    * w3jm_ctx.cg(ClebschGordan {
-                        tj1: r.j.twice(),
-                        tj2: s.j.twice(),
-                        tj12: j12.twice(),
-                        tm1: r.m.twice(),
-                        tm2: s.m.twice(),
-                        tm12: (r.m + s.m).twice(),
-                    })
-            }).sum());
-        }
-    }
-    h2
-}
-
 // (this could be made more general / not specific to nuclei)
 pub fn op1_j_to_m(
     j_atlas: &JAtlas<Pw, i32>,
