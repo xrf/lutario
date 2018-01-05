@@ -91,7 +91,7 @@ impl<'a> QdotTest<'a> {
                     .. Default::default()
                 },
                 .. Default::default()
-            }.make_run(hn);
+            }.make_run(&hn);
             irun.do_run().unwrap();
             toler_assert_eq!(imsrg_toler, irun.energy(), e_imsrg);
         }

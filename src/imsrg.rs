@@ -501,9 +501,9 @@ impl Default for Conf {
 }
 
 impl Conf {
-    pub fn make_run(self, h: MopJ012<f64>) -> Run {
+    pub fn make_run(self, h: &MopJ012<f64>) -> Run {
         let mut h_buf = vec![0.0; extent_mop_j012_as_tri(&h)];
-        clone_mop_j012_to_tri_slice(&h, &mut h_buf);
+        clone_mop_j012_to_tri_slice(h, &mut h_buf);
         let driver = Arc::new(BasicVectorDriver::new(h_buf.len()));
         Run {
             conf: self,
@@ -543,6 +543,12 @@ impl Run {
 
     pub fn flow(&self) -> f64 {
         self.flow
+    }
+
+    pub fn hamil(&self) -> MopJ012<f64> {
+        let mut h = new_mop_j012(&self.scheme);
+        clone_mop_j012_from_tri_slice(&mut h, &trs::He, &self.hamil);
+        h
     }
 
     pub fn step(&mut self) -> Result<(), sg_ode::Error> {

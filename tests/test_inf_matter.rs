@@ -47,7 +47,7 @@ fn test_inf_matter() {
             .. Default::default()
         },
         .. Default::default()
-    }.make_run(hn);
+    }.make_run(&hn);
     irun.do_run().unwrap();
     println!("- imsrg: {}", irun.energy());
     toler_assert_eq!(imsrg_toler, irun.energy(), 142.14556953083158);
