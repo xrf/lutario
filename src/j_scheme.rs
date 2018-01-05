@@ -1424,6 +1424,10 @@ pub fn op200_to_op211(
     let scheme = a2.scheme();
     for pq in scheme.states_20(&occ::ALL2) {
         for rs in pq.costates_20(&occ::ALL2) {
+            let w = -alpha
+                * pq.j().double().phase()
+                * pq.jweight(2)
+                * a2.at(pq, rs);
             let (p, q) = pq.split_to_10_10();
             let (r, s) = rs.split_to_10_10();
             for jps in Half::tri_range_2(
@@ -1432,22 +1436,14 @@ pub fn op200_to_op211(
             ) {
                 let ps = p.combine_with_10_to_21(s, jps).unwrap();
                 let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                b2.add(
-                    ps,
-                    rq,
-                    -alpha
-                        * w6j_ctx.get(Wigner6j {
-                            tj1: p.j().twice(),
-                            tj2: q.j().twice(),
-                            tj3: pq.j().twice(),
-                            tj4: r.j().twice(),
-                            tj5: s.j().twice(),
-                            tj6: ps.j().twice(),
-                        })
-                        * pq.j().double().phase()
-                        * pq.jweight(2)
-                        * a2.at(pq, rs)
-                );
+                b2.add(ps, rq, w * w6j_ctx.get(Wigner6j {
+                    tj1: p.j().twice(),
+                    tj2: q.j().twice(),
+                    tj3: pq.j().twice(),
+                    tj4: r.j().twice(),
+                    tj5: s.j().twice(),
+                    tj6: ps.j().twice(),
+                }));
             }
         }
     }
@@ -1470,29 +1466,23 @@ pub fn op211_to_op200(
         for rs in pq.costates_20(&occ::ALL2) {
             let (p, q) = pq.split_to_10_10();
             let (r, s) = rs.split_to_10_10();
+            let mut x = 0.0;
             for jps in Half::tri_range_2(
                 (p.j(), s.j()),
                 (r.j(), q.j()),
             ) {
                 let ps = p.combine_with_10_to_21(s, jps).unwrap();
                 let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                b2.add(
-                    pq,
-                    rs,
-                    -alpha
-                        * w6j_ctx.get(Wigner6j {
-                            tj1: p.j().twice(),
-                            tj2: q.j().twice(),
-                            tj3: pq.j().twice(),
-                            tj4: r.j().twice(),
-                            tj5: s.j().twice(),
-                            tj6: ps.j().twice(),
-                        })
-                        * pq.j().double().phase()
-                        * ps.jweight(2)
-                        * a2.at(ps, rq)
-                );
+                x += w6j_ctx.get(Wigner6j {
+                    tj1: p.j().twice(),
+                    tj2: q.j().twice(),
+                    tj3: pq.j().twice(),
+                    tj4: r.j().twice(),
+                    tj5: s.j().twice(),
+                    tj6: ps.j().twice(),
+                }) * ps.jweight(2) * a2.at(ps, rq);
             }
+            b2.add(pq, rs, -alpha * pq.j().double().phase() * x);
         }
     }
 }
