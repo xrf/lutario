@@ -7,7 +7,7 @@ extern crate test;
 
 use std::env;
 use std::sync::Arc;
-use lutario::{imsrg, nuclei};
+use lutario::{hf, imsrg, nuclei};
 use lutario::j_scheme::{JAtlas, JScheme, new_mop_j012, rand_mop_j012};
 use lutario::op::VectorMut;
 use rand::SeedableRng;
@@ -28,6 +28,20 @@ fn scheme_o16() -> Arc<JScheme> {
         e_fermi_p: 1,
         orbs: "",
     }.to_nucleus().unwrap().basis()).scheme().clone()
+}
+
+#[bench]
+fn bench_hf_transform_h2(bencher: &mut test::Bencher) {
+    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let scheme = &scheme_o16();
+    let a = rand_mop_j012(scheme, &mut rng);
+    let b = rand_mop_j012(scheme, &mut rng);
+    let mut c = new_mop_j012(scheme);
+    bencher.iter(|| {
+        c.2.set_zero();
+        hf::transform_h2(&b.2, &a.1, &mut c.2);
+        test::black_box(&mut c);
+    });
 }
 
 #[bench]
