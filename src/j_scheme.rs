@@ -18,7 +18,7 @@ use wigner_symbols::Wigner6j;
 use super::ang_mom::Wigner6jCtx;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, OrbIx, PartState};
-use super::block::Block;
+use super::block::{Bd, Block};
 use super::half::Half;
 use super::mat::Mat;
 use super::op::{ChartedBasis, Op, ReifiedState, ReifyState, VectorMut};
@@ -196,6 +196,11 @@ impl BasisSchemeJ10 {
     }
 
     #[inline]
+    pub fn layout(&self) -> &BasisLayout {
+        &self.layout
+    }
+
+    #[inline]
     pub fn num_chans(&self) -> u32 {
         self.chan_chart.len() as _
     }
@@ -330,6 +335,11 @@ impl BasisSchemeJ20 {
             aux_encoder: aux_encoder2,
             aux_decoder: chart2.aux_decoder,
         }
+    }
+
+    #[inline]
+    pub fn layout(&self) -> &BasisLayout {
+        &self.layout
     }
 
     #[inline]
@@ -1121,6 +1131,16 @@ impl JScheme {
     pub fn states_20(&self, xs: &[[Occ; 2]]) -> StatesJ20 {
         StatesJ20::new(self, StateMask20::new(xs))
     }
+
+    #[inline]
+    pub fn costates_10(&self, l: u32, xs: &[Occ]) -> CostatesJ10 {
+        CostatesJ10::new(self, l, StateMask10::new(xs))
+    }
+
+    #[inline]
+    pub fn costates_20(&self, l: u32, xs: &[[Occ; 2]]) -> CostatesJ20 {
+        CostatesJ20::new(self, l, StateMask20::new(xs))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -1210,20 +1230,24 @@ impl<'a> ReifyState for StateJ21<'a> {
     }
 }
 
-/// A diagonal standard-coupled one-body matrix.
+/// A diagonal standard-coupled one-body matrix
 pub type DiagOpJ10<T = f64> =
-    Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Vec<T>>>;
+    Op<Arc<JScheme>, BasisJ10, BasisJ10, Bd<Vec<T>>>;
 
-/// A standard-coupled one-body matrix.
-pub type OpJ100<T = f64> = Op<Arc<JScheme>, BasisJ10, BasisJ10, Block<Mat<T>>>;
+/// A standard-coupled one-body matrix
+pub type OpJ100<T = f64> = Op<Arc<JScheme>, BasisJ10, BasisJ10, Bd<Mat<T>>>;
 
-/// A standard-coupled two-body matrix.
-pub type OpJ200<T = f64> = Op<Arc<JScheme>, BasisJ20, BasisJ20, Block<Mat<T>>>;
+/// A standard-coupled two-body matrix
+pub type OpJ200<T = f64> = Op<Arc<JScheme>, BasisJ20, BasisJ20, Bd<Mat<T>>>;
 
-/// A Pandya-coupled two-body matrix.
-pub type OpJ211<T = f64> = Op<Arc<JScheme>, BasisJ21, BasisJ21, Block<Mat<T>>>;
+/// A Pandya-coupled two-body matrix
+pub type OpJ211<T = f64> = Op<Arc<JScheme>, BasisJ21, BasisJ21, Bd<Mat<T>>>;
 
-/// A standard-coupled (0, 1, 2)-body matrix.
+/// Block of a standard-coupled two-body matrix
+pub type OpBlockJ200<T = f64> =
+    Op<Arc<JScheme>, BasisJ20, BasisJ20, Block<Mat<T>>>;
+
+/// A standard-coupled (0, 1, 2)-body matrix
 pub type MopJ012<T> = (T, OpJ100<T>, OpJ200<T>);
 
 pub fn new_mop_j012<T: Default + Clone>(scheme: &Arc<JScheme>) -> MopJ012<T> {

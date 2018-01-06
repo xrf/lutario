@@ -2,7 +2,7 @@ use std::{f64, iter};
 use std::ops::{AddAssign, Mul};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
-use super::block::Block;
+use super::block::{Bd, Block};
 use super::mat::Mat;
 use super::utils::RefAdd;
 
@@ -109,7 +109,7 @@ impl<S: Clone, L: Clone, R: Clone, D: RefAdd> RefAdd for Op<S, L, R, D> {
     }
 }
 
-impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
+impl<S, L, R, T> Op<S, L, R, Bd<Mat<T>>> where
     L: ChartedBasis<Scheme = S> + Default,
     R: ChartedBasis<Scheme = S> + Default,
     T: Default + Clone,
@@ -121,7 +121,7 @@ impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
             let left_layout = left_basis.layout(&scheme);
             let right_layout = right_basis.layout(&scheme);
             assert_eq!(left_layout.num_chans(), right_layout.num_chans());
-            Block((0 .. left_layout.num_chans()).map(|l| {
+            Bd((0 .. left_layout.num_chans()).map(|l| {
                 Mat::replicate(
                     left_layout.num_auxs(l) as _,
                     right_layout.num_auxs(l) as _,
@@ -133,7 +133,32 @@ impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
     }
 }
 
-impl<S, B, T> Op<S, B, B, Block<Vec<T>>> where
+impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
+    L: ChartedBasis<Scheme = S> + Default,
+    R: ChartedBasis<Scheme = S> + Default,
+    T: Default + Clone,
+{
+    pub fn new_block(scheme: S, chan: u32) -> Self {
+        let left_basis = L::default();
+        let right_basis = R::default();
+        let data = {
+            let left_layout = left_basis.layout(&scheme);
+            let right_layout = right_basis.layout(&scheme);
+            assert_eq!(left_layout.num_chans(), right_layout.num_chans());
+            Block {
+                chan: chan as _,
+                data: Mat::replicate(
+                    left_layout.num_auxs(chan) as _,
+                    right_layout.num_auxs(chan) as _,
+                    Default::default(),
+                ),
+            }
+        };
+        Self { scheme, left_basis, right_basis, data }
+    }
+}
+
+impl<S, B, T> Op<S, B, B, Bd<Vec<T>>> where
     B: ChartedBasis<Scheme = S> + Default,
     T: Default + Clone,
 {
@@ -143,7 +168,7 @@ impl<S, B, T> Op<S, B, B, Block<Vec<T>>> where
         let right_basis = B::default();
         let data = {
             let layout = left_basis.layout(&scheme);
-            Block((0 .. layout.num_chans()).map(|l| {
+            Bd((0 .. layout.num_chans()).map(|l| {
                 vec![Default::default(); layout.num_auxs(l) as _]
             }).collect())
         };
@@ -151,7 +176,7 @@ impl<S, B, T> Op<S, B, B, Block<Vec<T>>> where
     }
 }
 
-impl<S, B, T> Op<S, B, B, Block<Vec<T>>> where
+impl<S, B, T> Op<S, B, B, Bd<Vec<T>>> where
     T: Clone + iter::Sum<T>
 {
     pub fn sum_vec(&self) -> T {

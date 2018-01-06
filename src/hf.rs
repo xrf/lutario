@@ -1,8 +1,8 @@
 use std::{f64, mem};
 use std::ops::{Add, Mul};
 use super::basis::occ;
-use super::j_scheme::{DiagOpJ10, MopJ012, OpJ100, OpJ200};
-use super::linalg::{self, Conj, EigenvalueRange, Part};
+use super::j_scheme::{DiagOpJ10, MopJ012, OpBlockJ200, OpJ100, OpJ200};
+use super::linalg::{self, Conj, EigenvalueRange, Part, Transpose};
 use super::mat::Mat;
 use super::op::{Op, VectorMut};
 use super::utils::Toler;
@@ -293,32 +293,35 @@ pub fn transform_h2(
 )
 {
     let scheme = h2.scheme();
-    let mut t2 = Op::new(scheme.clone());
-    for pq in scheme.states_20(&occ::ALL2) {
-        let (p, q) = pq.split_to_10_10();
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (r, s) = rs.split_to_10_10();
-            for tu in rs.costates_20(&occ::ALL2) {
-                t2.add(pq, tu, (
-                    h2.at(rs, tu)
-                        * d1.at(r, p).conj()
-                        * d1.at(s, q).conj()
-                ));
+    for l in 0 .. scheme.basis_20.num_chans() {
+        let mut og: OpBlockJ200<f64> = Op::new_block(scheme.clone(), l);
+        let mut ohg: OpBlockJ200<f64> = Op::new_block(scheme.clone(), l);
+        for pq in scheme.costates_20(l, &occ::ALL2) {
+            let (p, q) = pq.split_to_10_10();
+            let weight = pq.num_permut as f64;
+            for rs in pq.costates_20(&occ::ALL2) {
+                let (r, s) = rs.split_to_10_10();
+                og.add(pq, rs, weight * d1.at(p, r) * d1.at(q, s));
             }
         }
-    }
-    for pq in scheme.states_20(&occ::ALL2) {
-        let (p, q) = pq.split_to_10_10();
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (r, s) = rs.split_to_10_10();
-            for tu in rs.costates_20(&occ::ALL2) {
-                r2.add(tu, pq, (
-                    t2.at(tu, rs)
-                        * d1.at(r, p)
-                        * d1.at(s, q)
-                ));
-            }
-        }
+        linalg::gemm(
+            Transpose::None,
+            Transpose::None,
+            1.0,
+            h2.data.0[l as usize].as_ref(),
+            og.data.data.as_ref(),
+            0.0,
+            ohg.data.data.as_mut(),
+        );
+        linalg::gemm(
+            Transpose::Conjugate,
+            Transpose::None,
+            1.0,
+            og.data.data.as_ref(),
+            ohg.data.data.as_ref(),
+            1.0,
+            r2.data.0[l as usize].as_mut(),
+        );
     }
 }
 
