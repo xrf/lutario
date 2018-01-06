@@ -3,9 +3,9 @@ use std::{fmt, io};
 use std::ops::{Add, Sub};
 use fnv::FnvHashMap;
 use num::{Zero, range_step_inclusive};
-use super::basis::{occ, ChanState, Occ, PartState};
+use super::basis::{occ, ChanState, PartState};
 use super::half::Half;
-use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
+use super::j_scheme::{JAtlas, JChan, JOrbBasis, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils::cast;
@@ -97,7 +97,7 @@ pub struct Qdot {
 }
 
 impl Qdot {
-    pub fn orbs(self) -> Vec<Nls> {
+    pub fn states(self) -> Vec<Nls> {
         let mut orbitals = Vec::default();
         for k in 0 .. self.num_shells {
             for l in range_step_inclusive(-k, k, 2) {
@@ -110,8 +110,8 @@ impl Qdot {
         orbitals
     }
 
-    pub fn parted_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Ls>, i32>>> {
-        self.orbs().into_iter().map(|nls| {
+    pub fn basis(self) -> JOrbBasis<Ls, i32> {
+        self.states().into_iter().map(|nls| {
             PartState {
                 x: (nls.shell() >= self.num_filled).into(),
                 p: nls.into(),

@@ -3,12 +3,7 @@ extern crate fnv;
 extern crate lutario;
 extern crate netlib_src;
 extern crate rand;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_yaml;
 
-use std::fs::{self, File};
-use std::io::Write;
 use fnv::FnvHashMap;
 use lutario::{hf, imsrg, nuclei, qdpt};
 use lutario::basis::occ;
@@ -19,7 +14,7 @@ use lutario::utils::Toler;
 
 const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Results {
     pub de_dqdpt2: FnvHashMap<nuclei::Npjw, f64>,
     pub e_hf: f64,
@@ -27,11 +22,11 @@ pub struct Results {
 }
 
 fn calc_j(
-    nucleus: nuclei::Nucleus,
+    nucleus: &nuclei::Nucleus,
     omega: f64,
     two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
-    let atlas = JAtlas::new(&nucleus.jpwn_orbs());
+    let atlas = JAtlas::new(&nucleus.basis());
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ho3d_op_j(&atlas, omega);
     let h2 = nuclei::make_v_op_j(&atlas, two_body_mat_elems);
@@ -73,12 +68,12 @@ fn calc_j(
 }
 
 fn calc_m(
-    nucleus: nuclei::Nucleus,
+    nucleus: &nuclei::Nucleus,
     omega: f64,
     two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
-    let j_atlas = JAtlas::new(&nucleus.jpwn_orbs());
-    let atlas = JAtlas::new(&nucleus.pmwnj_orbs());
+    let j_atlas = JAtlas::new(&nucleus.basis());
+    let atlas = JAtlas::new(&nucleus.m_basis());
     let scheme = atlas.scheme();
     let h1j = nuclei::make_ho3d_op_j(&j_atlas, omega);
     let h2j = nuclei::make_v_op_j(&j_atlas, two_body_mat_elems);
@@ -126,28 +121,19 @@ fn calc_m(
 #[test]
 fn test_nuclei() {
     let omega = 24.0;
-    let trunc = nuclei::Ho3dTrunc {
+    let nucleus = nuclei::SimpleNucleus {
         e_max: 2,
-        .. Default::default()
-    };
-    let nucleus = nuclei::Nucleus {
-        neutron_trunc: trunc,
-        proton_trunc: trunc,
-        e_fermi_neutron: 2,
-        e_fermi_proton: 2,
-    };
+        e_fermi_n: 1,
+        e_fermi_p: 1,
+        orbs: "",
+    }.to_nucleus().unwrap();
     let two_body_mat_elems = nuclei::vrenorm::VintLoader {
         path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
         sp: "data/cens-mbpt/spox16.dat".as_ref(),
     }.load().unwrap();
-    let suffix = format!("ho-n3lo_omega={}_emax={}_en={}_ep={}.txt",
-                         omega,
-                         trunc.e_max,
-                         nucleus.e_fermi_neutron,
-                         nucleus.e_fermi_proton);
-    let j_results = calc_j(nucleus, omega, &two_body_mat_elems);
-    let m_results = calc_m(nucleus, omega, &two_body_mat_elems);
-    for npjw in nucleus.npjw_orbs() {
+    let j_results = calc_j(&nucleus, omega, &two_body_mat_elems);
+    let m_results = calc_m(&nucleus, omega, &two_body_mat_elems);
+    for npjw in nucleus.states() {
         if !j_results.de_dqdpt2.contains_key(&npjw)
             && !m_results.de_dqdpt2.contains_key(&npjw)
         {
@@ -159,10 +145,6 @@ fn test_nuclei() {
     }
     toler_assert_eq!(TOLER, j_results.e_hf, m_results.e_hf);
     toler_assert_eq!(TOLER, j_results.de_mp2, m_results.de_mp2);
-    fs::create_dir_all("out").unwrap();
-    let mut f = File::create(&format!("out/test_nuclei_{}", suffix)).unwrap();
-    serde_yaml::to_writer(&mut f, &j_results).unwrap();
-    writeln!(f, "").unwrap();
 }
 
 // cross-check commutator in J-scheme with M-scheme
@@ -176,19 +158,15 @@ fn test_commut_nuclei() {
         0x113ba7bb,
     ]);
     let toler = Toler { relerr: 1e-12, abserr: 1e-12 };
-    let trunc = nuclei::Ho3dTrunc {
+    let nucleus = nuclei::SimpleNucleus {
         e_max: 2,
-        .. Default::default()
-    };
-    let nucleus = nuclei::Nucleus {
-        neutron_trunc: trunc,
-        proton_trunc: trunc,
-        e_fermi_neutron: 2,
-        e_fermi_proton: 2,
-    };
+        e_fermi_n: 1,
+        e_fermi_p: 1,
+        orbs: "",
+    }.to_nucleus().unwrap();
     let mut w6j_ctx = Default::default();
-    let j_atlas = JAtlas::new(&nucleus.jpwn_orbs());
-    let m_atlas = JAtlas::new(&nucleus.pmwnj_orbs());
+    let j_atlas = JAtlas::new(&nucleus.basis());
+    let m_atlas = JAtlas::new(&nucleus.m_basis());
     let j_scheme = j_atlas.scheme();
     let m_scheme = m_atlas.scheme();
     let mop_j_to_m = |cj: &MopJ012<f64>| (

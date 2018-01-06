@@ -631,6 +631,19 @@ impl<X, P> fmt::Display for PartState<X, P> where
     }
 }
 
+impl<X, P> PartState<X, P> {
+    pub fn map_p<F: FnOnce(P) -> Q, Q>(self, f: F) -> PartState<X, Q> {
+        PartState {
+            x: self.x,
+            p: f(self.p),
+        }
+    }
+
+    pub fn count_occ(xps: &mut Iterator<Item = PartState<Occ, P>>) -> i32 {
+        xps.map(|xp| i32::from(xp.x)).sum()
+    }
+}
+
 /// Associates data types with sequences.
 pub trait Increment: Sized {
     /// Given the current item, return the next item in the associated
@@ -666,6 +679,12 @@ impl From<Occ> for usize {
             I => 0,
             A => 1,
         }
+    }
+}
+
+impl From<Occ> for i32 {
+    fn from(x: Occ) -> Self {
+        usize::from(x) as _
     }
 }
 

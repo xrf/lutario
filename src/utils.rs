@@ -5,6 +5,7 @@ use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
 use num::{Bounded, One, ToPrimitive, Zero};
 use take_mut;
+use super::basis::HashChart; // FIXME: HashChart doesn't belong in basis
 
 /// Helper struct for writing `Debug` implementations.
 pub struct DebugWith<F>(pub F);
@@ -309,6 +310,35 @@ impl From<Zigzag<u32>> for i32 {
     fn from(Zigzag(i): Zigzag<u32>) -> Self {
         (i >> 1) as i32 ^ -((i & 1) as i32)
     }
+}
+
+pub fn encode_number<T: Clone>(mut n: usize, chart: &HashChart<T>) -> Vec<T> {
+    let mut s = Vec::default();
+    loop {
+        let r = n % chart.len();
+        if r == 0 {
+            break;
+        }
+        n /= chart.len();
+        s.push(chart.decode(r).unwrap().clone());
+    }
+    s.reverse();
+    if s.is_empty() {
+        s.push(chart.decode(0).unwrap().clone());
+    }
+    s
+}
+
+pub fn decode_number<T: Hash + Eq>(
+    s: &mut Iterator<Item = T>,
+    chart: &HashChart<T>,
+) -> Result<usize, &'static str> {
+    let mut n = 0;
+    for c in s {
+        n *= chart.len();
+        n += *chart.encode(&c).ok_or("character not in alphabet")?;
+    }
+    Ok(n)
 }
 
 // Remove this when feature(from_ref) stabilizes

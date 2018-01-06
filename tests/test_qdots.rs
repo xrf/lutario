@@ -34,7 +34,7 @@ impl<'a> QdotTest<'a> {
         let v_elems = qdots::read_clh2_bin(
             &mut File::open("data/clh2-openfci/shells6.dat").unwrap(),
         ).unwrap();
-        let atlas = JAtlas::new(&self.system.parted_orbs());
+        let atlas = JAtlas::new(&self.system.basis());
         let scheme = atlas.scheme();
         let h1 = qdots::make_ho2d_op(&atlas, self.omega);
         let h2 = qdots::make_v_op(&atlas, &v_elems, self.omega);
@@ -167,7 +167,7 @@ fn test_commut_qdots() {
         num_shells: 3,
         num_filled: 2,
     };
-    let atlas = JAtlas::new(&system.parted_orbs());
+    let atlas = JAtlas::new(&system.basis());
     let scheme = atlas.scheme();
     let load = |s| read_mop_j012_txt(scheme, &mut open(s).unwrap()).unwrap();
     let mut w6j_ctx = Default::default();

@@ -272,7 +272,7 @@ impl<'a> Me2jLoader<'a> {
                 ))
             },
         };
-        let table = trunc.npj_states();
+        let table = trunc.states();
         load_me2j_j(&mut elems, &table, self.e12_max, target_e_max)
     }
 }

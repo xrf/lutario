@@ -5,107 +5,125 @@
 pub mod darmstadt;
 pub mod vrenorm;
 
-use std::{fmt, str};
-use std::cmp::min;
+use std::{fmt, iter, str};
+use std::error::Error;
 use std::ops::{Add, Sub};
-use fnv::FnvHashMap;
-use num::{Zero, range_step_inclusive};
+use fnv::{FnvHashMap, FnvHashSet};
+use num::Zero;
+use regex::Regex;
 use wigner_symbols::ClebschGordan;
 use super::ang_mom::Wigner3jmCtx;
-use super::basis::{occ, ChanState, Occ, PartState};
+use super::basis::{occ, ChanState, HashChart, Occ, PartState};
 use super::half::Half;
-use super::j_scheme::{JAtlas, JChan, OpJ100, OpJ200};
+use super::j_scheme::{JAtlas, JChan, JOrbBasis, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
+use super::utils;
 
-/// Orbital angular momentum (l)
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+lazy_static! {
+    pub static ref ORB_ANG_CHART: HashChart<char> =
+        "spdfghiklmnoqrtuvwxyz".chars().collect();
+}
+
+/// Orbital angular momentum magnitude (l)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct OrbAng(pub i32);
 
-/// Display the spectroscopic label using the base-20 alphabet
-/// "spdfghiklmnoqrtuvwxyz".
+/// Display the spectroscopic label using the `ORB_ANG_CHART` alphabet.
 impl fmt::Display for OrbAng {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        const ALPHABET: &[u8] = b"spdfghiklmnoqrtuvwxyz";
-        let mut l = self.0 as usize;
-        let mut s = Vec::default();
-        loop {
-            let r = l % ALPHABET.len();
-            if r == 0 {
-                break;
-            }
-            l /= ALPHABET.len();
-            s.push(ALPHABET[r]);
-        }
-        s.reverse();
-        if s.is_empty() {
-            s.push(ALPHABET[0]);
-        }
-        write!(f, "{}", str::from_utf8(&s).unwrap())
+        let s: String = utils::encode_number(self.0 as _, &ORB_ANG_CHART)
+            .into_iter().collect();
+        write!(f, "{}", s)
     }
 }
 
-/// Parity and isospin
+/// Parse a spectroscopic label using the `ORB_ANG_CHART` alphabet.
+impl str::FromStr for OrbAng {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(OrbAng(utils::decode_number(&mut s.chars(), &ORB_ANG_CHART)? as _))
+    }
+}
+
+/// Principal quantum number and total angular momentum magnitude
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Pw {
-    pub p: Parity,
-    pub w: Half<i32>,
+pub struct Nj {
+    pub n: i32,
+    pub j: Half<i32>,
 }
 
-impl Add for Pw {
-    type Output = Self;
-    fn add(self, other: Self) -> Self::Output {
-        Self { p: self.p + other.p, w: self.w + other.w }
+impl From<Npjmw> for Nj {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, j: s.j }
     }
 }
 
-impl Sub for Pw {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self::Output {
-        Self { p: self.p - other.p, w: self.w - other.w }
-    }
-}
-
-impl Zero for Pw {
-    fn zero() -> Self {
-        Self { p: Zero::zero(), w: Zero::zero() }
-    }
-    fn is_zero(&self) -> bool {
-        self.p.is_zero() && self.w.is_zero()
-    }
-}
-
+/// Principal quantum number, orbital angular momentum magnitude, and total
+/// angular momentum magnitude
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Pmw {
-    pub p: Parity,
-    pub m: Half<i32>,
-    pub w: Half<i32>,
+pub struct Nlj {
+    /// Principal quantum number (n)
+    pub n: i32,
+    /// Orbital angular momentum magnitude (l)
+    pub l: OrbAng,
+    /// Total angular momentum magnitude (j)
+    pub j: Half<i32>,
 }
 
-impl Add for Pmw {
-    type Output = Self;
-    fn add(self, other: Self) -> Self::Output {
-        Self { p: self.p + other.p, m: self.m + other.m, w: self.w + other.w }
+/// Display using spectroscopic notation.
+impl fmt::Display for Nlj {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}{}", self.n, self.l, self.j)
     }
 }
 
-impl Sub for Pmw {
-    type Output = Self;
-    fn sub(self, other: Self) -> Self::Output {
-        Self { p: self.p - other.p, m: self.m - other.m, w: self.w - other.w }
+/// Parse from spectroscopic notation.
+impl str::FromStr for Nlj {
+    type Err = Box<Error + Send + Sync>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let m = re!(r"(\d+)(\w+)(\d+)/2").captures(s).ok_or("invalid format")?;
+        let n = m.get(1).unwrap().as_str().parse()?;
+        let OrbAng(l) = m.get(2).unwrap().as_str().parse()?;
+        let j = Half(m.get(3).unwrap().as_str().parse()?);
+        if Half::from(l).abs_diff(j) != Half(1) {
+            return Err("l must be within 1/2 of j".into());
+        }
+        Ok(Self { n, l: OrbAng(l), j })
     }
 }
 
-impl Zero for Pmw {
-    fn zero() -> Self {
-        Self { p: Zero::zero(), m: Zero::zero(), w: Zero::zero() }
-    }
-    fn is_zero(&self) -> bool {
-        self.p.is_zero() && self.m.is_zero() && self.w.is_zero()
+impl From<Npj> for Nlj {
+    fn from(this: Npj) -> Self {
+        debug_assert!(this.j.try_get().is_err());
+        let a = this.j.twice() / 2;     // intentional integer division
+        Self {
+            n: this.n,
+            l: OrbAng(a + (a + i32::from(this.p)) % 2),
+            j: this.j,
+        }
     }
 }
 
-/// Principal quantum number, parity, and total angular momentum magnitude.
+impl From<Npjw> for Nlj {
+    fn from(s: Npjw) -> Self {
+        Npj::from(s).into()
+    }
+}
+
+impl Nlj {
+    /// Shell index (e)
+    pub fn shell(self) -> i32 {
+        2 * self.n + self.l.0
+    }
+
+    /// Returns harmonic oscillator energy in natural units.
+    pub fn osc_energy(self) -> f64 {
+        1.5 + self.shell() as f64
+    }
+}
+
+/// Principal quantum number, parity, and total angular momentum magnitude
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Npj {
     /// Principal quantum number (n)
@@ -119,26 +137,45 @@ pub struct Npj {
 /// Display using spectroscopic notation.
 impl fmt::Display for Npj {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", self.n, self.orb_ang(), self.j)
+        Nlj::from(*self).fmt(f)
+    }
+}
+
+/// Parse from spectroscopic notation.
+impl str::FromStr for Npj {
+    type Err = Box<Error + Send + Sync>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Nlj::from_str(s).map(Npj::from)
+    }
+}
+
+impl From<Nlj> for Npj {
+    fn from(this: Nlj) -> Self {
+        Self { n: this.n, p: Parity::of(this.l.0), j: this.j }
+    }
+}
+
+impl From<Npjw> for Npj {
+    fn from(s: Npjw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j }
+    }
+}
+
+impl From<Npjmw> for Npj {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j }
     }
 }
 
 impl Npj {
-    /// Shell index.
+    /// Shell index (e)
     pub fn shell(self) -> i32 {
-        2 * self.n + self.orb_ang().0
+        Nlj::from(self).shell()
     }
 
     /// Returns harmonic oscillator energy in natural units.
     pub fn osc_energy(self) -> f64 {
-        1.5 + self.shell() as f64
-    }
-
-    /// Orbital angular momentum.
-    pub fn orb_ang(self) -> OrbAng {
-        debug_assert!(self.j.try_get().is_err());
-        let a = self.j.twice() / 2;     // intentional integer division
-        OrbAng(a + (a + i32::from(self.p)) % 2)
+        Nlj::from(self).osc_energy()
     }
 
     pub fn and_w(self, w: Half<i32>) -> Npjw {
@@ -147,6 +184,13 @@ impl Npj {
             p: self.p,
             j: self.j,
             w,
+        }
+    }
+
+    pub fn to_j_chan_state(self) -> ChanState<JChan<Parity>, i32> {
+        ChanState {
+            l: JChan { j: self.j, k: self.p },
+            u: self.n,
         }
     }
 }
@@ -166,6 +210,45 @@ pub struct Npjw {
     pub w: Half<i32>,
 }
 
+/// Display using spectroscopic notation.
+impl fmt::Display for Npjw {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Npj::from(*self).fmt(f)?;
+        match self.w {
+            Half(-1) => write!(f, "n"),
+            Half(1) => write!(f, "p"),
+            _ => write!(f, "(w={})", self.w),
+        }
+    }
+}
+
+/// Parse from spectroscopic notation.
+impl str::FromStr for Npjw {
+    type Err = Box<Error + Send + Sync>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let m = re!(r"(.+)[pn]").captures(s).ok_or("expected p or n suffix")?;
+        let npj: Npj = m.get(1).unwrap().as_str().parse()?;
+        let w = match m.get(2).unwrap().as_str() {
+            "p" => Half(-1),
+            "n" => Half(1),
+            _ => panic!("huh?"),
+        };
+        Ok(npj.and_w(w))
+    }
+}
+
+impl From<ChanState<JChan<Pw>, i32>> for Npjw {
+    fn from(s: ChanState<JChan<Pw>, i32>) -> Self {
+        Self { n: s.u, p: s.l.k.p, j: s.l.j, w: s.l.k.w }
+    }
+}
+
+impl From<Npjmw> for Npjw {
+    fn from(s: Npjmw) -> Self {
+        Self { n: s.n, p: s.p, j: s.j, w: s.w }
+    }
+}
+
 impl Npjw {
     /// Shell index.
     pub fn shell(self) -> i32 {
@@ -179,48 +262,6 @@ impl Npjw {
 
     pub fn and_m(self, m: Half<i32>) -> Npjmw {
         Npjmw { n: self.n, p: self.p, j: self.j, m, w: self.w }
-    }
-}
-
-impl From<ChanState<JChan<Pw>, i32>> for Npjw {
-    fn from(s: ChanState<JChan<Pw>, i32>) -> Self {
-        Self { n: s.u, p: s.l.k.p, j: s.l.j, w: s.l.k.w }
-    }
-}
-
-impl From<Npjw> for ChanState<JChan<Pw>, i32> {
-    fn from(s: Npjw) -> Self {
-        Self { l: s.into(), u: s.n }
-    }
-}
-
-impl From<Npjw> for JChan<Pw> {
-    fn from(s: Npjw) -> Self {
-        Self { j: s.j, k: s.into() }
-    }
-}
-
-impl From<Npjw> for Npj {
-    fn from(s: Npjw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j }
-    }
-}
-
-impl From<Npjw> for Pw {
-    fn from(s: Npjw) -> Self {
-        Self { p: s.p, w: s.w }
-    }
-}
-
-/// Display using spectroscopic notation.
-impl fmt::Display for Npjw {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Npj::from(*self).fmt(f)?;
-        match self.w {
-            Half(-1) => write!(f, "n"),
-            Half(1) => write!(f, "p"),
-            _ => write!(f, "(w={})", self.w),
-        }
     }
 }
 
@@ -247,30 +288,6 @@ impl From<ChanState<JChan<Pmw>, Nj>> for Npjmw {
     }
 }
 
-impl From<Npjmw> for ChanState<JChan<Pmw>, Nj> {
-    fn from(s: Npjmw) -> Self {
-        Self { l: Pmw::from(s).into(), u: s.into() }
-    }
-}
-
-impl From<Npjmw> for Nj {
-    fn from(s: Npjmw) -> Self {
-        Self { n: s.n, j: s.j }
-    }
-}
-
-impl From<Npjmw> for Npjw {
-    fn from(s: Npjmw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j, w: s.w }
-    }
-}
-
-impl From<Npjmw> for Pmw {
-    fn from(s: Npjmw) -> Self {
-        Self { p: s.p, m: s.m, w: s.w }
-    }
-}
-
 impl Npjmw {
     /// Shell index.
     pub fn shell(self) -> i32 {
@@ -291,12 +308,15 @@ impl fmt::Display for Npjmw {
     }
 }
 
-impl From<Npjmw> for Npj {
-    fn from(s: Npjmw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j }
-    }
+/// Parity and total angular momentum magnitude
+#[derive(Clone, Copy, Debug)]
+pub struct Pj {
+    pub p: Parity,
+    pub j: Half<i32>,
 }
 
+/// Parity, total angular momentum magnitude, isospin magnitude, and isospin
+/// projection.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Pjtw {
     pub p: Parity,
@@ -325,129 +345,94 @@ impl fmt::Display for Pjtw {
     }
 }
 
+/// Parity, total angular momentum projection, and isospin projection
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Nj {
-    pub n: i32,
-    pub j: Half<i32>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Pj {
+pub struct Pmw {
     pub p: Parity,
-    pub j: Half<i32>,
+    pub m: Half<i32>,
+    pub w: Half<i32>,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Ho3dTrunc {
-    /// Maximum shell index
-    pub e_max: i32,
-    /// Maximum principal quantum number
-    pub n_max: i32,
-    /// Maximum orbital angular momentum magnitude
-    pub l_max: i32,
-}
-
-/// The default truncation sets `e_max` to `-1` and everything else to
-/// `i32::max_value()`.
-impl Default for Ho3dTrunc {
-    fn default() -> Self {
-        Self {
-            e_max: -1,
-            n_max: i32::max_value(),
-            l_max: i32::max_value(),
-        }
+impl From<Npjmw> for Pmw {
+    fn from(s: Npjmw) -> Self {
+        Self { p: s.p, m: s.m, w: s.w }
     }
 }
 
-impl Ho3dTrunc {
-    pub fn is_empty(self) -> bool {
-        self.e_max < 0 || self.n_max < 0 || self.l_max < 0
-    }
-
-    /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
-    pub fn npj_states(self) -> Vec<Npj> {
-        let mut orbitals = Vec::default();
-        for e in 0 .. self.e_max + 1 {
-            for l in range_step_inclusive(e % 2, min(e, self.l_max), 2) {
-                let n = (e - l) / 2;
-                if n > self.n_max {
-                    continue;
-                }
-                let p = Parity::of(l);
-                for j in Half::tri_range(l.into(), Half(1)) {
-                    orbitals.push(Npj { n, p, j });
-                }
-            }
-        }
-        orbitals
-    }
-
-    pub fn npjw_states(self, w: Half<i32>) -> Vec<Npjw> {
-        let mut orbitals = Vec::default();
-        for Npj { n, p, j } in self.npj_states() {
-            orbitals.push(Npjw { n, p, j, w });
-        }
-        orbitals
+impl From<Npjmw> for ChanState<JChan<Pmw>, Nj> {
+    fn from(s: Npjmw) -> Self {
+        Self { l: Pmw::from(s).into(), u: s.into() }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Nucleus {
-    pub neutron_trunc: Ho3dTrunc,
-    pub proton_trunc: Ho3dTrunc,
-    pub e_fermi_neutron: i32,
-    pub e_fermi_proton: i32,
+impl Add for Pmw {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self { p: self.p + other.p, m: self.m + other.m, w: self.w + other.w }
+    }
 }
 
-impl Nucleus {
-    pub fn npjw_orbs(self) -> Vec<Npjw> {
-        let mut states = Vec::default();
-        let mut ns = self.neutron_trunc.npjw_states(Half(-1)).into_iter();
-        let mut ps = self.proton_trunc.npjw_states(Half(1)).into_iter();
-        // interleave the neutron and proton states
-        loop {
-            let mut found = false;
-            if let Some(n) = ns.next() {
-                states.push(n);
-                found = true;
-            }
-            if let Some(p) = ps.next() {
-                states.push(p);
-                found = true;
-            }
-            if !found {
-                break;
-            }
-        }
-        states
+impl Sub for Pmw {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self { p: self.p - other.p, m: self.m - other.m, w: self.w - other.w }
     }
+}
 
-    pub fn jpwn_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pw>, i32>>> {
-        self.npjw_orbs().into_iter().map(|npjw| {
-            PartState {
-                x: (Npj::from(npjw).shell() >= self.e_fermi(npjw.w)).into(),
-                p: npjw.into(),
-            }
-        }).collect()
+impl Zero for Pmw {
+    fn zero() -> Self {
+        Self { p: Zero::zero(), m: Zero::zero(), w: Zero::zero() }
     }
-
-    pub fn pmwnj_orbs(self) -> Vec<PartState<Occ, ChanState<JChan<Pmw>, Nj>>> {
-        self.npjw_orbs().into_iter().flat_map(|npjw| {
-            npjw.j.multiplet().map(move |m| {
-                PartState {
-                    x: (Npj::from(npjw).shell() >= self.e_fermi(npjw.w)).into(),
-                    p: npjw.and_m(m).into(),
-                }
-            })
-        }).collect()
+    fn is_zero(&self) -> bool {
+        self.p.is_zero() && self.m.is_zero() && self.w.is_zero()
     }
+}
 
-    pub fn e_fermi(self, w: Half<i32>) -> i32 {
-        if w < Half(0) {
-            self.e_fermi_neutron
-        } else {
-            self.e_fermi_proton
-        }
+/// Parity and isospin projection
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Pw {
+    pub p: Parity,
+    pub w: Half<i32>,
+}
+
+impl From<Npjw> for Pw {
+    fn from(s: Npjw) -> Self {
+        Self { p: s.p, w: s.w }
+    }
+}
+
+impl From<Npjw> for JChan<Pw> {
+    fn from(s: Npjw) -> Self {
+        Self { j: s.j, k: s.into() }
+    }
+}
+
+impl From<Npjw> for ChanState<JChan<Pw>, i32> {
+    fn from(s: Npjw) -> Self {
+        Self { l: s.into(), u: s.n }
+    }
+}
+
+impl Add for Pw {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Self { p: self.p + other.p, w: self.w + other.w }
+    }
+}
+
+impl Sub for Pw {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self::Output {
+        Self { p: self.p - other.p, w: self.w - other.w }
+    }
+}
+
+impl Zero for Pw {
+    fn zero() -> Self {
+        Self { p: Zero::zero(), w: Zero::zero() }
+    }
+    fn is_zero(&self) -> bool {
+        self.p.is_zero() && self.w.is_zero()
     }
 }
 
@@ -534,6 +519,260 @@ impl JNpjwKey {
     }
 }
 
+/// Iterator for 3D harmonic oscillator states in (e, l, j)-order.
+#[derive(Clone, Debug)]
+pub struct Ho3dIter(pub Nlj);
+
+impl Default for Ho3dIter {
+    fn default() -> Self {
+        Ho3dIter(Nlj { n: 0, l: OrbAng(0), j: Half(1)})
+    }
+}
+
+impl Iterator for Ho3dIter {
+    type Item = Nlj;
+    fn next(&mut self) -> Option<Self::Item> {
+        let nlj = self.0;
+        let OrbAng(l) = nlj.l;
+        let greater_j = Half::from(l) + Half(1);
+        self.0 = if nlj.j != greater_j {
+            Nlj { j: greater_j, .. nlj }
+        } else if nlj.n > 0 {
+            Nlj { n: nlj.n - 1, l: OrbAng(l + 2), j: nlj.j + Half(2) }
+        } else {
+            let e = nlj.shell() + 1;
+            Nlj { n: e / 2, l: OrbAng(e % 2), j: Half(1) }
+        };
+        Some(nlj)
+    }
+}
+
+/// Truncation scheme for a 3D harmonic oscillator basis
+#[derive(Clone, Copy, Debug)]
+pub struct Ho3dTrunc {
+    /// Maximum shell index
+    pub e_max: i32,
+    /// Maximum principal quantum number
+    pub n_max: i32,
+    /// Maximum orbital angular momentum magnitude
+    pub l_max: i32,
+}
+
+/// The default truncation sets `e_max` to `-1` and everything else to
+/// `i32::max_value()`.
+impl Default for Ho3dTrunc {
+    fn default() -> Self {
+        Self {
+            e_max: -1,
+            n_max: i32::max_value(),
+            l_max: i32::max_value(),
+        }
+    }
+}
+
+impl Ho3dTrunc {
+    pub fn is_empty(self) -> bool {
+        self.e_max < 0 || self.n_max < 0 || self.l_max < 0
+    }
+
+    pub fn contains(self, nlj: Nlj) -> bool {
+        nlj.shell() <= self.e_max
+            && nlj.n <= self.n_max
+            && nlj.l <= OrbAng(self.l_max)
+    }
+
+    /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
+    pub fn states(self) -> Vec<Npj> {
+        Ho3dIter::default()
+            .take_while(|nlj| nlj.shell() <= self.e_max)
+            .filter(|&nlj| self.contains(nlj))
+            .map(Npj::from)
+            .collect()
+    }
+}
+
+/// Modified 3D harmonic oscillator basis truncation
+#[derive(Clone, Debug, Default)]
+pub struct Ho3dModTrunc {
+    pub trunc: Ho3dTrunc,
+    pub incl: FnvHashSet<Nlj>,
+    pub excl: FnvHashSet<Nlj>,
+}
+
+impl From<Ho3dTrunc> for Ho3dModTrunc {
+    fn from(trunc: Ho3dTrunc) -> Self {
+        Self { trunc, .. Default::default() }
+    }
+}
+
+impl Ho3dModTrunc {
+    pub fn e_max(&self) -> i32 {
+        self.incl.iter()
+            .map(|p| p.shell())
+            .chain(iter::once(self.trunc.e_max))
+            .max()
+            .unwrap_or(-1)
+    }
+
+    pub fn contains(&self, nlj: Nlj) -> bool {
+        self.trunc.contains(nlj)
+            && !self.excl.contains(&nlj)
+            || self.incl.contains(&nlj)
+    }
+
+    /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
+    pub fn states(&self) -> Vec<Npj> {
+        Ho3dIter::default()
+            .take_while(|nlj| nlj.shell() <= self.e_max())
+            .filter(|&nlj| self.contains(nlj))
+            .map(Npj::from)
+            .collect()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Nucleons {
+    pub all: Ho3dModTrunc,
+    pub occ: Ho3dModTrunc,
+}
+
+impl Nucleons {
+    pub fn e_max(&self) -> i32 {
+        self.all.e_max()
+    }
+
+    pub fn states(&self) -> Vec<Npj> {
+        self.all.states()
+    }
+
+    pub fn part_states(&self) -> Vec<PartState<Occ, Npj>> {
+        let mut finder = FnvHashMap::default();
+        let mut states: Vec<_> = self.states()
+            .into_iter()
+            .enumerate()
+            .map(|(i, p)| {
+                finder.insert(p, i);
+                PartState { x: Occ::A, p }
+            })
+            .collect();
+        for p in self.occ.states() {
+            let &i = finder.get(&p).expect("occ state not in all");
+            states[i].x = Occ::I;
+        }
+        states
+    }
+
+    pub fn orbs(&self) -> JOrbBasis<Parity, i32> {
+        self.part_states()
+            .into_iter()
+            .map(|xp| xp.map_p(|p| p.to_j_chan_state()))
+            .collect()
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct SimpleNucleus<'a> {
+    /// Maximum index of all available shells.
+    pub e_max: i32,
+    /// Maximum index of filled neutron shell.
+    pub e_fermi_n: i32,
+    /// Maximum index of filled proton shell.
+    pub e_fermi_p: i32,
+    /// Additional occupied orbitals included or excluded, specified using
+    /// spectroscopic notation (see `FromStr` implementation for `Npjw`) with
+    /// a prefix `+` indicating inclusion and `-` indicating exclusion.
+    ///
+    /// Example: `"-0s1/2 -0p1/2 +1s1/2"`.
+    pub orbs: &'a str,
+}
+
+impl<'a> SimpleNucleus<'a> {
+    pub fn to_nucleus(self) -> Result<Nucleus, Box<Error + Send + Sync>> {
+        let mut neutrons_occ = Ho3dModTrunc::from(Ho3dTrunc {
+            e_max: self.e_fermi_n,
+            .. Default::default()
+        });
+        let mut protons_occ = Ho3dModTrunc::from(Ho3dTrunc {
+            e_max: self.e_fermi_p,
+            .. Default::default()
+        });
+        for orb in self.orbs.split_whitespace() {
+            if orb.starts_with("+") {
+                let npjw: Npjw = orb.split_at(1).1.parse()?;
+                let occ = if npjw.w < Half(0) {
+                    &mut neutrons_occ
+                } else {
+                    &mut protons_occ
+                };
+                let nlj = npjw.into();
+                if occ.contains(nlj) {
+                    Err(format!("already included: {}", npjw))?;
+                }
+                occ.incl.insert(nlj);
+            } else if orb.starts_with("-") {
+                let npjw: Npjw = orb.split_at(1).1.parse()?;
+                let occ = if npjw.w < Half(0) {
+                    &mut neutrons_occ
+                } else {
+                    &mut protons_occ
+                };
+                let nlj = npjw.into();
+                if !occ.contains(nlj) {
+                    Err(format!("already excluded: {}", npjw))?;
+                }
+                occ.excl.insert(nlj);
+            } else {
+                Err(format!("must start with '+' or '-': {}", orb))?;
+            }
+        }
+        let all = Ho3dTrunc { e_max: self.e_max, .. Default::default() };
+        Ok(Nucleus {
+            neutrons: Nucleons { all: all.into(), occ: neutrons_occ },
+            protons: Nucleons { all: all.into(), occ: protons_occ },
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Nucleus {
+    pub neutrons: Nucleons,
+    pub protons: Nucleons,
+}
+
+impl Nucleus {
+    pub fn e_max(&self) -> i32 {
+        self.neutrons.e_max().max(self.protons.e_max())
+    }
+
+    pub fn states(&self) -> Vec<Npjw> {
+        self.neutrons.states().into_iter().map(|npj| {
+            npj.and_w(Half(-1))
+        }).chain(self.neutrons.states().into_iter().map(|npj| {
+            npj.and_w(Half(1))
+        })).collect()
+    }
+
+    pub fn part_states(&self) -> Vec<PartState<Occ, Npjw>> {
+        self.neutrons.part_states().into_iter().map(|xp| {
+            xp.map_p(|npj| npj.and_w(Half(-1)))
+        }).chain(self.neutrons.part_states().into_iter().map(|xp| {
+            xp.map_p(|npj| npj.and_w(Half(1)))
+        })).collect()
+    }
+
+    pub fn basis(&self) -> JOrbBasis<Pw, i32> {
+        self.part_states().into_iter().map(|xp| {
+            xp.map_p(From::from)
+        }).collect()
+    }
+
+    pub fn m_basis(&self) -> JOrbBasis<Pmw, Nj> {
+        self.part_states().into_iter().flat_map(|xp| {
+            xp.p.j.multiplet().map(move |m| xp.map_p(|p| p.and_m(m).into()))
+        }).collect()
+    }
+}
+
 /// Calculate the kinetic energy matrix element in a 3D harmonic oscillator
 /// basis:
 ///
@@ -552,7 +791,7 @@ pub fn kinetic_ho3d_mat_elem(a: Npj, b: Npj) -> f64 {
         0.5 * energy
     } else if dn == 1 {
         let nb = f64::from(nb);
-        let l = f64::from(a.orb_ang().0);
+        let l = f64::from(Nlj::from(a).l.0);
         0.5 * (nb * (nb + l + 0.5)).sqrt()
     } else {
         0.0
@@ -748,4 +987,28 @@ pub fn op2_j_to_m(
         }
     }
     b2
+}
+
+#[cfg(test)]
+mod tests {
+    use num::range_step_inclusive;
+    use super::super::half::Half;
+    use super::{Ho3dIter, Nlj, OrbAng};
+
+    #[test]
+    fn test_ho3d_iter() {
+        let e_max = 100;
+        let nljs1: Vec<_> =
+            Ho3dIter::default().take_while(|x| x.shell() <= e_max).collect();
+        let mut nljs2 = Vec::default();
+        for e in 0 .. e_max + 1 {
+            for l in range_step_inclusive(e % 2, e, 2) {
+                let n = (e - l) / 2;
+                for j in Half::tri_range(l.into(), Half(1)) {
+                    nljs2.push(Nlj { n, l: OrbAng(l), j });
+                }
+            }
+        }
+        assert_eq!(nljs1, nljs2);
+    }
 }

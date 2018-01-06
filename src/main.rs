@@ -12,8 +12,9 @@ use lutario::utils::Toler;
 fn main() {
     let matches = clap::App::new(env!("CARGO_PKG_NAME"))
         .args_from_usage("--emax=<emax> 'Maximum shell index for calculation'")
-        .args_from_usage("--efn=<efn> 'Number of neutron shells'")
-        .args_from_usage("--efp=<efp> 'Number of proton shells'")
+        .args_from_usage("--efn=<emaxn> 'Maximum shell index of occupied neutrons'")
+        .args_from_usage("--efp=<efp> 'Maximum shell index of occupied protons'")
+        .args_from_usage("[--orbs=<orbs>] 'Include (-) or exclude (+) additional orbitals'")
         .args_from_usage("--omega=<omega> 'Frequency of HO2D basis in energy units'")
         .args_from_usage("--input=<input> 'File containing input matrix elements'")
         .args_from_usage("--input-sp=<input-sp> 'File containing single-particle state table (CENS format only)'")
@@ -22,37 +23,41 @@ fn main() {
                .required(true))
         .args_from_usage("--input-emax=<input-emax> 'Maximum shell index in input file (ME2J format only)'")
         .get_matches();
-    let input = matches.value_of_os("input").unwrap().as_ref();
+
+    let e_max = matches.value_of("emax").unwrap().parse().unwrap();
+    println!("e_max: {}", e_max);
+    let e_fermi_n: i32 = matches.value_of("efn").unwrap().parse().unwrap();
+    println!("e_fermi_n: {}", e_fermi_n);
+    let e_fermi_p: i32 = matches.value_of("efp").unwrap().parse().unwrap();
+    println!("e_fermi_p: {}", e_fermi_p);
+    let orbs = matches.value_of("orbs").unwrap_or("");
+    println!("orbs: {}", orbs);
     let omega = matches.value_of("omega").unwrap().parse().unwrap();
-    let trunc = nuclei::Ho3dTrunc {
-        e_max: matches.value_of("emax").unwrap().parse().unwrap(),
-        .. Default::default()
-    };
-    let nucleus = nuclei::Nucleus {
-        neutron_trunc: trunc,
-        proton_trunc: trunc,
-        e_fermi_neutron: matches.value_of("efn").unwrap().parse().unwrap(),
-        e_fermi_proton: matches.value_of("efp").unwrap().parse().unwrap(),
-    };
+    println!("omega: {}", omega);
+    let input = matches.value_of("input").unwrap();
+    println!("input: {}", input);
+
+    let nucleus = nuclei::SimpleNucleus {
+        e_max,
+        e_fermi_n,
+        e_fermi_p,
+        orbs,
+    }.to_nucleus().unwrap();
     let me2 = if let Some(e_max) = matches.value_of("input-emax") {
         let e_max = e_max.parse().unwrap();
         nuclei::darmstadt::Me2jLoader {
-            path: input,
+            path: input.as_ref(),
             e_max,
             .. Default::default()
-        }.load(trunc.e_max).unwrap()
+        }.load(nucleus.e_max()).unwrap()
     } else {
         let sp = matches.value_of_os("input-sp").unwrap().as_ref();
-        nuclei::vrenorm::VintLoader { path: input, sp }.load().unwrap()
+        nuclei::vrenorm::VintLoader { path: input.as_ref(), sp }.load().unwrap()
     };
-
-    let atlas = JAtlas::new(&nucleus.jpwn_orbs());
+    let atlas = JAtlas::new(&nucleus.basis());
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ke_op_j(&atlas, omega);
     let h2 = nuclei::make_v_op_j(&atlas, &me2);
-    let mut w6j_ctx = Default::default();
-    let mut h2p = Op::new(scheme.clone());
-    op200_to_op211(&mut w6j_ctx, 1.0, &h2, &mut h2p);
 
     let mut hh;
     {
@@ -96,10 +101,11 @@ fn main() {
     let mut de_dqdpt2 = HashMap::new();
     let mut de_dqdpt3 = HashMap::new();
     let mut hi2p = Op::new(scheme.clone());
+    let mut w6j_ctx = Default::default();
     op200_to_op211(&mut w6j_ctx, 1.0, &hi.2, &mut hi2p);
-    for ip in nucleus.jpwn_orbs() {
-        let npjw = nuclei::Npjw::from(ip.p);
-        let p = atlas.encode(&ip.p).unwrap();
+    for sp in nucleus.states() {
+        let npjw = nuclei::Npjw::from(sp);
+        let p = atlas.encode(&sp.into()).unwrap();
         let ep = hi.1.at(p, p);
         let dep2 = qdpt::qdpt2_terms(&hi.1, &hi.2, p, p);
         let dep3 = qdpt::qdpt3_terms(&hi.1, &hi.2, &hi2p, p, p);

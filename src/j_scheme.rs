@@ -41,6 +41,8 @@ impl<K> From<K> for JChan<K> {
     }
 }
 
+pub type JOrbBasis<K, U> = Vec<PartState<Occ, ChanState<JChan<K>, U>>>;
+
 #[derive(Clone, Copy, Debug)]
 pub struct JPartedOrb {
     pub lu: ChanState,
@@ -84,7 +86,7 @@ impl<K, U: Hash + Eq> JAtlas<K, U>
     where K: Add<Output = K> + Sub<Output = K> + Hash + Eq + Clone,
           U: Hash + Eq + Clone,
 {
-    pub fn new(orbs: &[PartState<Occ, ChanState<JChan<K>, U>>]) -> Self {
+    pub fn new(orbs: &JOrbBasis<K, U>) -> Self {
         let mut linchan1_chart = HashChart::default();
         let mut linchan2_chart = HashChart::default();
         let (basis_10, aux_encoder, aux_decoder) = BasisSchemeJ10::new(
@@ -165,7 +167,7 @@ pub struct BasisSchemeJ10 {
 
 impl BasisSchemeJ10 {
     pub fn new<K: Add<Output = K> + Hash + Eq + Clone, U: Hash + Eq + Clone>(
-        orbs: &[PartState<Occ, ChanState<JChan<K>, U>>],
+        orbs: &JOrbBasis<K, U>,
         linchan1_chart: &mut HashChart<K, u32>,
     ) -> (Self, FnvHashMap<(u32, U), u32>, Box<[U]>)
     {
