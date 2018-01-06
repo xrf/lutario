@@ -1,7 +1,6 @@
 //! Input and output utility.
 use std::{io, str};
 use std::error::Error;
-use std::fs::File;
 use std::marker::PhantomData;
 use std::path::{self, Path};
 use byteorder::{ByteOrder, ReadBytesExt};
@@ -77,13 +76,16 @@ pub fn split_extension(path: &Path) -> io::Result<(&str, &str)> {
     }
 }
 
-/// Open a compressed file and decode based on the file extension.
-/// If the extension does not end in "z", the file is read as-is.
-pub fn open_compressed(path: &Path) -> io::Result<(&Path, Box<io::Read>)> {
-    use flate2;
-    use xz2;
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Compression {
+    None,
+    Gz,
+    Xz,
+}
 
-    let file = File::open(path)?;
+/// Guess the compression based on the file extension.
+/// If the extension does not end in "z", then no compression is assumed.
+pub fn guess_compression(path: &Path) -> io::Result<(&Path, Option<Compression>)> {
     let (rest, ext) = split_extension(path)?;
     let (rest, ext) = if ext.ends_with("z") {
         (rest.as_ref(), ext)
@@ -91,13 +93,27 @@ pub fn open_compressed(path: &Path) -> io::Result<(&Path, Box<io::Read>)> {
         (path, "")
     };
     Ok((rest, match ext {
-        "" => Box::new(file),
-        ".gz" => Box::new(flate2::read::GzDecoder::new(file)),
-        ".xz" => Box::new(xz2::read::XzDecoder::new(file)),
-        _ => return Err(invalid_data(
-            format!("unrecognized compression format: {}", ext),
-        )),
+        "" => Some(Compression::None),
+        ".gz" => Some(Compression::Gz),
+        ".xz" => Some(Compression::Xz),
+        _ => None,
     }))
+}
+
+/// Open a compressed file and decode based on the file extension.
+/// If the extension does not end in "z", the file is read as-is.
+pub fn decode_compressed<'a, F: io::Read + 'a>(
+    file: F,
+    compression: Compression,
+) -> Box<io::Read + 'a>
+{
+    use flate2;
+    use xz2;
+    match compression {
+        Compression::None => Box::new(file),
+        Compression::Gz => Box::new(flate2::read::GzDecoder::new(file)),
+        Compression::Xz => Box::new(xz2::read::XzDecoder::new(file)),
+    }
 }
 
 /// Parse numbers from a white-space separated text file.

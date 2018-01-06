@@ -11,7 +11,7 @@ use super::super::io::{Parser, invalid_data};
 use super::super::parity::Parity;
 use super::{JNpjwKey, Npjw};
 
-pub fn load_sp_table(reader: &mut io::Read) -> io::Result<Vec<Npjw>> {
+pub fn load_sp_table(reader: &mut io::Read) -> io::Result<(f64, Vec<Npjw>)> {
     let mut p = Parser::new(reader);
     let mut line_num = 1;
 
@@ -21,8 +21,25 @@ pub fn load_sp_table(reader: &mut io::Read) -> io::Result<Vec<Npjw>> {
         return Err(invalid_data("line 1 is invalid"));
     }
 
-    // locate the legend line
     let mut line = String::default();
+
+    // locate and parse the oscillator energy line
+    loop {
+        p.next_line(&mut line, &mut line_num)?;
+        if line.is_empty() {
+            return Err(invalid_data("can't find oscillator energy"));
+        }
+        if re!(r"^\s*Oscillator length and energy:").is_match(&line) {
+            break;
+        }
+    }
+    let omega = re!(r"^\s*Oscillator length and energy:\s*\S+\s*(\S+)")
+        .captures(&line)
+        .ok_or(invalid_data("cannot parse oscillator energy line"))?
+        .get(1).unwrap().as_str().parse()
+        .map_err(|_| invalid_data("cannot parse oscillator energy"))?;
+
+    // locate the legend line
     loop {
         p.next_line(&mut line, &mut line_num)?;
         if line.is_empty() {
@@ -60,7 +77,7 @@ pub fn load_sp_table(reader: &mut io::Read) -> io::Result<Vec<Npjw>> {
         let w = Half(-w_nucl);      // convert nuclear → HEP convention
         table.push(Npjw { n, p, j, w });
     }
-    Ok(table)
+    Ok((omega, table))
 }
 
 pub fn load_vint_table(
@@ -133,7 +150,7 @@ pub fn load_vint_table(
 
 pub fn load_sp_table_bin(
     reader: &mut io::Read,
-) -> io::Result<Box<[Npjw]>>
+) -> io::Result<Vec<Npjw>>
 {
     let mut table = Vec::default();
     loop {
@@ -152,7 +169,7 @@ pub fn load_sp_table_bin(
         let w = Half(-reader.read_i32::<LittleEndian>()?);
         table.push(Npjw { n, p, j, w });
     }
-    Ok(table.into_boxed_slice())
+    Ok(table)
 }
 
 pub fn load_vint_table_bin(
@@ -200,8 +217,9 @@ pub struct VintLoader<'a> {
 }
 
 impl<'a> VintLoader<'a> {
-    pub fn load(self) -> io::Result<FnvHashMap<JNpjwKey, f64>> {
-        let sp_table = load_sp_table(&mut File::open(self.sp)?)?;
-        load_vint_table(&mut File::open(self.path)?, &sp_table)
+    pub fn load(self) -> io::Result<(f64, FnvHashMap<JNpjwKey, f64>)> {
+        let (omega, sp_table) = load_sp_table(&mut File::open(self.sp)?)?;
+        let me = load_vint_table(&mut File::open(self.path)?, &sp_table)?;
+        Ok((omega, me))
     }
 }

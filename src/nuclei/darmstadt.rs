@@ -1,9 +1,12 @@
 //! Darmstadt ME2J matrix element format.
 
-use std::io;
+use std::{fmt, io};
+use std::fs::File;
 use std::path::Path;
 use fnv::FnvHashMap;
 use num::range_inclusive;
+use regex::Regex;
+use super::super::io as lio;
 use super::super::ang_mom::{Coupled2HalfSpinsBlock, Uncoupled2HalfSpinsBlock};
 use super::super::half::Half;
 use super::{Ho3dTrunc, JNpjwKey, JtwNpjKey, Npj, Pj, Pjtw};
@@ -209,28 +212,131 @@ pub fn load_me2j_jt(
     Ok(map)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Me2jLoader<'a> {
-    /// The file extension of the path is important: it determines the type of
-    /// compression (if any) and whether the binary or text format is used.
+/// ME2J loader that tries to guess parameters based on filename unless
+/// explicitly overridden.
+#[derive(Clone, Copy, Debug)]
+pub struct Me2jGuessLoader<'a> {
     pub path: &'a Path,
-    pub e_max: i32,
-    pub n_max: i32,
-    pub l_max: i32,
-    pub e12_max: i32,
+    pub compression: Option<lio::Compression>,
+    pub binary: Option<bool>,
+    pub trunc: Option<Ho3dTrunc>,
+    pub e12_max: Option<i32>,
+    pub omega: Option<f64>,
 }
 
-/// By default, `path` is set to `"/dev/null"`, `e_max` is set to `-1`, and
-/// everything else is set to the maximum integer value.
-impl<'a> Default for Me2jLoader<'a> {
+/// By default, `path` is set to `"/dev/null"` and everything else is set to
+/// their defaults.
+impl<'a> Default for Me2jGuessLoader<'a> {
     fn default() -> Self {
         Self {
             path: "/dev/null".as_ref(),
-            e_max: -1,
-            n_max: i32::max_value(),
-            l_max: i32::max_value(),
-            e12_max: i32::max_value(),
+            compression: Default::default(),
+            binary: Default::default(),
+            trunc: Default::default(),
+            e12_max: Default::default(),
+            omega: Default::default(),
         }
+    }
+}
+
+impl<'a> Me2jGuessLoader<'a> {
+    pub fn guess(self) -> io::Result<Me2jLoader<'a>> {
+        // guess compression (note: even if we don't guess, we need to chop
+        // off the compression file extension)
+        let (path, guessed_compression) = lio::guess_compression(self.path)?;
+        let compression = self.compression.or(guessed_compression)
+            .ok_or_else(|| lio::invalid_data("unknown compression extension"))?;
+
+        // guess binary or text
+        let binary = match self.binary {
+            Some(x) => x,
+            None => {
+                let (path, ext2) = lio::split_extension(path)?;
+                let (_, ext1) = lio::split_extension(path.as_ref())?;
+                match (ext1, ext2) {
+                    (".me2j", ".dat") => true,
+                    (_, ".me2j") => false,
+                    (_, "") => Err(lio::invalid_data(
+                        format!("missing format extension: {}", path),
+                    ))?,
+                    _ => Err(lio::invalid_data(
+                        format!("unknown format extension: {}", ext2),
+                    ))?,
+                }
+            }
+        };
+
+        // guess parameters
+        let name = path.to_str()
+            .ok_or_else(|| lio::invalid_data("path is not UTF-8"))?;
+        let name = name.replace('_', " ");
+        let trunc = match self.trunc {
+            Some(x) => x,
+            None => {
+                let e_max = re!(r"\beMax(\d+)\b").captures(&name)
+                    .ok_or_else(|| lio::invalid_data("can't find eMax"))?
+                    .get(1).unwrap().as_str().parse()
+                    .map_err(|_| lio::invalid_data("can't parse eMax"))?;
+                let n_max = match re!(r"\bnMax(\d+)\b").captures(&name) {
+                    None => i32::max_value(),
+                    Some(m) => m.get(1).unwrap().as_str().parse()
+                        .map_err(|_| lio::invalid_data("can't parse nMax"))?,
+                };
+                let l_max = match re!(r"\blMax(\d+)\b").captures(&name) {
+                    None => i32::max_value(),
+                    Some(m) => m.get(1).unwrap().as_str().parse()
+                        .map_err(|_| lio::invalid_data("can't parse lMax"))?,
+                };
+                Ho3dTrunc { e_max, n_max, l_max }
+            }
+        };
+        let e12_max = match self.e12_max {
+            Some(x) => x,
+            None => match re!(r"\bEMax(\d+)\b").captures(&name) {
+                None => i32::max_value(),
+                Some(m) => m.get(1).unwrap().as_str().parse()
+                    .map_err(|_| lio::invalid_data("can't parse EMax"))?,
+            },
+        };
+        let omega = match self.omega {
+            Some(x) => x,
+            None => re!(r"\bhwHO(\d+)\b").captures(&name)
+                .ok_or_else(|| lio::invalid_data("can't find hwHO"))?
+                .get(1).unwrap().as_str().parse()
+                .map_err(|_| lio::invalid_data("can't parse hwHO"))?,
+        };
+
+        Ok(Me2jLoader {
+            path: self.path,
+            compression,
+            binary,
+            trunc,
+            e12_max,
+            omega,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Me2jLoader<'a> {
+    pub path: &'a Path,
+    pub compression: lio::Compression,
+    pub binary: bool,
+    pub trunc: Ho3dTrunc,
+    pub e12_max: i32,
+    pub omega: f64,
+}
+
+impl<'a> fmt::Display for Me2jLoader<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{path: {}", self.path.display())?;
+        write!(f, ", compression: {:?}", self.compression)?;
+        write!(f, ", binary: {}", self.binary)?;
+        write!(f, ", trunc: {}", self.trunc)?;
+        if self.e12_max != i32::max_value() {
+            writeln!(f, ", e12_max: {}", self.e12_max)?;
+        }
+        write!(f, ", omega: {}}}", self.omega)
     }
 }
 
@@ -238,41 +344,23 @@ impl<'a> Me2jLoader<'a> {
     pub fn load(
         self,
         target_e_max: i32,
-    ) -> io::Result<FnvHashMap<JNpjwKey, f64>>
+    ) -> io::Result<(f64, FnvHashMap<JNpjwKey, f64>)>
     {
         use byteorder::LittleEndian;
-        use super::super::io as lio;
-
-        let trunc = Ho3dTrunc {
-            e_max: self.e_max,
-            n_max: self.n_max,
-            l_max: self.l_max,
+        let file = File::open(self.path)?;
+        let file = lio::decode_compressed(file, self.compression);
+        let mut elems: Box<Iterator<Item = _>> = if self.binary {
+            Box::new(lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
+                     .map(|x| {
+                         // don't invert this or you'll change the numbers!
+                         let precision = 1e7;
+                         (x as f64 * precision).round() / precision
+                     }))
+        } else {
+            Box::new(lio::MapleTableParser::new(io::BufReader::new(file)))
         };
-        if trunc.is_empty() {
-            return Ok(Default::default())
-        }
-        let (subpath, file) = lio::open_compressed(self.path)?;
-        let ext = subpath.extension().unwrap_or("".as_ref());
-        let mut elems: Box<Iterator<Item = _>> = match ext.to_str() {
-            Some("dat") => {
-                Box::new(lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
-                         .map(|x| {
-                             // don't invert this or you'll change the numbers!
-                             let precision = 1e7;
-                             (x as f64 * precision).round() / precision
-                         }))
-            }
-            Some("me2j") => {
-                Box::new(lio::MapleTableParser::new(io::BufReader::new(file)))
-            }
-            _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("unknown format: .{}", ext.to_string_lossy()),
-                ))
-            },
-        };
-        let table = trunc.states();
-        load_me2j_j(&mut elems, &table, self.e12_max, target_e_max)
+        let table = self.trunc.states();
+        let me = load_me2j_j(&mut elems, &table, self.e12_max, target_e_max)?;
+        Ok((self.omega, me))
     }
 }

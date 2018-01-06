@@ -15,13 +15,8 @@ fn main() {
         .args_from_usage("--efn=<emaxn> 'Maximum shell index of occupied neutrons'")
         .args_from_usage("--efp=<efp> 'Maximum shell index of occupied protons'")
         .args_from_usage("[--orbs=<orbs>] 'Include (-) or exclude (+) additional orbitals'")
-        .args_from_usage("--omega=<omega> 'Frequency of HO2D basis in energy units'")
-        .args_from_usage("--input=<input> 'File containing input matrix elements'")
-        .args_from_usage("--input-sp=<input-sp> 'File containing single-particle state table (CENS format only)'")
-        .group(clap::ArgGroup::with_name("input-params")
-               .args(&["input-sp", "input-emax"])
-               .required(true))
-        .args_from_usage("--input-emax=<input-emax> 'Maximum shell index in input file (ME2J format only)'")
+        .args_from_usage("--input=<input> 'File containing input matrix elements (note: parameters will be guessed based on filename)'")
+        .args_from_usage("[--input-sp=<input-sp>] 'File containing single-particle state table (CENS format only)'")
         .get_matches();
 
     let e_max = matches.value_of("emax").unwrap().parse().unwrap();
@@ -32,10 +27,7 @@ fn main() {
     println!("e_fermi_p: {}", e_fermi_p);
     let orbs = matches.value_of("orbs").unwrap_or("");
     println!("orbs: {}", orbs);
-    let omega = matches.value_of("omega").unwrap().parse().unwrap();
-    println!("omega: {}", omega);
     let input = matches.value_of("input").unwrap();
-    println!("input: {}", input);
 
     let nucleus = nuclei::SimpleNucleus {
         e_max,
@@ -43,17 +35,23 @@ fn main() {
         e_fermi_p,
         orbs,
     }.to_nucleus().unwrap();
-    let me2 = if let Some(e_max) = matches.value_of("input-emax") {
-        let e_max = e_max.parse().unwrap();
-        nuclei::darmstadt::Me2jLoader {
+
+    let (omega, me2) = if let Some(sp) = matches.value_of_os("input-sp") {
+        let (omega, me2) = nuclei::vrenorm::VintLoader {
             path: input.as_ref(),
-            e_max,
-            .. Default::default()
-        }.load(nucleus.e_max()).unwrap()
+            sp: sp.as_ref(),
+        }.load().unwrap();
+        println!("input: {{path: {}, omega: {}}}", input, omega);
+        (omega, me2)
     } else {
-        let sp = matches.value_of_os("input-sp").unwrap().as_ref();
-        nuclei::vrenorm::VintLoader { path: input.as_ref(), sp }.load().unwrap()
+        let loader = nuclei::darmstadt::Me2jGuessLoader {
+            path: input.as_ref(),
+            .. Default::default()
+        }.guess().unwrap();
+        println!("input: {}", loader);
+        loader.load(e_max).unwrap()
     };
+
     let atlas = JAtlas::new(&nucleus.basis());
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ke_op_j(&atlas, omega);

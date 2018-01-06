@@ -24,12 +24,12 @@ pub struct Results {
 fn calc_j(
     nucleus: &nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
+    me2: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
     let atlas = JAtlas::new(&nucleus.basis());
     let scheme = atlas.scheme();
     let h1 = nuclei::make_ho3d_op_j(&atlas, omega);
-    let h2 = nuclei::make_v_op_j(&atlas, two_body_mat_elems);
+    let h2 = nuclei::make_v_op_j(&atlas, me2);
     let mut w6j_ctx = Default::default();
     let mut h2p = Op::new(scheme.clone());
     op200_to_op211(&mut w6j_ctx, 1.0, &h2, &mut h2p);
@@ -70,13 +70,13 @@ fn calc_j(
 fn calc_m(
     nucleus: &nuclei::Nucleus,
     omega: f64,
-    two_body_mat_elems: &FnvHashMap<nuclei::JNpjwKey, f64>,
+    me2: &FnvHashMap<nuclei::JNpjwKey, f64>,
 ) -> Results {
     let j_atlas = JAtlas::new(&nucleus.basis());
     let atlas = JAtlas::new(&nucleus.m_basis());
     let scheme = atlas.scheme();
     let h1j = nuclei::make_ho3d_op_j(&j_atlas, omega);
-    let h2j = nuclei::make_v_op_j(&j_atlas, two_body_mat_elems);
+    let h2j = nuclei::make_v_op_j(&j_atlas, me2);
     let h1 = nuclei::op1_j_to_m(&j_atlas, &atlas, &h1j);
     let h2 = nuclei::op2_j_to_m(&j_atlas, &atlas, &h2j);
     let mut w6j_ctx = Default::default();
@@ -127,12 +127,12 @@ fn test_nuclei() {
         e_fermi_p: 1,
         orbs: "",
     }.to_nucleus().unwrap();
-    let two_body_mat_elems = nuclei::vrenorm::VintLoader {
+    let (_, me2) = nuclei::vrenorm::VintLoader {
         path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
         sp: "data/cens-mbpt/spox16.dat".as_ref(),
     }.load().unwrap();
-    let j_results = calc_j(&nucleus, omega, &two_body_mat_elems);
-    let m_results = calc_m(&nucleus, omega, &two_body_mat_elems);
+    let j_results = calc_j(&nucleus, omega, &me2);
+    let m_results = calc_m(&nucleus, omega, &me2);
     for npjw in nucleus.states() {
         if !j_results.de_dqdpt2.contains_key(&npjw)
             && !m_results.de_dqdpt2.contains_key(&npjw)

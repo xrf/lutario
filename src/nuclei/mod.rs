@@ -558,6 +558,19 @@ pub struct Ho3dTrunc {
     pub l_max: i32,
 }
 
+impl fmt::Display for Ho3dTrunc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{e_max: {}", self.e_max)?;
+        if self.n_max != i32::max_value() {
+            write!(f, ", n_max: {}", self.n_max)?;
+        }
+        if self.l_max != i32::max_value() {
+            write!(f, ", l_max: {}", self.l_max)?;
+        }
+        write!(f, "}}")
+    }
+}
+
 /// The default truncation sets `e_max` to `-1` and everything else to
 /// `i32::max_value()`.
 impl Default for Ho3dTrunc {
