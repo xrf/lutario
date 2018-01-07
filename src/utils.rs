@@ -3,8 +3,9 @@ use std::ops::{Add, Range};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
-use num::{Bounded, One, ToPrimitive, Zero};
+use num::{self, Bounded, One, ToPrimitive, Zero};
 use take_mut;
+use super::parity;
 use super::basis::HashChart; // FIXME: HashChart doesn't belong in basis
 
 /// Helper struct for writing `Debug` implementations.
@@ -57,6 +58,24 @@ impl<T> RefAdd for T where
 {
     fn ref_add(&self, rhs: &Self) -> Self {
         self + rhs
+    }
+}
+
+pub fn euclid_div(a: i32, b: i32) -> i32 {
+    let r = a / b;
+    if a % b < 0 {
+        r + if b < 0 { 1 } else { -1 }
+    } else {
+        r
+    }
+}
+
+pub fn euclid_mod(a: i32, b: i32) -> i32 {
+    let r = a % b;
+    if r < 0 {
+        r + b.abs()
+    } else {
+        r
     }
 }
 
@@ -255,6 +274,126 @@ impl<K: Eq + Hash, V: Clone, S: BuildHasher> Map<K> for HashMap<K, V, S> {
     }
 }
 
+pub fn gcd(mut a: i32, mut b: i32) -> i32 {
+    // avoid funky results on negative numbers
+    a = a.abs();
+    b = b.abs();
+    while b != 0 {
+        let old_b = b;
+        b = a % b;
+        a = old_b;
+    }
+    return a;
+}
+
+/// An ordered sequence of numbers `[ start + k × step | 0 ≤ k < len ]`
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RangeSet {
+    pub start: i32,
+    pub step: i32,
+    pub len: i32,
+}
+
+impl Default for RangeSet {
+    fn default() -> Self {
+        Self { start: 0, step: 1, len: 0 }
+    }
+}
+
+impl RangeSet {
+    pub fn len(&self) -> usize {
+        self.len as _
+    }
+
+    pub fn get(&self, i: usize) -> Option<i32> {
+        if i < self.len() {
+            Some(self.unchecked_get(i))
+        } else {
+            None
+        }
+    }
+
+    pub fn unchecked_get(&self, i: usize) -> i32 {
+        debug_assert!(i < self.len());
+        self.start + i as i32 * self.step
+    }
+
+    pub fn first(&self) -> Option<i32> {
+        if self.len() == 0 {
+            None
+        } else {
+            Some(self.unchecked_get(0))
+        }
+    }
+
+    pub fn last(&self) -> Option<i32> {
+        if self.len() == 0 {
+            None
+        } else {
+            Some(self.unchecked_get(self.len() - 1))
+        }
+    }
+
+    pub fn contains(&self, i: i32) -> bool {
+        let offset = i - self.start;
+        offset >= 0
+            && offset % self.step == 0
+            && offset / self.step < self.len
+    }
+
+    pub fn position(&self, i: i32) -> Option<usize> {
+        if self.contains(i) {
+            Some(self.unchecked_position(i))
+        } else {
+            None
+        }
+    }
+
+    pub fn unchecked_position(&self, i: i32) -> usize {
+        debug_assert!(self.contains(i));
+        let offset = i - self.start;
+        (offset / self.step) as _
+    }
+
+    /// Expand the range so as to include the given integer.
+    pub fn insert(&mut self, i: i32) {
+        if self.len == 0 {
+            self.start = i;
+            self.len = 1;
+        } else if self.len == 1 {
+            if self.start != i {
+                let (_, a, b) = parity::sort2(self.start, i);
+                self.start = a;
+                self.step = b - a;
+                self.len = 2;
+            }
+        } else {
+            let offset = i - self.start;
+            let new_step = gcd(offset, self.step);
+            let (_, k1, _, k3) = parity::sort3(
+                0,
+                offset,
+                (self.len - 1) * self.step,
+            );
+            self.start += k1;
+            self.step = new_step;
+            self.len = (k3 - k1) / new_step + 1;
+        }
+    }
+}
+
+impl IntoIterator for RangeSet {
+    type Item = i32;
+    type IntoIter = num::iter::RangeStep<i32>;
+    fn into_iter(self) -> Self::IntoIter {
+        num::range_step(
+            self.start,
+            self.start + self.len * self.step,
+            self.step,
+        )
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Toler {
     pub relerr: f64,
@@ -374,6 +513,26 @@ mod tests {
     }
 
     #[test]
+    fn test_euclid_div_mod() {
+        assert_eq!(euclid_div(10, 5), 10 / 5);
+        assert_eq!(euclid_mod(10, 5), 10 % 5);
+        assert_eq!(euclid_div(-10, 5), -10 / 5);
+        assert_eq!(euclid_mod(-10, 5), -10 % 5);
+        assert_eq!(euclid_div(10, -5), 10 / -5);
+        assert_eq!(euclid_mod(10, -5), 10 % -5);
+        assert_eq!(euclid_div(-10, -5), -10 / -5);
+        assert_eq!(euclid_mod(-10, -5), -10 % -5);
+        assert_eq!(euclid_div(10, 7), 10 / 7);
+        assert_eq!(euclid_mod(10, 7), 10 % 7);
+        assert_eq!(euclid_div(-10, 7), -2);
+        assert_eq!(euclid_mod(-10, 7), 4);
+        assert_eq!(euclid_div(10, -7), 10 / -7);
+        assert_eq!(euclid_mod(10, -7), 10 % -7);
+        assert_eq!(euclid_div(-10, -7), 2);
+        assert_eq!(euclid_mod(-10, -7), 4);
+    }
+
+    #[test]
     fn zigzag() {
         for i in -100 .. 101 {
             assert_eq!(i32::from(Zigzag::from(i)), i);
@@ -381,6 +540,45 @@ mod tests {
         for &i in &[-0x80000000, -0x7fffffff, -0x7ffffffe,
                     0x7ffffffe, 0x7fffffff] {
             assert_eq!(i32::from(Zigzag::from(i)), i);
+        }
+    }
+
+    #[test]
+    fn test_gcd() {
+        assert_eq!(gcd(0, 20), 20);
+        assert_eq!(gcd(20, 0), 20);
+        assert_eq!(gcd(6, 3), 3);
+        assert_eq!(gcd(3, 6), 3);
+        assert_eq!(gcd(1, 1), 1);
+        assert_eq!(gcd(1, -1), 1);
+        assert_eq!(gcd(-1, 1), 1);
+        assert_eq!(gcd(147, 462), 21);
+    }
+
+    #[test]
+    fn test_range_set() {
+        use std::iter::FromIterator;
+        for &s in &[
+            &[78, 27, -70, -66, 92, -90, 95, -71, -76, 72, -47, 8, 13, 37, -46, -40],
+            &[-58, 61, 62, -10, 53, -28, -35, 21, 94, 28, -84, -93, 97, -53, 81, 41],
+            &[12, -93, 52, -30, -2, 73, 83, 70, -15, 34, 69, -49, 74, 42, -50, 62],
+            &[22, 39, -20, 72, 30, -68, 26, -1, -70, 65, 47, -82, -82, -79, -60, 44],
+        ] {
+            let mut past = Vec::new();
+            let mut set = RangeSet::default();
+            assert_eq!(Vec::from_iter(set).len(), 0);
+            for &x in s {
+                set.insert(x);
+                past.push(x);
+                let v = Vec::from_iter(set);
+                for y in &past {
+                    assert_eq!(v.iter().cloned().min(),
+                               past.iter().cloned().min());
+                    assert_eq!(v.iter().cloned().max(),
+                               past.iter().cloned().max());
+                    assert!(v.contains(&y));
+                }
+            }
         }
     }
 }
