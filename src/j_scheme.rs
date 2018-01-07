@@ -1409,11 +1409,36 @@ pub fn check_eq_op_j200(
             let left = a2.at(pq, rs);
             let right = b2.at(pq, rs);
             if !toler.is_eq(left, right) {
-                let err = format!("{},{},{},{}: {} != {} within {:?}",
-                                  p.s1.lu, q.s1.lu, r.s1.lu, s.s1.lu,
+                let err = format!("{};{},{},{},{}: {} != {} within {:?}",
+                                  pq.lu12.l, p.s1.lu, q.s1.lu, r.s1.lu, s.s1.lu,
                                   left, right, toler);
                 eprintln!("{}", err);
                 status = status.and(Err(err));
+            }
+        }
+    }
+    status
+}
+
+pub fn check_eq_op_j211(
+    toler: Toler,
+    a2: &OpJ211,
+    b2: &OpJ211,
+) -> Result<(), String> {
+    use super::op::IndexBlockMatRef;
+    let scheme = a2.scheme();
+    let mut status = Ok(());
+    for lps in 0 .. scheme.basis_21.layout.num_chans() {
+        for ups in 0 .. scheme.basis_21.layout.num_auxs(lps) {
+            for urq in 0 .. scheme.basis_21.layout.num_auxs(lps) {
+                let left = a2.data.at_block_mat(lps as _, ups as _, urq as _);
+                let right = b2.data.at_block_mat(lps as _, ups as _, urq as _);
+                if !toler.is_eq(left, right) {
+                    let err = format!("{};{},{}: {} != {} within {:?}",
+                                      lps, ups, urq, left, right, toler);
+                    eprintln!("{}", err);
+                    status = status.and(Err(err));
+                }
             }
         }
     }
