@@ -1,5 +1,6 @@
 //! Block-diagonal matrices and similar things.
 use std::ops::AddAssign;
+use num::Zero;
 use super::mat::Mat;
 use super::op::{IndexBlockMatRef, IndexBlockMatMut, Vector, VectorMut};
 use super::tri_mat::{TriMat, Trs};
@@ -33,9 +34,13 @@ impl<M: VectorMut> VectorMut for Block<M> {
     fn set_zero(&mut self) {
         self.data.set_zero();
     }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        self.data.scale(factor);
+    }
 }
 
-impl<T: Clone> IndexBlockMatRef for Block<Vec<T>> {
+impl<T: Clone + Zero> IndexBlockMatRef for Block<Vec<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
         debug_assert_eq!(self.chan, l);
         debug_assert_eq!(u1, u2);
@@ -57,7 +62,7 @@ impl<T: Clone> IndexBlockMatRef for Block<TriMat<T>> {
     }
 }
 
-impl<T: AddAssign> IndexBlockMatMut for Block<Vec<T>> {
+impl<T: AddAssign + Zero + Clone> IndexBlockMatMut for Block<Vec<T>> {
     fn set_block_mat(
         &mut self,
         l: usize,
@@ -196,9 +201,15 @@ impl<M: VectorMut> VectorMut for Bd<M> {
             block.set_zero();
         }
     }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        for block in &mut self.0 {
+            block.scale(factor);
+        }
+    }
 }
 
-impl<T: Clone> IndexBlockMatRef for Bd<Vec<T>> {
+impl<T: Zero + Clone> IndexBlockMatRef for Bd<Vec<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
         debug_assert_eq!(u1, u2);
         self.0[l][u1].clone()
@@ -217,7 +228,7 @@ impl<T: Clone> IndexBlockMatRef for Bd<TriMat<T>> {
     }
 }
 
-impl<T: AddAssign> IndexBlockMatMut for Bd<Vec<T>> {
+impl<T: AddAssign + Zero + Clone> IndexBlockMatMut for Bd<Vec<T>> {
     fn set_block_mat(
         &mut self,
         l: usize,

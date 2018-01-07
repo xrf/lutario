@@ -1,5 +1,5 @@
 use std::{f64, iter};
-use std::ops::{AddAssign, Mul};
+use std::ops::{AddAssign, Mul, MulAssign};
 use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
 use super::block::{Bd, Block};
@@ -35,7 +35,7 @@ pub trait Vector {
     fn len(&self) -> usize;
 }
 
-impl<T> Vector for Vec<T> {
+impl<T: Zero + Clone> Vector for Vec<T> {
     type Elem = T;
     fn len(&self) -> usize {
         self.len()
@@ -46,13 +46,20 @@ pub trait VectorMut: Vector {
     // note that we don't have "fill" because filling with an arbitrary value
     // does not make sense for symmetry constrained matrices
     fn set_zero(&mut self);
+    fn scale(&mut self, factor: &Self::Elem);
 }
 
-impl<T: Zero + Clone> VectorMut for Vec<T> {
+impl<T: MulAssign + Zero + Clone> VectorMut for Vec<T> {
     fn set_zero(&mut self) {
         let n = self.len();
         self.clear();
         self.resize(n, Zero::zero());
+    }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        for x in self {
+            *x *= factor.clone();
+        }
     }
 }
 
@@ -260,5 +267,9 @@ impl<S, L, R, D: Vector> Vector for Op<S, L, R, D> {
 impl<S, L, R, D: VectorMut> VectorMut for Op<S, L, R, D> {
     fn set_zero(&mut self) {
         self.data.set_zero();
+    }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        self.data.scale(factor);
     }
 }

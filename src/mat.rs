@@ -3,7 +3,7 @@
 use std::{fmt, mem, ptr, slice};
 use std::cmp::min;
 use std::marker::PhantomData;
-use std::ops::{Deref, Index, IndexMut, Range};
+use std::ops::{Deref, Index, IndexMut, MulAssign, Range};
 use num::Zero;
 use super::op::{Vector, VectorMut};
 use super::tri_mat::{TriMatDim, Trs, TrsMat};
@@ -580,7 +580,7 @@ impl<'a, T: Clone> MatMut<'a, T> {
     pub fn clone_from_trs_mat<S>(&mut self, source: &TrsMat<S, T>) where
         S: Trs<T>,
     {
-        let n = *source.mat.as_ref().dim();
+        let n = *source.mat.as_ref().shape();
         assert_eq!(n, self.shape().num_rows);
         assert_eq!(n, self.shape().num_cols);
         for i in 0 .. self.shape().num_rows {
@@ -598,9 +598,17 @@ impl<'a, T> Vector for MatMut<'a, T> {
     }
 }
 
-impl<'a, T: Zero + Clone> VectorMut for MatMut<'a, T> {
+impl<'a, T: MulAssign + Zero + Clone> VectorMut for MatMut<'a, T> {
     fn set_zero(&mut self) {
         self.fill(&Zero::zero());
+    }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        for row in self.as_mut().rows() {
+            for x in row {
+                *x *= factor.clone();
+            }
+        }
     }
 }
 
@@ -882,8 +890,12 @@ impl<T> Vector for Mat<T> {
     }
 }
 
-impl<T: Zero + Clone> VectorMut for Mat<T> {
+impl<T: MulAssign + Zero + Clone> VectorMut for Mat<T> {
     fn set_zero(&mut self) {
         self.as_mut().set_zero();
+    }
+
+    fn scale(&mut self, factor: &Self::Elem) {
+        self.as_mut().scale(factor);
     }
 }
