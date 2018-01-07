@@ -6,17 +6,19 @@ use std::mem;
 use std::collections::HashMap;
 use lutario::{hf, imsrg, nuclei, qdpt, sg_ode};
 use lutario::j_scheme::{JAtlas, new_mop_j012, op200_to_op211};
-use lutario::op::Op;
-use lutario::utils::Toler;
+use lutario::op::{Op, VectorMut};
+use lutario::utils::{RefAdd, Toler};
 
 fn main() {
     let matches = clap::App::new(env!("CARGO_PKG_NAME"))
         .args_from_usage("--emax=<emax> 'Maximum shell index for calculation'")
         .args_from_usage("--efn=<emaxn> 'Maximum shell index of occupied neutrons'")
         .args_from_usage("--efp=<efp> 'Maximum shell index of occupied protons'")
-        .args_from_usage("[--orbs=<orbs>] 'Include (-) or exclude (+) additional orbitals'")
+        .args_from_usage("--orbs=[orbs] 'Include (-) or exclude (+) additional orbitals'")
         .args_from_usage("--input=<input> 'File containing input matrix elements (note: parameters will be guessed based on filename)'")
-        .args_from_usage("[--input-sp=<input-sp>] 'File containing single-particle state table (CENS format only)'")
+        .args_from_usage("--input-sp=[input-sp] 'File containing single-particle state table (CENS format only)'")
+        .args_from_usage("--a=[a] 'Number of particles (for subtracting center-of-mass kinetic energy)'")
+        .args_from_usage("--input-tpp=[input-tpp] 'File containing matrix elements of the two-body momentum product: −(a / fm)² ⟨…| p₁ ⋅ p₂ / (2 m MeV) |…⟩ where ‘a’ is the characteristic length'")
         .get_matches();
 
     let e_max = matches.value_of("emax").unwrap().parse().unwrap();
@@ -54,8 +56,33 @@ fn main() {
 
     let atlas = JAtlas::new(&nucleus.basis());
     let scheme = atlas.scheme();
-    let h1 = nuclei::make_ke_op_j(&atlas, omega);
-    let h2 = nuclei::make_v_op_j(&atlas, &me2);
+    let mut h1 = nuclei::make_ke_op_j(&atlas, omega);
+    let mut h2 = nuclei::make_v_op_j(&atlas, &me2);
+
+    // subtract center-of-mass kinetic energy
+    if let Some(mass_num) = matches.value_of("a") {
+        let mass_num: i32 = mass_num.parse().unwrap();
+        h1.scale(&(1.0 - 1.0 / mass_num as f64));
+        if let Some(input_tpp) = matches.value_of("input-tpp") {
+            let loader = nuclei::darmstadt::Me2jGuessLoader {
+                path: input_tpp.as_ref(),
+                omega: Some(1.0),
+                .. Default::default()
+            }.guess().unwrap();
+            println!("input_tpp: {}", loader);
+            let (_, me_tpp) = loader.load(e_max).unwrap();
+            let mut tpp = nuclei::make_v_op_j(&atlas, &me_tpp);
+            tpp.scale(&(2.0
+                        * nuclei::darmstadt::TPP_FACTOR
+                        * omega
+                        / mass_num as f64));
+            h2 = h2.ref_add(&tpp);
+        } else {
+            panic!("--a was provided but not --input-tpp?");
+        }
+    } else if let Some(_) = matches.value_of("input-tpp") {
+        panic!("--input-tpp was provided but not --a?");
+    }
 
     let mut hh;
     {

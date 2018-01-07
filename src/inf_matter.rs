@@ -3,7 +3,7 @@ use super::basis::occ;
 use super::half::Half;
 use super::j_scheme::{JAtlas, OpJ100};
 use super::op::Op;
-use super::phys_consts::{HBAR_C, M_N, M_P};
+use super::phys_consts::{HBAR_C_MEVFM, M_NEUTRON_MEVPC2, M_PROTON_MEVPC2};
 use super::plane_wave_basis::{HarmSpin, HarmSpinIso};
 
 /// Kinetic energy of two species of particles, distinguished by isospin.
@@ -49,12 +49,12 @@ pub fn unit_wavenumber(box_len: f64) -> f64 {
 impl Kinetic {
     /// Kinetic energy of neutrons in MeV.  Box length must be in fm.
     pub fn neutron_mev(box_len: f64) -> Self {
-        Self::natural(M_N / HBAR_C.powi(2), box_len)
+        Self::natural(M_NEUTRON_MEVPC2 / HBAR_C_MEVFM.powi(2), box_len)
     }
 
     /// Kinetic energy of protons in MeV.  Box length must be in fm.
     pub fn proton_mev(box_len: f64) -> Self {
-        Self::natural(M_P / HBAR_C.powi(2), box_len)
+        Self::natural(M_PROTON_MEVPC2 / HBAR_C_MEVFM.powi(2), box_len)
     }
 
     /// Kinetic energy of particles in natural units.
@@ -137,12 +137,12 @@ mod tests {
             s: Half(1),
             t: Half(-1),
         };
-        toler_assert_eq!(Toler { relerr: 1e-9, abserr: 0.0 },
+        toler_assert_eq!(Toler { relerr: 1e-8, abserr: 0.0 },
                          nucleon_kinetic.diag_op1_elem(proton_orbital),
-                         819.169701);
-        toler_assert_eq!(Toler { relerr: 1e-9, abserr: 0.0 },
+                         819.16970);
+        toler_assert_eq!(Toler { relerr: 1e-8, abserr: 0.0 },
                          nucleon_kinetic.diag_op1_elem(neutron_orbital),
-                         818.042096);
+                         818.04210);
     }
 
     #[test]

@@ -1,10 +1,10 @@
 //! Physical constants.
 
-/// `ħ c / (MeV fm)`
-pub const HBAR_C: f64 = 197.3269788;
+/// ħ c /(MeV fm)
+pub const HBAR_C_MEVFM: f64 = 197.326979;
 
-/// `neutron_mass / (MeV c⁻²)`
-pub const M_N: f64 = 939.5654133;
+/// Mass of neutron /(MeV c⁻²)
+pub const M_NEUTRON_MEVPC2: f64 = 939.565413;
 
-/// `proton_mass / (MeV c⁻²)`
-pub const M_P: f64 = 938.2720813;
+/// Mass of proton /(MeV c⁻²)
+pub const M_PROTON_MEVPC2: f64 = 938.272081;

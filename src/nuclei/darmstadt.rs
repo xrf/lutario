@@ -11,6 +11,30 @@ use super::super::ang_mom::{Coupled2HalfSpinsBlock, Uncoupled2HalfSpinsBlock};
 use super::super::half::Half;
 use super::{Ho3dTrunc, JNpjwKey, JtwNpjKey, Npj, Pj, Pjtw};
 
+/// This factor is used to adjust ME2J matrix elements for the pairwise dot
+/// product of momentum (`tpp` elements).
+///
+/// In the files, they are stored in this strange convention:
+///
+/// ```text
+/// −(a / fm)² ⟨…| p² / (2 m MeV) |…⟩
+/// ```
+///
+/// Therefore, given `ω / (MeV ħ⁻¹)`, one must compute `(a / fm)⁻²`, where
+/// `a` is the characteristic length of the harmonic oscillator:
+///
+/// ```text
+/// a = ħ / m ω
+/// ```
+///
+/// This can be achieved simply by multiplying `ω / (MeV ħ⁻¹)` by this
+/// constant.
+//
+// this constant is from Heiko's IM-SRG code (lib/GLO_Base.h: INVM);
+// we use their exact value for reproducibility reasons.
+// INVM = ħ / (2 m MeV fm²) ≈ 20.7355
+pub const TPP_FACTOR: f64 = 1.0 / (2.0 * 20.7355285386);
+
 #[derive(Clone, Copy, Debug)]
 pub struct Me2j<'a> {
     pub npjs: &'a [Npj],
