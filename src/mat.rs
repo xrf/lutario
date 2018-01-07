@@ -207,7 +207,7 @@ impl<'a, T> MatRef<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a T {
-        self.get(i, j).expect(&format!("out of range: ({}, {})", i, j))
+        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a T> {
@@ -438,7 +438,7 @@ impl<'a, T> MatMut<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a mut T {
-        self.get(i, j).expect(&format!("out of range: ({}, {})", i, j))
+        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a mut T> {
