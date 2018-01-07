@@ -102,7 +102,7 @@ impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
     pub fn tri_range(self, other: Half<T>) -> RangeInclusive<Half<T>> {
         RangeInclusive {
             start: Half::abs_diff(self.clone(), other.clone()),
-            end: self + other + Half(One::one()),
+            end: self + other,
         }
     }
 
