@@ -215,7 +215,7 @@ impl<S, L, R, D> Op<S, L, R, D> where
     {
         let ri = i.reify_state(&self.scheme, &self.left_basis);
         let rj = j.reify_state(&self.scheme, &self.right_basis);
-        assert_eq!(ri.chan, rj.chan, "channels do not match");
+        debug_assert_eq!(ri.chan, rj.chan, "channels do not match");
         self.data.set_block_mat(
             ri.chan,
             ri.aux,
@@ -238,7 +238,7 @@ impl<S, L, R, D> Op<S, L, R, D> where
     {
         let ri = i.reify_state(&self.scheme, &self.left_basis);
         let rj = j.reify_state(&self.scheme, &self.right_basis);
-        assert_eq!(ri.chan, rj.chan, "channels do not match");
+        debug_assert_eq!(ri.chan, rj.chan, "channels do not match");
         self.data.add_block_mat(
             ri.chan,
             ri.aux,

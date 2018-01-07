@@ -37,22 +37,22 @@ impl<M: VectorMut> VectorMut for Block<M> {
 
 impl<T: Clone> IndexBlockMatRef for Block<Vec<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
-        assert_eq!(self.chan, l);
-        assert_eq!(u1, u2);
+        debug_assert_eq!(self.chan, l);
+        debug_assert_eq!(u1, u2);
         self.data[u1].clone()
     }
 }
 
 impl<T: Clone> IndexBlockMatRef for Block<Mat<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         self.data.as_ref().get(u1, u2).unwrap().clone()
     }
 }
 
 impl<T: Clone> IndexBlockMatRef for Block<TriMat<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         self.data.as_ref().get(u1, u2).unwrap().clone()
     }
 }
@@ -66,8 +66,8 @@ impl<T: AddAssign> IndexBlockMatMut for Block<Vec<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
-        assert_eq!(u1, u2);
+        debug_assert_eq!(self.chan, l);
+        debug_assert_eq!(u1, u2);
         self.data[u1] = value;
     }
 
@@ -79,8 +79,8 @@ impl<T: AddAssign> IndexBlockMatMut for Block<Vec<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
-        assert_eq!(u1, u2);
+        debug_assert_eq!(self.chan, l);
+        debug_assert_eq!(u1, u2);
         self.data[u1] += value;
     }
 }
@@ -94,7 +94,7 @@ impl<T: AddAssign> IndexBlockMatMut for Block<Mat<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() = value;
     }
 
@@ -106,7 +106,7 @@ impl<T: AddAssign> IndexBlockMatMut for Block<Mat<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() += value;
     }
 }
@@ -120,7 +120,7 @@ impl<T: AddAssign> IndexBlockMatMut for Block<TriMat<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() = value;
     }
 
@@ -132,7 +132,7 @@ impl<T: AddAssign> IndexBlockMatMut for Block<TriMat<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(self.chan, l);
+        debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() += value;
     }
 }
@@ -200,7 +200,7 @@ impl<M: VectorMut> VectorMut for Bd<M> {
 
 impl<T: Clone> IndexBlockMatRef for Bd<Vec<T>> {
     fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem {
-        assert_eq!(u1, u2);
+        debug_assert_eq!(u1, u2);
         self.0[l][u1].clone()
     }
 }
@@ -226,7 +226,7 @@ impl<T: AddAssign> IndexBlockMatMut for Bd<Vec<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(u1, u2);
+        debug_assert_eq!(u1, u2);
         self.0[l][u1] = value;
     }
 
@@ -238,7 +238,7 @@ impl<T: AddAssign> IndexBlockMatMut for Bd<Vec<T>> {
         value: Self::Elem,
     )
     {
-        assert_eq!(u1, u2);
+        debug_assert_eq!(u1, u2);
         self.0[l][u1] += value;
     }
 }
