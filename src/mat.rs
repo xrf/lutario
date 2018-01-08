@@ -207,7 +207,11 @@ impl<'a, T> MatRef<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a T {
-        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
+        let num_rows = self.num_rows();
+        let num_cols = self.num_cols();
+        self.get(i, j).unwrap_or_else(|| {
+            panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols)
+        })
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a T> {
@@ -438,7 +442,11 @@ impl<'a, T> MatMut<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a mut T {
-        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
+        let num_rows = self.num_rows();
+        let num_cols = self.num_cols();
+        self.get(i, j).unwrap_or_else(|| {
+            panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols)
+        })
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a mut T> {
@@ -736,6 +744,19 @@ impl<T: PartialEq<U>, U> PartialEq<Mat<U>> for Mat<T> {
 }
 
 impl<T: Eq> Eq for Mat<T> {}
+
+impl<T> Index<(usize, usize)> for Mat<T> {
+    type Output = T;
+    fn index(&self, (i, j): (usize, usize)) -> &Self::Output {
+        self.as_ref().index(i, j)
+    }
+}
+
+impl<T> IndexMut<(usize, usize)> for Mat<T> {
+    fn index_mut(&mut self, (i, j): (usize, usize)) -> &mut Self::Output {
+        self.as_mut().index(i, j)
+    }
+}
 
 /// Convenience function for creating matrices directly in code.
 impl<T> From<Vec<Vec<T>>> for Mat<T> {

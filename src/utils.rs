@@ -1,5 +1,5 @@
 use std::{ascii, cmp, fmt, mem, panic, ptr, process};
-use std::ops::{Add, Range};
+use std::ops::{Add, Range, Sub};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
@@ -84,6 +84,12 @@ pub fn euclid_mod(a: i32, b: i32) -> i32 {
 pub struct RangeInclusive<Idx> {
     pub start: Idx,
     pub end: Idx,
+}
+
+impl<A: Add<Output = A> + Sub<Output = A> + One + Clone> RangeInclusive<A> {
+    pub fn len(&self) -> A {
+        self.end.clone() - self.start.clone() + One::one()
+    }
 }
 
 impl<A> Iterator for RangeInclusive<A>
@@ -314,7 +320,6 @@ impl RangeSet {
     }
 
     pub fn unchecked_get(&self, i: usize) -> i32 {
-        debug_assert!(i < self.len());
         self.start + i as i32 * self.step
     }
 
@@ -350,9 +355,22 @@ impl RangeSet {
     }
 
     pub fn unchecked_position(&self, i: i32) -> usize {
-        debug_assert!(self.contains(i));
         let offset = i - self.start;
         (offset / self.step) as _
+    }
+
+    pub fn ceil(&self, i: i32) -> Option<i32> {
+        self.get(0.max(-euclid_div(self.start - i, self.step)) as _)
+    }
+
+    pub fn floor(&self, i: i32) -> Option<i32> {
+        let pos = (self.len - 1)
+            .min(euclid_div(i - self.start, self.step));
+        if pos < 0 {
+            None
+        } else {
+            self.get(pos as _)
+        }
     }
 
     /// Expand the range so as to include the given integer.

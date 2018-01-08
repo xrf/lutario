@@ -8,6 +8,7 @@
 //! M-scheme simply by treating all J's as zero.
 
 use std::{f64, fmt, io, mem};
+use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::{Add, Deref, MulAssign, Range, Sub};
 use std::sync::Arc;
@@ -20,10 +21,11 @@ use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
                    Occ, Occ20, Orb, OrbIx, PartState};
 use super::block::{Bd, Block};
 use super::half::Half;
+use super::linalg::{self, Transpose};
 use super::mat::Mat;
 use super::op::{ChartedBasis, Op, ReifiedState, ReifyState, VectorMut};
 use super::tri_mat::Trs;
-use super::utils::{self, Toler};
+use super::utils::{self, RangeInclusive, RangeSet, Toler};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct JChan<K = u32> {
@@ -163,6 +165,8 @@ pub struct BasisSchemeJ10 {
     pub orb_from_ix: Box<[Orb]>,
     /// `i → p`
     pub orb_to_ix: Box<[OrbIx]>,
+    /// set of all `j` values (may include false positives)
+    pub j_set: RangeSet,
 }
 
 impl BasisSchemeJ10 {
@@ -171,12 +175,15 @@ impl BasisSchemeJ10 {
         linchan1_chart: &mut HashChart<K, u32>,
     ) -> (Self, FnvHashMap<(u32, U), u32>, Box<[U]>)
     {
+        let mut j_set = RangeSet::default();
         let chart1 = BasisChart::new_with(orbs.iter().map(|state| {
+            let j = state.p.l.j;
+            j_set.insert(j.twice());
             PartState {
                 x: state.x,
                 p: ChanState {
                     l: JChan {
-                        j: state.p.l.j,
+                        j,
                         k: linchan1_chart.insert(state.p.l.k.clone()).index,
                     },
                     u: state.p.u.clone(),
@@ -189,6 +196,7 @@ impl BasisSchemeJ10 {
                 chan_chart: chart1.chan_chart,
                 orb_from_ix: chart1.orb_from_ix,
                 orb_to_ix: chart1.orb_to_ix,
+                j_set,
             },
             chart1.aux_encoder,
             chart1.aux_decoder,
@@ -258,6 +266,26 @@ impl BasisSchemeJ10 {
     pub fn orb_to_ix(&self, i: Orb) -> OrbIx {
         self.orb_to_ix[i.0 as usize]
     }
+
+    pub fn jjjj_blocks<'a>(
+        &'a self,
+    ) -> Box<Iterator<Item = (Half<i32>, Half<i32>, Half<i32>, Half<i32>)> + 'a> {
+        let j_set = self.j_set;
+        Box::new(j_set.into_iter().map(Half).flat_map(move |jp| {
+            j_set.into_iter().map(Half).flat_map(move |jq| {
+                j_set.into_iter().map(Half).flat_map(move |jr| {
+                    let js_range = Half::quad_range(jp, jq, jr);
+                    j_set.ceil(js_range.start.twice())
+                        .into_iter().flat_map(move |js_start| {
+                            RangeInclusive {
+                                start: Half(js_start),
+                                end: Half(j_set.floor(js_range.end.twice()).unwrap()),
+                            }.map(move |js| (jp, jq, jr, js))
+                        })
+                })
+            })
+        }))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -268,6 +296,9 @@ pub struct BasisSchemeJ20 {
     pub aux_encoder: FnvHashMap<(Half<i32>, Orb, Orb), ChanState>,
     /// `i12 → (i1, i2)`
     pub aux_decoder: Box<[(Orb, Orb)]>,
+    /// `(j1, j2) → k12 → [(p1, p2)]`
+    pub jj_k12_pp: FnvHashMap<(Half<i32>, Half<i32>),
+                              BTreeMap<u32, Vec<(Orb, Orb)>>>,
 }
 
 impl BasisSchemeJ20 {
@@ -278,6 +309,7 @@ impl BasisSchemeJ20 {
     ) -> Self
     {
         let mut states2 = Vec::default();
+        let mut jj_k12_pp = FnvHashMap::<_, BTreeMap<_, Vec<_>>>::default();
         for l1 in 0 .. basis_10.num_chans() {
             for l2 in 0 .. basis_10.num_chans() {
                 for u1 in basis_10.auxs(l1, Occ::I, Occ::A) {
@@ -298,10 +330,23 @@ impl BasisSchemeJ20 {
                         let x12 = Occ20::from_usize(
                             usize::from(basis_10.occ(lu1))
                                 + usize::from(basis_10.occ(lu2))).unwrap();
-                        let j1_j2 = jk1.j + jk2.j;
-                        for j12 in Half::tri_range(jk1.j, jk2.j) {
+                        let j1 = jk1.j;
+                        let j2 = jk2.j;
+                        jj_k12_pp.entry((j1, j2))
+                            .or_insert(Default::default())
+                            .entry(k12)
+                            .or_insert(Default::default())
+                            .push((p1, p2));
+                        if p1 != p2 {
+                            jj_k12_pp.entry((j2, j1))
+                                .or_insert(Default::default())
+                                .entry(k12)
+                                .or_insert(Default::default())
+                                .push((p2, p1));
+                        }
+                        for j12 in Half::tri_range(j1, j2) {
                             if p1 == p2
-                                && j1_j2.abs_diff(j12).unwrap() % 2 == 0
+                                && (j1 + j2).abs_diff(j12).unwrap() % 2 == 0
                             {
                                 // forbidden by antisymmetry
                                 continue;
@@ -334,6 +379,7 @@ impl BasisSchemeJ20 {
             chan_chart: chart2.chan_chart,
             aux_encoder: aux_encoder2,
             aux_decoder: chart2.aux_decoder,
+            jj_k12_pp,
         }
     }
 
@@ -1460,6 +1506,54 @@ pub fn check_eq_mop_j012(
         .and(check_eq_op_j200(toler, &a.2, &b.2))
 }
 
+pub fn calc_jjjj_naaaa(
+    scheme: &Arc<JScheme>,
+    jjjj: (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
+) -> usize
+{
+    foreach_jjjjk12_block(scheme, jjjj, |_, _, _| {})
+}
+
+pub fn foreach_jjjjk12_block<F>(
+    scheme: &Arc<JScheme>,
+    (jp, jq, jr, js): (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
+    mut callback: F,
+) -> usize where
+    F: FnMut(usize, &[(Orb, Orb)], &[(Orb, Orb)]),
+{
+    let kpq_tree = scheme.basis_20.jj_k12_pp.get(&(jp, jq)).unwrap();
+    let krs_tree = scheme.basis_20.jj_k12_pp.get(&(jr, js)).unwrap();
+    let mut blk_off = 0;
+    for (kpq, ppspq) in kpq_tree {
+        if let Some(ppsrs) = krs_tree.get(kpq) {
+            callback(blk_off, ppspq, ppsrs);
+            blk_off += ppspq.len() * ppsrs.len();
+        }
+    }
+    blk_off
+}
+
+pub fn foreach_jjjjk12_elem<'a, F>(
+    scheme: &'a Arc<JScheme>,
+    jjjj: (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
+    mut callback: F,
+) where
+    F: FnMut(usize, (StateJ10<'a>, StateJ10<'a>, StateJ10<'a>, StateJ10<'a>)),
+{
+    foreach_jjjjk12_block(scheme, jjjj, |blk_off, ppspq, ppsrs| {
+        let nrs = ppsrs.len();
+        for (ipq, &(sp, sq)) in ppspq.iter().enumerate() {
+            let tp = scheme.state_10(scheme.basis_10.encode(sp));
+            let tq = scheme.state_10(scheme.basis_10.encode(sq));
+            for (irs, &(sr, ss)) in ppsrs.iter().enumerate() {
+                let tr = scheme.state_10(scheme.basis_10.encode(sr));
+                let ts = scheme.state_10(scheme.basis_10.encode(ss));
+                callback(blk_off + ipq * nrs + irs, (tp, tq, tr, ts));
+            }
+        }
+    });
+}
+
 /// Pandya transformation.
 ///
 /// ```text
@@ -1473,29 +1567,57 @@ pub fn op200_to_op211(
 )
 {
     let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            let w = -alpha
-                * pq.j().double().phase()
-                * pq.jweight(2)
-                * a2.at(pq, rs);
-            let (p, q) = pq.split_to_10_10();
-            let (r, s) = rs.split_to_10_10();
-            for jps in Half::tri_range_2(
-                (p.j(), s.j()),
-                (r.j(), q.j()),
-            ) {
-                let ps = p.combine_with_10_to_21(s, jps).unwrap();
-                let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                b2.add(ps, rq, w * w6j_ctx.get(Wigner6j {
-                    tj1: p.j().twice(),
-                    tj2: q.j().twice(),
-                    tj3: pq.j().twice(),
-                    tj4: r.j().twice(),
-                    tj5: s.j().twice(),
-                    tj6: ps.j().twice(),
-                }));
+    for jjjj in scheme.basis_10.jjjj_blocks() {
+        let (jp, jq, jr, js) = jjjj;
+        let naaaa = calc_jjjj_naaaa(scheme, jjjj);
+        let jpq_range = Half::tri_range_2((jp, jq), (jr, js));
+        let jps_range = Half::tri_range_2((jp, js), (jr, jq));
+        let njpq = jpq_range.len().unwrap() as usize;
+        let njps = jps_range.len().unwrap() as usize;
+        let mut mw = Mat::zero(njps, njpq);
+        let mut ma = Mat::zero(njpq, naaaa);
+        let mut mb = Mat::zero(njps, naaaa);
+        for (ijpq, jpq) in jpq_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
+                if let Some(tpq) = tp.combine_with_10(tq, jpq) {
+                    if let Some(trs) = tr.combine_with_10(ts, jpq) {
+                        ma[(ijpq, iaaaa)] = a2.at(tpq, trs);
+                    }
+                }
+            });
+        }
+        for (ijps, jps) in jps_range.clone().enumerate() {
+            for (ijpq, jpq) in jpq_range.clone().enumerate() {
+                mw.as_mut()[(ijps, ijpq)] =
+                    jpq.double().phase()
+                    * jpq.weight(2)
+                    * w6j_ctx.get(Wigner6j {
+                        tj1: jp.twice(),
+                        tj2: jq.twice(),
+                        tj3: jpq.twice(),
+                        tj4: jr.twice(),
+                        tj5: js.twice(),
+                        tj6: jps.twice(),
+                    });
             }
+        }
+        linalg::gemm(
+            Transpose::None,
+            Transpose::None,
+            -alpha,
+            mw.as_ref(),
+            ma.as_ref(),
+            1.0,
+            mb.as_mut(),
+        );
+        for (ijps, jps) in jps_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
+                if let Some(tps) = tp.combine_with_10_to_21(ts, jps) {
+                    if let Some(trq) = tr.combine_with_10_to_21(tq, jps) {
+                        b2.add(tps, trq, mb[(ijps, iaaaa)]);
+                    }
+                }
+            });
         }
     }
 }
@@ -1513,27 +1635,57 @@ pub fn op211_to_op200(
 )
 {
     let scheme = a2.scheme();
-    for pq in scheme.states_20(&occ::ALL2) {
-        for rs in pq.costates_20(&occ::ALL2) {
-            let (p, q) = pq.split_to_10_10();
-            let (r, s) = rs.split_to_10_10();
-            let mut x = 0.0;
-            for jps in Half::tri_range_2(
-                (p.j(), s.j()),
-                (r.j(), q.j()),
-            ) {
-                let ps = p.combine_with_10_to_21(s, jps).unwrap();
-                let rq = r.combine_with_10_to_21(q, jps).unwrap();
-                x += w6j_ctx.get(Wigner6j {
-                    tj1: p.j().twice(),
-                    tj2: q.j().twice(),
-                    tj3: pq.j().twice(),
-                    tj4: r.j().twice(),
-                    tj5: s.j().twice(),
-                    tj6: ps.j().twice(),
-                }) * ps.jweight(2) * a2.at(ps, rq);
+    for jjjj in scheme.basis_10.jjjj_blocks() {
+        let (jp, jq, jr, js) = jjjj;
+        let naaaa = calc_jjjj_naaaa(scheme, jjjj);
+        let jpq_range = Half::tri_range_2((jp, jq), (jr, js));
+        let jps_range = Half::tri_range_2((jp, js), (jr, jq));
+        let njpq = jpq_range.len().unwrap() as usize;
+        let njps = jps_range.len().unwrap() as usize;
+        let mut mw = Mat::zero(njpq, njps);
+        let mut ma = Mat::zero(njps, naaaa);
+        let mut mb = Mat::zero(njpq, naaaa);
+        for (ijps, jps) in jps_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
+                if let Some(tps) = tp.combine_with_10_to_21(ts, jps) {
+                    if let Some(trq) = tr.combine_with_10_to_21(tq, jps) {
+                        ma[(ijps, iaaaa)] = a2.at(tps, trq);
+                    }
+                }
+            });
+        }
+        for (ijpq, jpq) in jpq_range.clone().enumerate() {
+            for (ijps, jps) in jps_range.clone().enumerate() {
+                mw.as_mut()[(ijpq, ijps)] =
+                    jpq.double().phase()
+                    * jps.weight(2)
+                    * w6j_ctx.get(Wigner6j {
+                        tj1: jp.twice(),
+                        tj2: jq.twice(),
+                        tj3: jpq.twice(),
+                        tj4: jr.twice(),
+                        tj5: js.twice(),
+                        tj6: jps.twice(),
+                    });
             }
-            b2.add(pq, rs, -alpha * pq.j().double().phase() * x);
+        }
+        linalg::gemm(
+            Transpose::None,
+            Transpose::None,
+            -alpha,
+            mw.as_ref(),
+            ma.as_ref(),
+            1.0,
+            mb.as_mut(),
+        );
+        for (ijpq, jpq) in jpq_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
+                if let Some(tpq) = tp.combine_with_10(tq, jpq) {
+                    if let Some(trs) = tr.combine_with_10(ts, jpq) {
+                        b2.add(tpq, trs, mb[(ijpq, iaaaa)]);
+                    }
+                }
+            });
         }
     }
 }

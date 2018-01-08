@@ -1,7 +1,8 @@
 //! Half-integers for angular momentum quantities.
-use std::fmt;
+use std::{cmp, fmt};
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use num::{One, Signed, ToPrimitive, Zero};
+use super::parity;
 use super::utils::{self, RangeInclusive};
 
 /// Type that logically behaves like half-integers, but what is actually
@@ -55,7 +56,7 @@ impl<T: Signed> Half<T> {
 
 impl<T: Signed + Ord> Half<T> {
     #[inline]
-    pub fn in_multiplet_of(self, j: Half<T>) -> bool {
+    pub fn in_multiplet_of(self, j: Self) -> bool {
         self.abs().twice() < j.twice()
     }
 }
@@ -63,7 +64,7 @@ impl<T: Signed + Ord> Half<T> {
 impl<T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One> Half<T> {
     /// Get the value if it's half-even.  Otherwise, returns `Err(self)`.
     #[inline]
-    pub fn try_get(self) -> Result<T, Half<T>> {
+    pub fn try_get(self) -> Result<T, Self> {
         let two = T::one() + T::one();
         if (self.0.clone() % two.clone()).is_zero() {
             Ok(self.0 / two)
@@ -99,7 +100,7 @@ impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
     /// Obtain the range of values that satisfy the triangular condition, i.e.
     /// the range from `|self − other|` to `self + other` (inclusive).
     #[inline]
-    pub fn tri_range(self, other: Half<T>) -> RangeInclusive<Half<T>> {
+    pub fn tri_range(self, other: Self) -> RangeInclusive<Self> {
         RangeInclusive {
             start: Half::abs_diff(self.clone(), other.clone()),
             end: self + other,
@@ -108,9 +109,9 @@ impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
 
     #[inline]
     pub fn tri_range_2(
-        (j1, j2): (Half<T>, Half<T>),
-        (j3, j4): (Half<T>, Half<T>),
-    ) -> RangeInclusive<Half<T>> {
+        (j1, j2): (Self, Self),
+        (j3, j4): (Self, Self),
+    ) -> RangeInclusive<Self> {
         utils::intersect_range_inclusive(
             Half::tri_range(j1, j2),
             Half::tri_range(j3, j4),
@@ -213,5 +214,17 @@ impl Half<i32> where {
     #[inline]
     pub fn weight(self, exponent: i32) -> f64 {
         ((self.twice() + 1) as f64).powf(exponent as f64 / 2.0)
+    }
+
+    /// Obtain the range of values that satisfy the quadrangular condition.
+    #[inline]
+    pub fn quad_range(self, b: Self, c: Self) -> RangeInclusive<Self> {
+        RangeInclusive {
+            start: cmp::max(
+                Zero::zero(),
+                parity::sort3(self - b - c, b - c - self, c - self - b).3,
+            ),
+            end: self + b + c,
+        }
     }
 }

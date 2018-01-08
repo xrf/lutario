@@ -221,7 +221,10 @@ impl<'a, T> TriMatRef<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a T {
-        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
+        let shape = *self.shape();
+        self.get(i, j).unwrap_or_else(|| {
+            panic!("({}, {}) is not within ({}, {})", i, j, shape, shape)
+        })
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a T> {
@@ -375,7 +378,10 @@ impl<'a, T> TriMatMut<'a, T> {
     }
 
     pub fn index(self, i: usize, j: usize) -> &'a mut T {
-        self.get(i, j).unwrap_or_else(|| panic!("out of range: ({}, {})", i, j))
+        let shape = *self.shape();
+        self.get(i, j).unwrap_or_else(|| {
+            panic!("({}, {}) is not within ({}, {})", i, j, shape, shape)
+        })
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a mut T> {
