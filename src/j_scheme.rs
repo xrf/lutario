@@ -11,14 +11,14 @@ use std::{f64, fmt, io, mem};
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::ops::{Add, Deref, MulAssign, Range, Sub};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use fnv::FnvHashMap;
 use num::Zero;
 use rand;
 use wigner_symbols::Wigner6j;
 use super::ang_mom::Wigner6jCtx;
 use super::basis::{occ, BasisChart, BasisLayout, ChanState, Fence, HashChart,
-                   Occ, Occ20, Orb, OrbIx, PartState};
+                   Occ, Occ20, Orb, OrbIx, PackedOptChanState, PartState};
 use super::block::{Bd, Block};
 use super::half::Half;
 use super::linalg::{self, Transpose};
@@ -110,11 +110,7 @@ impl<K, U: Hash + Eq> JAtlas<K, U>
             linchan2_chart,
             aux_encoder,
             aux_decoder,
-            scheme: Arc::new(JScheme {
-                basis_10,
-                basis_20,
-                basis_21,
-            }),
+            scheme: JScheme::new(basis_10, basis_20, basis_21),
         }
     }
 }
@@ -527,6 +523,77 @@ impl BasisSchemeJ21 {
         self.aux_encoder.get(&(j12, i1, i2)).cloned()
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct JjjjBlockInfo {
+    pub naaaa: usize,
+    pub j12_range: RangeInclusive<Half<i32>>,
+    pub j14_range: RangeInclusive<Half<i32>>,
+    pub imap_200: Mat<(PackedOptChanState, PackedOptChanState)>,
+    pub imap_211: Mat<(PackedOptChanState, PackedOptChanState)>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PandyaScheme {
+    pub block_infos: FnvHashMap<(Half<i32>, Half<i32>, Half<i32>, Half<i32>),
+                                JjjjBlockInfo>,
+}
+
+impl PandyaScheme {
+    pub fn new(scheme: &Arc<JScheme>) -> Self {
+        let block_infos = scheme.basis_10.jjjj_blocks().map(|jjjj| {
+            let (j1, j2, j3, j4) = jjjj;
+            let naaaa = calc_jjjj_naaaa(scheme, jjjj);
+            let j12_range = Half::tri_range_2((j1, j2), (j3, j4));
+            let j14_range = Half::tri_range_2((j1, j4), (j3, j2));
+            let nj12 = j12_range.len().unwrap() as usize;
+            let nj14 = j14_range.len().unwrap() as usize;
+            let mut imap_200 = Mat::replicate(nj12, naaaa, Default::default());
+            let mut imap_211 = Mat::replicate(nj14, naaaa, Default::default());
+            for (ij12, j12) in j12_range.clone().enumerate() {
+                foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                    let tp = scheme.state_10(scheme.basis_10.encode(sp));
+                    let tq = scheme.state_10(scheme.basis_10.encode(sq));
+                    let tr = scheme.state_10(scheme.basis_10.encode(sr));
+                    let ts = scheme.state_10(scheme.basis_10.encode(ss));
+                    if let Some(tpq) = tp.combine_with_10(tq, j12) {
+                        if let Some(trs) = tr.combine_with_10(ts, j12) {
+                            imap_200[(ij12, iaaaa)] = (
+                                PackedOptChanState::from(Some(tpq.lu12)),
+                                PackedOptChanState::from(Some(trs.lu12)),
+                            )
+                        }
+                    }
+                });
+            }
+            for (ij14, j14) in j14_range.clone().enumerate() {
+                foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                    let tp = scheme.state_10(scheme.basis_10.encode(sp));
+                    let tq = scheme.state_10(scheme.basis_10.encode(sq));
+                    let tr = scheme.state_10(scheme.basis_10.encode(sr));
+                    let ts = scheme.state_10(scheme.basis_10.encode(ss));
+                    if let Some(tps) = tp.combine_with_10_to_21(ts, j14) {
+                        if let Some(trq) = tr.combine_with_10_to_21(tq, j14) {
+                            imap_211[(ij14, iaaaa)] = (
+                                PackedOptChanState::from(Some(tps.lu12)),
+                                PackedOptChanState::from(Some(trq.lu12)),
+                            )
+                        }
+                    }
+                });
+            }
+            (jjjj, JjjjBlockInfo {
+                naaaa,
+                j12_range,
+                j14_range,
+                imap_200,
+                imap_211,
+            })
+        }).collect();
+        Self { block_infos }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct StateMask10 {
@@ -1113,14 +1180,37 @@ impl<'a> StateJ21<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct JScheme {
     pub basis_10: BasisSchemeJ10,
     pub basis_20: BasisSchemeJ20,
     pub basis_21: BasisSchemeJ21,
+    pub pandya: Mutex<Option<Arc<PandyaScheme>>>,
 }
 
 impl JScheme {
+    pub fn new(
+        basis_10: BasisSchemeJ10,
+        basis_20: BasisSchemeJ20,
+        basis_21: BasisSchemeJ21,
+    ) -> Arc<Self>
+    {
+        let scheme = Arc::new(Self {
+            basis_10,
+            basis_20,
+            basis_21,
+            pandya: Default::default(),
+        });
+        // mutually recursive initialization is awful
+        *scheme.pandya.lock().unwrap() =
+            Some(Arc::new(PandyaScheme::new(&scheme)));
+        scheme
+    }
+
+    pub fn pandya(&self) -> Arc<PandyaScheme> {
+        self.pandya.lock().unwrap().as_ref().unwrap().clone()
+    }
+
     #[inline]
     pub fn parted_orb(&self, lu: ChanState) -> JPartedOrb {
         JPartedOrb {
@@ -1141,6 +1231,23 @@ impl JScheme {
     #[inline]
     pub fn state_20(&self, lu12: ChanState) -> StateJ20 {
         let (s1, s2) = self.basis_20.decode(lu12);
+        self.raw_state_20(lu12, s1, s2)
+    }
+
+    #[inline]
+    pub fn raw_state_20(&self, lu12: ChanState, s1: Orb, s2: Orb) -> StateJ20 {
+        let t12 = self.raw_state_20_ord(lu12, s1, s2);
+        if s1 < s2 {
+            t12.next_permut().unwrap()
+        } else {
+            t12
+        }
+    }
+
+    /// Note: s1 and s2 must be in natural order.  Otherwise, the caller is
+    /// responsible for adjust the permut.
+    #[inline]
+    pub fn raw_state_20_ord(&self, lu12: ChanState, s1: Orb, s2: Orb) -> StateJ20 {
         let num_permut = if s1 == s2 { 1 } else { 2 };
         StateJ20 {
             scheme: self,
@@ -1159,6 +1266,11 @@ impl JScheme {
     #[inline]
     pub fn state_21(&self, lu12: ChanState) -> StateJ21 {
         let (s1, s2) = self.basis_21.decode(lu12);
+        self.raw_state_21(lu12, s1, s2)
+    }
+
+    #[inline]
+    pub fn raw_state_21(&self, lu12: ChanState, s1: Orb, s2: Orb) -> StateJ21 {
         StateJ21 {
             scheme: self,
             lu12,
@@ -1507,7 +1619,7 @@ pub fn check_eq_mop_j012(
 }
 
 pub fn calc_jjjj_naaaa(
-    scheme: &Arc<JScheme>,
+    scheme: &JScheme,
     jjjj: (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
 ) -> usize
 {
@@ -1515,7 +1627,7 @@ pub fn calc_jjjj_naaaa(
 }
 
 pub fn foreach_jjjjk12_block<F>(
-    scheme: &Arc<JScheme>,
+    scheme: &JScheme,
     (jp, jq, jr, js): (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
     mut callback: F,
 ) -> usize where
@@ -1533,22 +1645,18 @@ pub fn foreach_jjjjk12_block<F>(
     blk_off
 }
 
-pub fn foreach_jjjjk12_elem<'a, F>(
-    scheme: &'a Arc<JScheme>,
+pub fn foreach_jjjjk12_elem<F>(
+    scheme: &JScheme,
     jjjj: (Half<i32>, Half<i32>, Half<i32>, Half<i32>),
     mut callback: F,
 ) where
-    F: FnMut(usize, (StateJ10<'a>, StateJ10<'a>, StateJ10<'a>, StateJ10<'a>)),
+    F: FnMut(usize, (Orb, Orb, Orb, Orb)),
 {
     foreach_jjjjk12_block(scheme, jjjj, |blk_off, ppspq, ppsrs| {
         let nrs = ppsrs.len();
         for (ipq, &(sp, sq)) in ppspq.iter().enumerate() {
-            let tp = scheme.state_10(scheme.basis_10.encode(sp));
-            let tq = scheme.state_10(scheme.basis_10.encode(sq));
             for (irs, &(sr, ss)) in ppsrs.iter().enumerate() {
-                let tr = scheme.state_10(scheme.basis_10.encode(sr));
-                let ts = scheme.state_10(scheme.basis_10.encode(ss));
-                callback(blk_off + ipq * nrs + irs, (tp, tq, tr, ts));
+                callback(blk_off + ipq * nrs + irs, (sp, sq, sr, ss));
             }
         }
     });
@@ -1567,20 +1675,25 @@ pub fn op200_to_op211(
 )
 {
     let scheme = a2.scheme();
+    let pandya_scheme = scheme.pandya();
     for jjjj in scheme.basis_10.jjjj_blocks() {
         let (jp, jq, jr, js) = jjjj;
-        let naaaa = calc_jjjj_naaaa(scheme, jjjj);
-        let jpq_range = Half::tri_range_2((jp, jq), (jr, js));
-        let jps_range = Half::tri_range_2((jp, js), (jr, jq));
+        let block_info = pandya_scheme.block_infos.get(&jjjj).unwrap();
+        let naaaa = block_info.naaaa;
+        let jpq_range = &block_info.j12_range;
+        let jps_range = &block_info.j14_range;
         let njpq = jpq_range.len().unwrap() as usize;
         let njps = jps_range.len().unwrap() as usize;
         let mut mw = Mat::zero(njps, njpq);
         let mut ma = Mat::zero(njpq, naaaa);
         let mut mb = Mat::zero(njps, naaaa);
-        for (ijpq, jpq) in jpq_range.clone().enumerate() {
-            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
-                if let Some(tpq) = tp.combine_with_10(tq, jpq) {
-                    if let Some(trs) = tr.combine_with_10(ts, jpq) {
+        for (ijpq, _) in jpq_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                let (lupq, lurs) = block_info.imap_200[(ijpq, iaaaa)];
+                if let Some(lupq) = lupq.into() {
+                    if let Some(lurs) = lurs.into() {
+                        let mut tpq = scheme.raw_state_20(lupq, sp, sq);
+                        let mut trs = scheme.raw_state_20(lurs, sr, ss);
                         ma[(ijpq, iaaaa)] = a2.at(tpq, trs);
                     }
                 }
@@ -1610,10 +1723,13 @@ pub fn op200_to_op211(
             1.0,
             mb.as_mut(),
         );
-        for (ijps, jps) in jps_range.clone().enumerate() {
-            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
-                if let Some(tps) = tp.combine_with_10_to_21(ts, jps) {
-                    if let Some(trq) = tr.combine_with_10_to_21(tq, jps) {
+        for (ijps, _) in jps_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                let (lups, lurq) = block_info.imap_211[(ijps, iaaaa)];
+                if let Some(lups) = lups.into() {
+                    if let Some(lurq) = lurq.into() {
+                        let tps = scheme.raw_state_21(lups, sp, ss);
+                        let trq = scheme.raw_state_21(lurq, sr, sq);
                         b2.add(tps, trq, mb[(ijps, iaaaa)]);
                     }
                 }
@@ -1635,20 +1751,25 @@ pub fn op211_to_op200(
 )
 {
     let scheme = a2.scheme();
+    let pandya_scheme = scheme.pandya();
     for jjjj in scheme.basis_10.jjjj_blocks() {
         let (jp, jq, jr, js) = jjjj;
-        let naaaa = calc_jjjj_naaaa(scheme, jjjj);
-        let jpq_range = Half::tri_range_2((jp, jq), (jr, js));
-        let jps_range = Half::tri_range_2((jp, js), (jr, jq));
+        let block_info = pandya_scheme.block_infos.get(&jjjj).unwrap();
+        let naaaa = block_info.naaaa;
+        let jpq_range = &block_info.j12_range;
+        let jps_range = &block_info.j14_range;
         let njpq = jpq_range.len().unwrap() as usize;
         let njps = jps_range.len().unwrap() as usize;
         let mut mw = Mat::zero(njpq, njps);
         let mut ma = Mat::zero(njps, naaaa);
         let mut mb = Mat::zero(njpq, naaaa);
-        for (ijps, jps) in jps_range.clone().enumerate() {
-            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
-                if let Some(tps) = tp.combine_with_10_to_21(ts, jps) {
-                    if let Some(trq) = tr.combine_with_10_to_21(tq, jps) {
+        for (ijps, _) in jps_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                let (lups, lurq) = block_info.imap_211[(ijps, iaaaa)];
+                if let Some(lups) = lups.into() {
+                    if let Some(lurq) = lurq.into() {
+                        let tps = scheme.raw_state_21(lups, sp, ss);
+                        let trq = scheme.raw_state_21(lurq, sr, sq);
                         ma[(ijps, iaaaa)] = a2.at(tps, trq);
                     }
                 }
@@ -1678,10 +1799,13 @@ pub fn op211_to_op200(
             1.0,
             mb.as_mut(),
         );
-        for (ijpq, jpq) in jpq_range.clone().enumerate() {
-            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (tp, tq, tr, ts)| {
-                if let Some(tpq) = tp.combine_with_10(tq, jpq) {
-                    if let Some(trs) = tr.combine_with_10(ts, jpq) {
+        for (ijpq, _) in jpq_range.clone().enumerate() {
+            foreach_jjjjk12_elem(scheme, jjjj, |iaaaa, (sp, sq, sr, ss)| {
+                let (lupq, lurs) = block_info.imap_200[(ijpq, iaaaa)];
+                if let Some(lupq) = lupq.into() {
+                    if let Some(lurs) = lurs.into() {
+                        let mut tpq = scheme.raw_state_20(lupq, sp, sq);
+                        let mut trs = scheme.raw_state_20(lurs, sr, ss);
                         b2.add(tpq, trs, mb[(ijpq, iaaaa)]);
                     }
                 }

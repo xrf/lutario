@@ -616,6 +616,43 @@ impl<L, U> fmt::Display for ChanState<L, U> where
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct PackedOptChanState(pub u32);
+
+impl Default for PackedOptChanState {
+    fn default() -> Self {
+        None.into()
+    }
+}
+
+impl From<Option<ChanState>> for PackedOptChanState {
+    fn from(x: Option<ChanState>) -> Self {
+        match x {
+            None => PackedOptChanState(u32::max_value()),
+            Some(lu) => {
+                assert!(lu.l <= u16::max_value() as u32);
+                assert!(lu.u <= u16::max_value() as u32);
+                let i = lu.l | (lu.u << 16);
+                assert!(i != u32::max_value());
+                PackedOptChanState(i)
+            }
+        }
+    }
+}
+
+impl From<PackedOptChanState> for Option<ChanState> {
+    fn from(PackedOptChanState(i): PackedOptChanState) -> Self {
+        if i == u32::max_value() {
+            None
+        } else {
+            Some(ChanState {
+                l: (i & 0xffff) as u32,
+                u: ((i >> 16) & 0xffff) as u32,
+            })
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PartState<X, P> {
     pub x: X,
