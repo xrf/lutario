@@ -45,13 +45,8 @@ use std::{mem, ptr, slice};
 use std::os::raw;
 use conv::ValueInto;
 use libc;
-use super::super::utils::abort_on_unwind;
+use super::super::utils::{UnsafeSync, abort_on_unwind};
 use super::{VectorDriver, assert_all_eq};
-
-#[derive(Clone, Copy, Debug)]
-struct UnsafeSync<T>(T);
-
-unsafe impl<T> Sync for UnsafeSync<T> {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct CVectorDriver<D> {
@@ -115,7 +110,7 @@ impl<D: VectorDriver<Item=f64> + Sized> CVectorDriver<D> {
                              num_vectors: libc::size_t) {
         abort_on_unwind(|| {
             let d = &*(d as *const D);
-            let f_ctx = UnsafeSync(f_ctx);
+            let f_ctx = UnsafeSync::new(f_ctx);
             // avoid creating slices with null pointers (which would be bad)
             if num_vectors == 0 {
                 vectors = [].as_mut_ptr();
@@ -182,7 +177,7 @@ fn wrapper<S>(f: ffi::VectorOperation,
         let mut mut_slices: Vec<_> =
             mut_slices.into_iter().map(|s| s.as_mut_ptr()).collect();
         unsafe {
-            f(f_ctx.0,
+            f(f_ctx.into_inner(),
               accum.as_mut_ptr() as *mut _,
               val.as_ptr() as *const _,
               offset,

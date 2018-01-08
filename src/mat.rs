@@ -699,6 +699,9 @@ pub struct Mat<T> {
     num_cols: usize,
 }
 
+unsafe impl<T: Send> Send for Mat<T> {}
+unsafe impl<T: Sync> Sync for Mat<T> {}
+
 impl<T: fmt::Debug> fmt::Debug for Mat<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.as_ref().fmt(f)

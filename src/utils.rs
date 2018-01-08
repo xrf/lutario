@@ -1,5 +1,5 @@
 use std::{ascii, cmp, fmt, mem, panic, ptr, process};
-use std::ops::{Add, Range, Sub};
+use std::ops::{Add, Deref, DerefMut, Range, Sub};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::{BuildHasher, Hash};
 use conv::ValueInto;
@@ -16,6 +16,35 @@ impl<F: Fn(&mut fmt::Formatter) -> fmt::Result> fmt::Debug for DebugWith<F> {
         self.0(f)
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct UnsafeSync<T>(T);
+
+impl<T> Deref for UnsafeSync<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for UnsafeSync<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> UnsafeSync<T> {
+    pub unsafe fn new(t: T) -> Self {
+        UnsafeSync(t)
+    }
+
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+unsafe impl<T> Send for UnsafeSync<T> {}
+unsafe impl<T> Sync for UnsafeSync<T> {}
 
 /// No-op trait: no constraints; satisfied by all types.
 pub trait Erased {}
