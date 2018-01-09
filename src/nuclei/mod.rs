@@ -226,11 +226,11 @@ impl fmt::Display for Npjw {
 impl str::FromStr for Npjw {
     type Err = Box<Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let m = re!(r"(.+)[pn]").captures(s).ok_or("expected p or n suffix")?;
+        let m = re!(r"(.+)([np])").captures(s).ok_or("expected p or n suffix")?;
         let npj: Npj = m.get(1).unwrap().as_str().parse()?;
         let w = match m.get(2).unwrap().as_str() {
-            "p" => Half(-1),
-            "n" => Half(1),
+            "n" => Half(-1),
+            "p" => Half(1),
             _ => panic!("huh?"),
         };
         Ok(npj.and_w(w))
@@ -710,32 +710,31 @@ impl<'a> SimpleNucleus<'a> {
             .. Default::default()
         });
         for orb in self.orbs.split_whitespace() {
-            if orb.starts_with("+") {
-                let npjw: Npjw = orb.split_at(1).1.parse()?;
-                let occ = if npjw.w < Half(0) {
-                    &mut neutrons_occ
-                } else {
-                    &mut protons_occ
-                };
-                let nlj = npjw.into();
+            let is_incl = if orb.starts_with("+") {
+                true
+            } else if orb.starts_with("-") {
+                false
+            } else {
+                return Err(format!("must start with '+' or '-': {}", orb)
+                           .into());
+            };
+            let npjw: Npjw = orb.split_at(1).1.parse()?;
+            let occ = if npjw.w < Half(0) {
+                &mut neutrons_occ
+            } else {
+                &mut protons_occ
+            };
+            let nlj = npjw.into();
+            if is_incl {
                 if occ.contains(nlj) {
                     Err(format!("already included: {}", npjw))?;
                 }
                 occ.incl.insert(nlj);
-            } else if orb.starts_with("-") {
-                let npjw: Npjw = orb.split_at(1).1.parse()?;
-                let occ = if npjw.w < Half(0) {
-                    &mut neutrons_occ
-                } else {
-                    &mut protons_occ
-                };
-                let nlj = npjw.into();
+            } else {
                 if !occ.contains(nlj) {
                     Err(format!("already excluded: {}", npjw))?;
                 }
                 occ.excl.insert(nlj);
-            } else {
-                Err(format!("must start with '+' or '-': {}", orb))?;
             }
         }
         let all = Ho3dTrunc { e_max: self.e_max, .. Default::default() };
@@ -760,7 +759,7 @@ impl Nucleus {
     pub fn states(&self) -> Vec<Npjw> {
         self.neutrons.states().into_iter().map(|npj| {
             npj.and_w(Half(-1))
-        }).chain(self.neutrons.states().into_iter().map(|npj| {
+        }).chain(self.protons.states().into_iter().map(|npj| {
             npj.and_w(Half(1))
         })).collect()
     }
@@ -768,7 +767,7 @@ impl Nucleus {
     pub fn part_states(&self) -> Vec<PartState<Occ, Npjw>> {
         self.neutrons.part_states().into_iter().map(|xp| {
             xp.map_p(|npj| npj.and_w(Half(-1)))
-        }).chain(self.neutrons.part_states().into_iter().map(|xp| {
+        }).chain(self.protons.part_states().into_iter().map(|xp| {
             xp.map_p(|npj| npj.and_w(Half(1)))
         })).collect()
     }
@@ -1006,7 +1005,7 @@ pub fn op2_j_to_m(
 mod tests {
     use num::range_step_inclusive;
     use super::super::half::Half;
-    use super::{Ho3dIter, Nlj, OrbAng};
+    use super::*;
 
     #[test]
     fn test_ho3d_iter() {
@@ -1023,5 +1022,11 @@ mod tests {
             }
         }
         assert_eq!(nljs1, nljs2);
+    }
+
+    #[test]
+    fn test_npjw() {
+        let x: Npjw = "1d5/2p".parse().unwrap();
+        assert_eq!(x, Npjw { n: 1, p: Parity::Even, j: Half(5), w: Half(1)});
     }
 }
