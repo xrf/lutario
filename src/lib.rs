@@ -28,6 +28,7 @@ extern crate netlib_src;
 extern crate quick_error;
 extern crate rand;
 extern crate regex;
+extern crate rug;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -66,6 +67,7 @@ pub mod phys_consts;
 pub mod qdpt;
 pub mod qdots;
 pub mod sg_ode;
+pub mod tbm_bracket;
 pub mod tri_mat;
 pub mod utils;
 pub mod vecn;
