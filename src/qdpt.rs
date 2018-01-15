@@ -6,7 +6,7 @@ use super::j_scheme::{OpJ100, OpJ200, OpJ211, StateJ10};
 /// Second-order Møller–Plesset (nondegenerate) perturbation theory.
 ///
 /// ```text
-/// R[p] = 1/2 ∑[i a b] J[p i]^2 abs(H[p i a b])^2 / Δ[p i a b]
+/// ΔE = 1/4 ∑[i j a b] J[i j]^2 abs(H[i j a b])^2 / Δ[i j a b]
 /// ```
 pub fn mp2(h1: &OpJ100<f64>, h2: &OpJ200<f64>) -> f64
 {
