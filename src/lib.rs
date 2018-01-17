@@ -53,7 +53,6 @@ pub mod plane_wave_basis;
 pub mod phys_consts;
 pub mod qdpt;
 pub mod qdots;
-pub mod scheme;
 pub mod sg_ode;
 pub mod tri_mat;
 pub mod utils;
