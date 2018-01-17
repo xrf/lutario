@@ -1,3 +1,8 @@
+//! Everything else and the kitchen sink
+//!
+//! This is for small things that don’t belong in other modules.  As things
+//! grow, they will likely migrate into their own modules.
+
 use std::{ascii, cmp, fmt, mem, panic, ptr, process};
 use std::ops::{Add, Deref, DerefMut, Range, Sub};
 use std::collections::{BTreeMap, HashMap};

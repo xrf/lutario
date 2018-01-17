@@ -8,6 +8,19 @@ macro_rules! move_ref {
     }
 }
 
+/// Check whether two `f64` numbers are equal within the given
+/// [`Toler`](utils/struct.Toler.html).
+///
+/// ```
+/// #[macro_use]
+/// extern crate lutario;
+///
+/// use lutario::utils::Toler;
+///
+/// fn main() {
+///     toler_assert_eq!(Toler { abserr: 1e-2, relerr: 1e-3 }, 10.0, 10.02);
+/// }
+/// ```
 #[macro_export]
 macro_rules! toler_assert_eq {
     ($toler:expr, $left:expr, $right:expr) => {
@@ -20,7 +33,22 @@ macro_rules! toler_assert_eq {
     }
 }
 
-/// Declare a regular expression cached via `lazy_static!`.
+/// Declare a regular expression (`Regex`) cached via `lazy_static!`.
+/// This macro is mainly for internal use.
+///
+/// ```
+/// #[macro_use]
+/// extern crate lazy_static;
+/// #[macro_use]
+/// extern crate lutario;
+/// extern crate regex;
+///
+/// use regex::Regex;
+///
+/// fn main() {
+///     let r: &Regex = re!(r"hello (\w+)");
+/// }
+/// ```
 #[macro_export]
 macro_rules! re {
     ($e:expr) => {
@@ -108,6 +136,25 @@ macro_rules! _vec_apply_vectors_mut {
     };
 }
 
+/// Apply an applicative, multi-vector operation.
+/// See [`vector_driver`](vector_driver/index.html).
+///
+/// ```
+/// #[macro_use]
+/// extern crate lutario;
+///
+/// use lutario::vector_driver::VectorDriver;
+/// use lutario::vector_driver::basic::BasicVectorDriver;
+///
+/// fn main() {
+///     let d = BasicVectorDriver::new(5);
+///     let ref v = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+///     let ref w = vec![2.0, 4.0, 1.0, 3.0, 5.0];
+///     let ref mut u = d.create_vector(0.0).unwrap();
+///     vec_apply! { for (v, w, mut u) in d { *u = *v - *w; } };
+///     assert_eq!(u, &vec![-1.0, -2.0, 2.0, 1.0, 0.0]);
+/// }
+/// ```
 #[macro_export]
 macro_rules! vec_apply {
     { for ($($vars:tt)*) in $driver:tt $body:block } => {

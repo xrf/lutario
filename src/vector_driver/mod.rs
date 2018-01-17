@@ -1,3 +1,22 @@
+//! Generalizes the idea of vector operations to enable transparent
+//! parallelization.
+//!
+//! A vector driver is a device that understands how to perform
+//! map-reduce-like operations on its own family of vector-like objects.  It
+//! is the interface used by the sg-ode solver and is quite powerful, albeit
+//! awkward to use.  The `vec_apply!` macro helps a bit.
+//!
+//! The documentation here is very incomplete.  There is a bit more
+//! information in the [docs of the sg-ode vector driver interface in
+//! C](https://xrf.github.io/sg-ode/vector_8h.html), after which the Rust
+//! interface is modelled.
+//!
+//! The MPI vector driver will be implemented some day, but for now you can
+//! only use the [`basic`](basic/index.html) vector driver.  There is nothing
+//! difficult about the MPI implementation – proof of concepts have already
+//! been made.  The main concern is that it adds a really heavy dependency
+//! (MPI) to Lutario, so it probably should be done in a separate crate.
+
 pub mod basic;
 pub mod c;
 
@@ -28,6 +47,14 @@ pub trait VectorDriver {
     fn create_vector_with<F>(&self, f: F) -> Option<Self::Vector>
         where F: Fn() -> Self::Item + Sync;
 
+    /// Performs an applicative operation on multiple vectors.
+    ///
+    /// This is the fundamental operation of vector drviers: it allows an
+    /// arbitrary operation to be applied element-wise to multiple vectors
+    /// with low overhead.
+    ///
+    /// Conceptually, you can think of this as a map-reduce-like operation,
+    /// but with an ugly interface for efficiency reasons.
     fn operate<F>(
         &self,
         accum: &mut [u8],
@@ -81,6 +108,9 @@ pub trait VectorDriver {
         *accum = deserialize(&accum_buf).unwrap();
     }
 
+    /// Sum all elements of the vector.
+    ///
+    /// This is a demonstration of the flexibility of vector driver.
     fn sum(&self, v: &Self::Vector) -> Self::Item where
         Self::Item: for<'a> iter::Sum<&'a Self::Item>
                   + Serialize + for<'a> Deserialize<'a> + Clone

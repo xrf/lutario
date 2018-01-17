@@ -1,4 +1,6 @@
-//! Type-safe caching of arbitrary data
+//! Insert-only caching of arbitrary data
+//!
+//! Experimental module, not yet used for anything.
 
 use std::{cmp, mem};
 use std::cell::RefCell;

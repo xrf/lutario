@@ -1,4 +1,5 @@
 //! Quasidegenerate perturbation theory.
+
 use super::basis::{occ, Occ};
 use super::half::Half;
 use super::j_scheme::{OpJ100, OpJ200, OpJ211, StateJ10};
@@ -231,9 +232,11 @@ pub fn qdpt_term_d<F>(
 /// Obtain a specific QDPT term.
 ///
 /// `term` is an integer starting from one.  Terms 3 and 4 are second order,
-/// and terms 5 through 22 are third order.
+/// and terms 5 through 22 are third order.  The numbering scheme follows the
+/// same order given in Fei’s thesis and Morten’s diagrams.
 ///
-/// Note that some third-order terms require a Pandya transformed matrix.
+/// Note that some third-order terms require a Pandya transformed matrix.  If
+/// you don’t provide one, the code will panic.
 pub fn qdpt_term(
     term: u32,
     h1: &OpJ100<f64>,

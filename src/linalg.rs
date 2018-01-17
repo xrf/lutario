@@ -1,4 +1,8 @@
-//! Linear algebra.
+//! Linear algebra things
+//!
+//! Most of things here are just thin wrappers over BLAS and LAPACK
+//! functionality along with some traits to enable polymorphism.
+
 use std::mem;
 use std::cmp::max;
 use std::ops::{Add, Mul, Neg, Range};

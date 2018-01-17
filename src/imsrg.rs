@@ -1,3 +1,9 @@
+//! Implementation of IM-SRG(2)
+//!
+//! This module contains all the terms of IM-SRG(2) commutator or linked
+//! product, implemented for J-scheme.  It also contains a set of helper
+//! routines for driving the IM-SRG evolution ([`Run`](struct.Run.html)).
+
 use std::f64;
 use std::sync::Arc;
 use super::ang_mom::Wigner6jCtx;
@@ -16,6 +22,11 @@ use super::tri_mat::trs;
 use super::utils::{self, Toler};
 use super::vector_driver::basic::BasicVectorDriver;
 
+/// Term 011
+///
+/// ```text
+/// C[] ←+ α ∑[i a] Ji^2 A[i a] B[a i]
+/// ```
 pub fn c011(
     alpha: f64,
     a1: &OpJ100<f64>,
@@ -23,7 +34,6 @@ pub fn c011(
     c0: &mut f64,
 )
 {
-    // C[] ←+ α ∑[i a] Ji^2 A[i a] B[a i]
     let scheme = a1.scheme();
     for i in scheme.states_10(&[occ::I]) {
         for a in i.costates_10(&[occ::A]) {
@@ -32,6 +42,11 @@ pub fn c011(
     }
 }
 
+/// Term 022
+///
+/// ```text
+/// C[] ←+ α/4 ∑[i j a b] Jij^2 A[i j a b] B[a b i j]
+/// ```
 pub fn c022(
     alpha: f64,
     a2: &OpJ200<f64>,
@@ -39,7 +54,6 @@ pub fn c022(
     c0: &mut f64,
 )
 {
-    // C[] ←+ α/4 ∑[i j a b] Jij^2 A[i j a b] B[a b i j]
     let scheme = a2.scheme();
     for ij in scheme.states_20(&[occ::II]) {
         for ab in ij.costates_20(&[occ::AA]) {
@@ -48,6 +62,11 @@ pub fn c022(
     }
 }
 
+/// Term 111
+///
+/// ```text
+/// C[p q] ←+ −α (∑[i] A[i q] B[p i] + ∑[a] A[p a] B[a q])
+/// ```
 pub fn c111(
     alpha: f64,
     a1: &OpJ100<f64>,
@@ -55,7 +74,6 @@ pub fn c111(
     c1: &mut OpJ100<f64>,
 )
 {
-    // C[p q] ←+ −α (∑[i] A[i q] B[p i] + ∑[a] A[p a] B[a q])
     let scheme = a1.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
@@ -69,6 +87,11 @@ pub fn c111(
     }
 }
 
+/// Term 112
+///
+/// ```text
+/// C[p q] ←+ α ∑[i a] (Jap / Jp)² A[i a] B[a p i q]
+/// ```
 pub fn c112(
     alpha: f64,
     a1: &OpJ100<f64>,
@@ -76,7 +99,6 @@ pub fn c112(
     c1: &mut OpJ100<f64>,
 )
 {
-    // C[p q] ←+ α ∑[i a] (Jap / Jp)² A[i a] B[a p i q]
     let scheme = a1.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
@@ -104,6 +126,11 @@ pub fn c112(
     }
 }
 
+/// Term 121
+///
+/// ```text
+/// C[p q] ←+ α ∑[i a] (Jip / Jp)² A[i p a q] B[a i]
+/// ```
 pub fn c121(
     alpha: f64,
     a2: &OpJ200<f64>,
@@ -111,7 +138,6 @@ pub fn c121(
     c1: &mut OpJ100<f64>,
 )
 {
-    // 121: C[p q] ←+ α ∑[i a] (Jip / Jp)² A[i p a q] B[a i]
     let scheme = a2.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
@@ -139,6 +165,11 @@ pub fn c121(
     }
 }
 
+/// Term 1220
+///
+/// ```text
+/// C[p q] ←+ −α/2 ∑[i j a] (Jij / Jp)² A[i j a q] B[a p i j]
+/// ```
 pub fn c1220(
     alpha: f64,
     a2: &OpJ200<f64>,
@@ -146,7 +177,6 @@ pub fn c1220(
     c1: &mut OpJ100<f64>,
 )
 {
-    // 122: C[p q] ←+ −α/2 ∑[i j a] (Jij / Jp)² A[i j a q] B[a p i j]
     let scheme = a2.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
@@ -171,6 +201,11 @@ pub fn c1220(
     }
 }
 
+/// Term 1221
+///
+/// ```text
+/// C[p q] ←+ α/2 ∑[i a b] (Jip / Jp)² A[i p a b] B[a b i q]
+/// ```
 pub fn c1221(
     alpha: f64,
     a2: &OpJ200<f64>,
@@ -178,7 +213,6 @@ pub fn c1221(
     c1: &mut OpJ100<f64>,
 )
 {
-    // 122: C[p q] ←+ α/2 ∑[i a b] (Jip / Jp)² A[i p a b] B[a b i q]
     let scheme = a2.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
@@ -203,6 +237,12 @@ pub fn c1221(
     }
 }
 
+/// Term 212
+///
+/// ```text
+/// C[p q r s] ←+ α (−2 𝒜[r s] ∑[i] A[i r] B[p q i s]
+///                 + 2 𝒜[p q] ∑[a] A[p a] B[a q r s])
+/// ```
 pub fn c212(
     alpha: f64,
     a1: &OpJ100<f64>,
@@ -210,8 +250,6 @@ pub fn c212(
     c2: &mut OpJ200<f64>,
 )
 {
-    // 212: C[p q r s] ←+ α (−2 𝒜[r s] ∑[i] A[i r] B[p q i s]
-    //                      + 2 𝒜[p q] ∑[a] A[p a] B[a q r s])
     let scheme = a1.scheme();
     for pq in scheme.states_20(&occ::ALL2) {
         for is in pq.costates_20(&[occ::II, occ::IA]) {
@@ -235,6 +273,12 @@ pub fn c212(
     }
 }
 
+/// Term 221
+///
+/// ```text
+/// C[p q r s] ←+ α (−2 𝒜[p q] ∑[i] A[i q r s] B[p i]
+///                 + 2 𝒜[r s] ∑[a] A[p q a s] B[a r])
+/// ```
 pub fn c221(
     alpha: f64,
     a2: &OpJ200<f64>,
@@ -242,8 +286,6 @@ pub fn c221(
     c2: &mut OpJ200<f64>,
 )
 {
-    // 221: C[p q r s] ←+ α (−2 𝒜[p q] ∑[i] A[i q r s] B[p i]
-    //                      + 2 𝒜[r s] ∑[a] A[p q a s] B[a r])
     let scheme = a2.scheme();
     for rs in scheme.states_20(&occ::ALL2) {
         for iq in rs.costates_20(&[occ::II, occ::IA]) {
@@ -267,6 +309,8 @@ pub fn c221(
     }
 }
 
+/// Generic 2220/2222-type term
+///
 /// ```text
 /// C[p q r s] ←+ α/2 ∑[t u] A[p q t u] B[t u r s]
 /// ```
@@ -312,6 +356,8 @@ pub fn c2222_base(
     }
 }
 
+/// Term 2220
+///
 /// ```text
 /// C[p q r s] ←+ α/2 ∑[i j] A[i j r s] B[p q i j]
 /// ```
@@ -325,6 +371,8 @@ pub fn c2220(
     c2222_base(Occ::I, alpha, b2, a2, c2);
 }
 
+/// Term 2222
+///
 /// ```text
 /// C[p q r s] ←+ α/2 ∑[a b] A[p q a b] B[a b r s]
 /// ```
@@ -338,6 +386,8 @@ pub fn c2222(
     c2222_base(Occ::A, alpha, a2, b2, c2);
 }
 
+/// Term 2221 (particle-hole term)
+///
 /// ```text
 /// C[p q r s] ←+ 4 α 𝒜[p q] 𝒜[r s] ∑[i a] A[i p a r] B[a q i s]
 /// ```
@@ -375,6 +425,7 @@ pub fn c2221(
     op211_to_op200(w6j_ctx, 1.0, &cc2, c2);
 }
 
+/// Linked product of two many-body operators
 pub fn linked(
     w6j_ctx: &mut Wigner6jCtx,
     alpha: f64,
@@ -397,6 +448,7 @@ pub fn linked(
     c2222(alpha, &a.2, &b.2, &mut c.2);
 }
 
+/// Commutator of two many-body operators
 pub fn commut(
     w6j_ctx: &mut Wigner6jCtx,
     alpha: f64,
@@ -427,6 +479,8 @@ pub enum DenomType {
     EpsteinNesbet,
 }
 
+/// Calculate the White generator, multiply by `alpha`, and then add it to
+/// `eta`.
 pub fn white_gen(
     denom_type: DenomType,
     alpha: f64,
@@ -473,6 +527,7 @@ pub fn white_gen(
 }
 
 quick_error! {
+    /// Error type for `Run`.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Error {
         MaxFlowReached {}
@@ -480,6 +535,7 @@ quick_error! {
     }
 }
 
+/// Configuration for an IM-SRG(2) run
 #[derive(Clone, Copy, Debug)]
 pub struct Conf {
     pub toler: Toler,
@@ -516,10 +572,11 @@ impl Conf {
     }
 }
 
+/// The state of an IM-SRG(2) run
 #[derive(Debug)]
 pub struct Run {
     /// You can modify `conf` while the run is ongoing, but changing
-    /// `solver_conf` has no effect.
+    /// `conf.solver_conf` has no effect.
     pub conf: Conf,
     pub scheme: Arc<JScheme>,
     pub w6j_ctx: Wigner6jCtx,
@@ -541,6 +598,7 @@ impl Run {
         self.hamil[0]
     }
 
+    /// Retrieve the current flow parameter
     pub fn flow(&self) -> f64 {
         self.flow
     }

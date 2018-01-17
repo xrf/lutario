@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 
+/// [internal] A fixed-size string buffer
 #[derive(Clone, Debug, Default)]
 pub struct Buffer {
     buf: Box<[u8]>,
@@ -40,6 +41,7 @@ impl Buffer {
     }
 }
 
+/// [internal] A chain of string buffers
 #[derive(Debug)]
 pub struct Chain {
     buf: Buffer,
@@ -52,6 +54,7 @@ struct SharedChainInner {
     alloc: Alloc,
 }
 
+/// [internal] A reference-counted chain
 #[derive(Clone, Debug, Default)]
 pub struct SharedChain(Option<SharedChainInner>);
 
@@ -95,6 +98,7 @@ struct AllocInner {
     reserve: Option<Rc<RefCell<Chain>>>,
 }
 
+/// [internal] Allocator for `Parser`
 #[derive(Debug, Clone)]
 pub struct Alloc(Rc<RefCell<AllocInner>>);
 

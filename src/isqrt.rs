@@ -1,3 +1,7 @@
+//! Integer square root
+//!
+//! This used to be needed for quantum dots but is not anymore.
+
 /// Calculate the integer square root `⌊√n⌋`.
 pub fn isqrt_i64(n: i64) -> i64 {
     assert!(n >= 0);

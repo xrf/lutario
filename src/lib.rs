@@ -1,3 +1,15 @@
+//! Lutario is an implementation of IM-SRG(2) and QDPT3.
+//!
+//! The best way to get started is to look at the tests and examples.  The
+//! code is always in flux, but the test and examples within the codebase are
+//! guaranteed to stay up to date thanks to automated testing.
+//!
+//! The code is currently organized in a very monolithic manner to enable
+//! rapid development and prototyping.  When the various submodules stabilize
+//! and become sufficiently generic, they may eventually graduate to become
+//! their own separate crates, which would help reduce bloat as well as
+//! compilation times.
+
 extern crate any_key;
 extern crate bincode;
 extern crate byteorder;

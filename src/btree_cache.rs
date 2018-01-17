@@ -1,3 +1,5 @@
+//! Insert-only B-tree map
+
 use std::mem;
 use std::cell::RefCell;
 use std::collections::BTreeMap;

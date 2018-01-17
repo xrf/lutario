@@ -1,3 +1,5 @@
+//! The most trivial vector driver.
+
 use std::marker::PhantomData;
 use super::{VectorDriver, assert_all_eq};
 

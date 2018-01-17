@@ -1,4 +1,7 @@
-//! Type-safe caching of arbitrary data
+//! Reference-counted caching of arbitrary data
+//!
+//! Experimental module, not yet used for anything.
+
 use std::{cmp, fmt};
 use std::any::Any;
 use std::collections::HashMap;

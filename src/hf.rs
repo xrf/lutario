@@ -1,3 +1,5 @@
+//! Hartree–Fock method and normal ordering
+
 use std::{f64, mem};
 use std::ops::{Add, Mul};
 use super::basis::occ;
@@ -7,7 +9,7 @@ use super::mat::Mat;
 use super::op::{Op, VectorMut};
 use super::utils::Toler;
 
-/// Hartree–Fock with ad hoc linear mixing.
+/// Configuration for a Hartree–Fock run
 #[derive(Clone, Copy, Debug)]
 pub struct Conf {
     pub init_mix_factor: f64,
@@ -74,6 +76,7 @@ impl Conf {
     }
 }
 
+/// A Hartree–Fock run with ad hoc linear mixing
 pub struct Run<'a> {
     pub conf: Conf,
     pub h1: &'a OpJ100<f64>,
@@ -160,7 +163,7 @@ impl<'a> Run<'a> {
     }
 }
 
-/// `y ← α × x + β × y`
+/// `y ← α x + β y`
 pub fn block_mat_axpby<T>(
     alpha: T,
     x: &[Mat<T>],
@@ -180,6 +183,7 @@ pub fn block_mat_axpby<T>(
     }
 }
 
+/// Solve the eigenvalue problem for a Hermitian block-diagonal matrix.
 pub fn block_heevr<T: linalg::Heevr>(
     left: bool,
     part: Part,
@@ -210,8 +214,10 @@ pub fn block_heevr<T: linalg::Heevr>(
     Ok(())
 }
 
+/// Compute the J-weighted sum of orbital energies.
+///
 /// ```text
-/// R = ∑[p] Jp E[p]
+/// R = ∑[p] Jp^2 E[p]
 /// ```
 pub fn weighted_sum(e1: &DiagOpJ10<f64>) -> f64 {
     let scheme = e1.scheme();
@@ -222,6 +228,8 @@ pub fn weighted_sum(e1: &DiagOpJ10<f64>) -> f64 {
     r
 }
 
+/// Compute the combined coefficient matrix.
+///
 /// ```text
 /// Q[v x] = ∑[i] D[x i] D†[i v]
 /// ```
@@ -241,6 +249,7 @@ pub fn qcoeff(
     }
 }
 
+/// Compute the Fock operator.
 pub fn fock2(
     h2: &OpJ200<f64>,
     q1: &OpJ100<f64>,
@@ -264,6 +273,7 @@ pub fn fock2(
     }
 }
 
+/// Perform the HF transformation on a one-body operator.
 pub fn transform_h1(
     h1: &OpJ100<f64>,
     d1: &OpJ100<f64>,
@@ -286,6 +296,7 @@ pub fn transform_h1(
     }
 }
 
+/// Perform the HF transformation on a two-body operator.
 pub fn transform_h2(
     h2: &OpJ200<f64>,
     d1: &OpJ100<f64>,
@@ -325,15 +336,23 @@ pub fn transform_h2(
     }
 }
 
+/// Calculate the Hartree–Fock energy from transformed operators
+///
+/// Note: the input operators must have already been transformed.
+///
+/// (This is essentially the zero-body term from normal-ordering.)
+///
+/// ```text
+/// ZN[p q] =
+///     ∑[i] Ji² U[i i]
+///     + 1/2 ∑[i j] Jij^2 V[i j i j]
+///     + 1/6 ∑[i j k] Jijk^2 W[i j k i j k]    (NYI)
+/// ```
 pub fn hf_energy(
     h1: &OpJ100<f64>,
     h2: &OpJ200<f64>,
 ) -> f64
 {
-    // ZN[p q] =
-    //     ∑[i] Ji² U[i i]
-    //     + 1/2 ∑[i j] Jij^2 V[i j i j]
-    //     + 1/6 ∑[i j k] Jijk^2 W[i j k i j k]    (NYI)
     let scheme = h1.scheme();
     let mut r = 0.0;
     for i in scheme.states_10(&[occ::I]) {
@@ -345,19 +364,29 @@ pub fn hf_energy(
     r
 }
 
+/// Normal order an operator `h` and store the results in `r`.
+///
+/// Note: `r` does not need to be zeroed.
+///
+/// 3-body normal ordering is not yet implemented.
+///
+/// ```text
+/// ZN[p q] = (see docs for hf_energy)
+///
+/// UN[p q] =
+///     U[p q]
+///     + ∑[i] (Jpi / Jp)² V[p i q i]
+///     + 1/2 ∑[i j] (Jpij/Jp)² W[p i j q i j]    (NYI)
+///
+/// VN[p q r s] =
+///     V[p q r s]
+///     + ∑[i] (Jpqi / Jpq)² W[p q i r s i]       (NYI)
+///
 pub fn normord(
     h: &MopJ012<f64>,
     r: &mut MopJ012<f64>,
 )
 {
-    // UN[p q] =
-    //     U[p q]
-    //     + ∑[i] (Jpi / Jp)² V[p i q i]
-    //     + 1/2 ∑[i j] (Jpij/Jp)² W[p i j q i j]    (NYI)
-    //
-    // VN[p q r s] =
-    //     V[p q r s]
-    //     + ∑[i] (Jpqi / Jpq)² W[p q i r s i]    (NYI)
     let scheme = h.1.scheme();
     r.0 = h.0 + hf_energy(&h.1, &h.2);
     r.1.clone_from(&h.1);

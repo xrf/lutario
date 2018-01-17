@@ -1,3 +1,5 @@
+//! Infinite matter, both electronic and nuclear
+
 use std::f64::consts::PI;
 use super::basis::occ;
 use super::half::Half;

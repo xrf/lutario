@@ -1,3 +1,8 @@
+//! Quantum operators
+//!
+//! This module defines the `Op` abstraction, which exists mainly for
+//! convenience.  It is a thin wrapper over block matrices.
+
 use std::{f64, iter};
 use std::ops::{AddAssign, Mul, MulAssign};
 use num::{FromPrimitive, Zero};

@@ -1,3 +1,5 @@
+//! Vector driver interface with C.
+
 pub mod ffi {
     use std::os::raw;
     use libc;
@@ -48,6 +50,8 @@ use libc;
 use super::super::utils::{UnsafeSync, abort_on_unwind};
 use super::{VectorDriver, assert_all_eq};
 
+/// This is a reified vector driver that is compatible with C vector driver
+/// interface.
 #[derive(Clone, Copy, Debug)]
 pub struct CVectorDriver<D> {
     vtable: ffi::VectorDriverVt,

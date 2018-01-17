@@ -1,3 +1,5 @@
+//! Minnesota interaction of nucleons
+
 use std::f64::consts::PI;
 use super::basis::occ;
 use super::half::Half;

@@ -26,6 +26,7 @@ pub fn fill_buf_with_retry<R>(r: &mut R) -> io::Result<&[u8]>
     r.fill_buf()
 }
 
+/// Copy data from a source to a sink while the predicate remains true.
 pub fn copy_while<R, P, W>(r: &mut R, mut pred: P, w: &mut W)
                            -> io::Result<usize>
     where R: io::BufRead + ?Sized,
@@ -76,10 +77,13 @@ pub fn split_extension(path: &Path) -> io::Result<(&str, &str)> {
     }
 }
 
+/// Supported compression formats for input files
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Compression {
     None,
+    /// gzip (DEFLATE)
     Gz,
+    /// xz (LZMA)
     Xz,
 }
 
