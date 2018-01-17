@@ -110,7 +110,7 @@ impl HarmTable {
     ) -> Vec<PartState<Occ, ChanState<JChan<HarmSpin>, ()>>>
     {
         self.table.into_iter().enumerate().flat_map(|(i, shell)| {
-            let x = (i >= num_filled as _).into();
+            let x = (i >= num_filled as usize).into();
             shell.into_iter().flat_map(move |n| vec![
                 PartState { x, p: HarmSpin { n, s: Half(-1) }.into() },
                 PartState { x, p: HarmSpin { n, s: Half(1) }.into() },
