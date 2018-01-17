@@ -107,3 +107,14 @@ fn test_basic_vector_driver() {
 
     vec_apply! { for (v, mut u) in d { *u = *v; } };
 }
+
+#[test]
+fn test_basic_vector_driver_2() {
+    // test to make sure the order of arguments in vec_apply is correct
+    let d = BasicVectorDriver::new(5);
+    let ref v = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+    let ref w = vec![2.0, 4.0, 1.0, 3.0, 5.0];
+    let ref mut u = d.create_vector(0.0).unwrap();
+    vec_apply! { for (v, w, mut u) in d { *u = *v - *w; } };
+    assert_eq!(u, &vec![-1.0, -2.0, 2.0, 1.0, 0.0]);
+}

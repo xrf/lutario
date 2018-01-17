@@ -56,7 +56,7 @@ macro_rules! _unsafe_vec_apply_bind {
     };
     ($index:expr, $i:expr, $j:expr, $slices:expr, $mut_slices:expr,
      [$var:ident $($vars:tt)*]) => {
-        debug_assert!($i < $mut_slices.len());
+        debug_assert!($i < $slices.len());
         let $var = unsafe { $slices
                              .get_unchecked($i)
                              .get_unchecked($index) };
@@ -67,8 +67,19 @@ macro_rules! _unsafe_vec_apply_bind {
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! _vec_apply_reverse {
+    ([ ] -> [$($body:tt)*]) => { [$($body)*] };
+    ([$var:ident, $($vars:tt)*] -> [$($body:tt)*]) => {
+        _vec_apply_reverse!([$($vars)*] -> [$var, $($body)*])
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! _vec_apply_vectors {
-    (( ) -> [$($body:tt)*]) => { [$($body)*] };
+    (( ) -> [$($body:tt)*]) => {
+        _vec_apply_reverse!([$($body)*] -> [])
+    };
     ((, $($vars:tt)*) -> [$($body:tt)*]) => {
         _vec_apply_vectors!(($($vars)*) -> [$($body)*])
     };
@@ -83,7 +94,9 @@ macro_rules! _vec_apply_vectors {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! _vec_apply_vectors_mut {
-    (( ) -> [$($body:tt)*]) => { [$($body)*] };
+    (( ) -> [$($body:tt)*]) => {
+        _vec_apply_reverse!([$($body)*] -> [])
+    };
     ((, $($vars:tt)*) -> [$($body:tt)*]) => {
         _vec_apply_vectors_mut!(($($vars)*) -> [$($body)*])
     };
