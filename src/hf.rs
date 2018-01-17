@@ -359,7 +359,7 @@ pub fn normord(
     //     V[p q r s]
     //     + ∑[i] (Jpqi / Jpq)² W[p q i r s i]    (NYI)
     let scheme = h.1.scheme();
-    r.0 += h.0 + hf_energy(&h.1, &h.2);
+    r.0 = h.0 + hf_energy(&h.1, &h.2);
     r.1.clone_from(&h.1);
     for pi in scheme.states_20(&[occ::II, occ::AI]) {
         let (p, i) = pi.split_to_10_10();
