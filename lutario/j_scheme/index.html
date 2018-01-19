@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `j_scheme` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, j_scheme">
+
+    <title>lutario::j_scheme - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module j_scheme</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'><a href='../index.html'>lutario</a></p><script>window.sidebarCurrent = {name: 'j_scheme', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lutario</a>::<wbr><a class="mod" href=''>j_scheme</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1-1815' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Implementation of the J-scheme abstraction.</p>
+
+<p>In our J-scheme, we classify states according to channels.  Unlike
+M-scheme, however, we also track the angular momentum magnitude (J) of
+each channel.</p>
+
+<p>J-scheme is strictly more general than M-scheme and can be used to emulate
+M-scheme simply by treating all J&#39;s as zero.</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisJ10.html"
+                                  title='struct lutario::j_scheme::BasisJ10'>BasisJ10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisJ20.html"
+                                  title='struct lutario::j_scheme::BasisJ20'>BasisJ20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisJ21.html"
+                                  title='struct lutario::j_scheme::BasisJ21'>BasisJ21</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisSchemeJ10.html"
+                                  title='struct lutario::j_scheme::BasisSchemeJ10'>BasisSchemeJ10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisSchemeJ20.html"
+                                  title='struct lutario::j_scheme::BasisSchemeJ20'>BasisSchemeJ20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisSchemeJ21.html"
+                                  title='struct lutario::j_scheme::BasisSchemeJ21'>BasisSchemeJ21</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CostatesJ10.html"
+                                  title='struct lutario::j_scheme::CostatesJ10'>CostatesJ10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CostatesJ20.html"
+                                  title='struct lutario::j_scheme::CostatesJ20'>CostatesJ20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CostatesJ21.html"
+                                  title='struct lutario::j_scheme::CostatesJ21'>CostatesJ21</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.JAtlas.html"
+                                  title='struct lutario::j_scheme::JAtlas'>JAtlas</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.JChan.html"
+                                  title='struct lutario::j_scheme::JChan'>JChan</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.JPartedOrb.html"
+                                  title='struct lutario::j_scheme::JPartedOrb'>JPartedOrb</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.JScheme.html"
+                                  title='struct lutario::j_scheme::JScheme'>JScheme</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.JjjjBlockInfo.html"
+                                  title='struct lutario::j_scheme::JjjjBlockInfo'>JjjjBlockInfo</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.PandyaScheme.html"
+                                  title='struct lutario::j_scheme::PandyaScheme'>PandyaScheme</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateJ10.html"
+                                  title='struct lutario::j_scheme::StateJ10'>StateJ10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateJ20.html"
+                                  title='struct lutario::j_scheme::StateJ20'>StateJ20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateJ21.html"
+                                  title='struct lutario::j_scheme::StateJ21'>StateJ21</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateMask10.html"
+                                  title='struct lutario::j_scheme::StateMask10'>StateMask10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateMask20.html"
+                                  title='struct lutario::j_scheme::StateMask20'>StateMask20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StateMask21.html"
+                                  title='struct lutario::j_scheme::StateMask21'>StateMask21</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StatesJ10.html"
+                                  title='struct lutario::j_scheme::StatesJ10'>StatesJ10</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.StatesJ20.html"
+                                  title='struct lutario::j_scheme::StatesJ20'>StatesJ20</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.calc_jjjj_naaaa.html"
+                                  title='fn lutario::j_scheme::calc_jjjj_naaaa'>calc_jjjj_naaaa</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.check_eq_mop_j012.html"
+                                  title='fn lutario::j_scheme::check_eq_mop_j012'>check_eq_mop_j012</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.check_eq_op_j100.html"
+                                  title='fn lutario::j_scheme::check_eq_op_j100'>check_eq_op_j100</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.check_eq_op_j200.html"
+                                  title='fn lutario::j_scheme::check_eq_op_j200'>check_eq_op_j200</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.check_eq_op_j211.html"
+                                  title='fn lutario::j_scheme::check_eq_op_j211'>check_eq_op_j211</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.clone_mop_j012_from_tri_slice.html"
+                                  title='fn lutario::j_scheme::clone_mop_j012_from_tri_slice'>clone_mop_j012_from_tri_slice</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.clone_mop_j012_to_tri_slice.html"
+                                  title='fn lutario::j_scheme::clone_mop_j012_to_tri_slice'>clone_mop_j012_to_tri_slice</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.extent_mop_j012_as_tri.html"
+                                  title='fn lutario::j_scheme::extent_mop_j012_as_tri'>extent_mop_j012_as_tri</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.foreach_jjjjk12_block.html"
+                                  title='fn lutario::j_scheme::foreach_jjjjk12_block'>foreach_jjjjk12_block</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.foreach_jjjjk12_elem.html"
+                                  title='fn lutario::j_scheme::foreach_jjjjk12_elem'>foreach_jjjjk12_elem</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.new_mop_j012.html"
+                                  title='fn lutario::j_scheme::new_mop_j012'>new_mop_j012</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.op200_to_op211.html"
+                                  title='fn lutario::j_scheme::op200_to_op211'>op200_to_op211</a></td>
+                           <td class='docblock-short'>
+                                <p>Pandya transformation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.op211_to_op200.html"
+                                  title='fn lutario::j_scheme::op211_to_op200'>op211_to_op200</a></td>
+                           <td class='docblock-short'>
+                                <p>Inverse Pandya transformation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.rand_mop_j012.html"
+                                  title='fn lutario::j_scheme::rand_mop_j012'>rand_mop_j012</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.read_mop_j012_txt.html"
+                                  title='fn lutario::j_scheme::read_mop_j012_txt'>read_mop_j012_txt</a></td>
+                           <td class='docblock-short'>
+                                <p>Read M-scheme matrix elements of a (0, 1, 2)-body operator from a text
+file, where states are encoded as orbital indices.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.set_zero_mop_j012.html"
+                                  title='fn lutario::j_scheme::set_zero_mop_j012'>set_zero_mop_j012</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.DiagOpJ10.html"
+                                  title='type lutario::j_scheme::DiagOpJ10'>DiagOpJ10</a></td>
+                           <td class='docblock-short'>
+                                <p>A diagonal standard-coupled one-body matrix</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.JOrbBasis.html"
+                                  title='type lutario::j_scheme::JOrbBasis'>JOrbBasis</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.MopJ012.html"
+                                  title='type lutario::j_scheme::MopJ012'>MopJ012</a></td>
+                           <td class='docblock-short'>
+                                <p>A standard-coupled (0, 1, 2)-body matrix</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.OpBlockJ200.html"
+                                  title='type lutario::j_scheme::OpBlockJ200'>OpBlockJ200</a></td>
+                           <td class='docblock-short'>
+                                <p>Block of a standard-coupled two-body matrix</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.OpJ100.html"
+                                  title='type lutario::j_scheme::OpJ100'>OpJ100</a></td>
+                           <td class='docblock-short'>
+                                <p>A standard-coupled one-body matrix</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.OpJ200.html"
+                                  title='type lutario::j_scheme::OpJ200'>OpJ200</a></td>
+                           <td class='docblock-short'>
+                                <p>A standard-coupled two-body matrix</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.OpJ211.html"
+                                  title='type lutario::j_scheme::OpJ211'>OpJ211</a></td>
+                           <td class='docblock-short'>
+                                <p>A Pandya-coupled two-body matrix</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["HasherMut","Work around the inability of `Hash` to accept unsized `Hasher`s."]],"trait":[["AnyHash","Object-safe trait for dynamically typed hashable keys."],["AnyOrd","Object-safe trait for dynamically typed totally ordered keys."]]});

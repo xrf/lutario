@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Cache","An associative container where entries can never be removed.  Therefore, references to its entries remain valid as long as the cache is not destroyed.  Arbitrary types are allowed."],["CacheEntry","Implementation detail for `Cache`."]],"trait":[["CacheKey",""]]});

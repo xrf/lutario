@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["unit_wavenumber","Returns the smallest positive wavenumber in a box."]],"struct":[["Coulomb",""],["IsoKinetic","Kinetic energy of two species of particles, distinguished by isospin."],["Kinetic","Kinetic energy of a single species of particles."]]});

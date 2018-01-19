@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BTreeCache","Works like a `BTreeMap`, but elements can never be removed.  Therefore, stable references (i.e. `StableDeref`) to its elements remain valid as long as the cache is not destroyed."]]});

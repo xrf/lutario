@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Vector` trait in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Vector">
+
+    <title>lutario::op::Vector - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc trait">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Trait Vector</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#associated-types">Associated Types</a><div class="sidebar-links"><a href="#associatedtype.Elem">Elem</a></div><a class="sidebar-title" href="#required-methods">Required Methods</a><div class="sidebar-links"><a href="#tymethod.len">len</a></div><a class="sidebar-title" href="#foreign-impls">Implementations on Foreign Types</a><div class="sidebar-links"><a href="#impl-Vector">Vec&lt;T&gt;</a></div><a class="sidebar-title" href="#implementors">Implementors</a></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>op</a></p><script>window.sidebarCurrent = {name: 'Vector', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>op</a>::<wbr><a class="trait" href=''>Vector</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/op.rs.html#38-41' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Vector {
+    type <a href='#associatedtype.Elem' class="type">Elem</a>;
+    fn <a href='#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>;
+}</pre>
+            <h2 id='associated-types' class='small-section-header'>
+              Associated Types<a href='#associated-types' class='anchor'></a>
+            </h2>
+            <div class='methods'>
+        <h3 id='associatedtype.Elem' class='method'><span id='Elem.t' class='invisible'><code>type <a href='#associatedtype.Elem' class="type">Elem</a></code></span></h3></div>
+            <h2 id='required-methods' class='small-section-header'>
+              Required Methods<a href='#required-methods' class='anchor'></a>
+            </h2>
+            <div class='methods'>
+        <h3 id='tymethod.len' class='method'><span id='len.v' class='invisible'><code>fn <a href='#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span></h3></div>
+                <h2 id='foreign-impls' class='small-section-header'>
+                  Implementations on Foreign Types<a href='#foreign-impls' class='anchor'></a>
+                </h2>
+            <h3 id='impl-Vector' class='impl'><span class='in-band'><code>impl&lt;T:&nbsp;<a class="trait" href="../../num_traits/identities/trait.Zero.html" title="trait num_traits::identities::Zero">Zero</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>&gt; <a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a> for <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;T&gt;</code><a href='#impl-Vector' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/op.rs.html#43-48' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='associatedtype.Elem-1' class="type"><span id='Elem.t-1' class='invisible'><code>type <a href='#associatedtype.Elem' class="type">Elem</a> = T</code></span></h4>
+<h4 id='method.len' class="method"><span id='len.v-1' class='invisible'><code>fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/op.rs.html#45-47' title='goto source code'>[src]</a></span></h4>
+</div></span>
+        <h2 id='implementors' class='small-section-header'>
+          Implementors<a href='#implementors' class='anchor'></a>
+        </h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><div class='out-of-band'><a class='srclink' href='../../src/lutario/block.rs.html#26-31' title='goto source code'>[src]</a></div><code>impl&lt;M:&nbsp;<a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a>&gt; Vector for <a class="struct" href="../../lutario/block/struct.Block.html" title="struct lutario::block::Block">Block</a>&lt;M&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = M::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/block.rs.html#191-196' title='goto source code'>[src]</a></div><code>impl&lt;M:&nbsp;<a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a>&gt; Vector for <a class="struct" href="../../lutario/block/struct.Bd.html" title="struct lutario::block::Bd">Bd</a>&lt;M&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = M::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/block_mat.rs.html#220-227' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/block_mat/struct.BlockMatRef.html" title="struct lutario::block_mat::BlockMatRef">BlockMatRef</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/block_mat.rs.html#279-286' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/mat.rs.html#337-342' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/mat/struct.MatRef.html" title="struct lutario::mat::MatRef">MatRef</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/mat.rs.html#602-607' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/mat/struct.MatMut.html" title="struct lutario::mat::MatMut">MatMut</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/mat.rs.html#910-915' title='goto source code'>[src]</a></div><code>impl&lt;T&gt; Vector for <a class="struct" href="../../lutario/mat/struct.Mat.html" title="struct lutario::mat::Mat">Mat</a>&lt;T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/op.rs.html#265-270' title='goto source code'>[src]</a></div><code>impl&lt;S, L, R, D:&nbsp;<a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a>&gt; Vector for <a class="struct" href="../../lutario/op/struct.Op.html" title="struct lutario::op::Op">Op</a>&lt;S, L, R, D&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = D::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/tri_mat.rs.html#192-197' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/tri_mat/struct.TriMatRef.html" title="struct lutario::tri_mat::TriMatRef">TriMatRef</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/tri_mat.rs.html#319-324' title='goto source code'>[src]</a></div><code>impl&lt;'a, T&gt; Vector for <a class="struct" href="../../lutario/tri_mat/struct.TriMatMut.html" title="struct lutario::tri_mat::TriMatMut">TriMatMut</a>&lt;'a, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/tri_mat.rs.html#655-660' title='goto source code'>[src]</a></div><code>impl&lt;T&gt; Vector for <a class="struct" href="../../lutario/tri_mat/struct.TriMat.html" title="struct lutario::tri_mat::TriMat">TriMat</a>&lt;T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/lutario/tri_mat.rs.html#730-735' title='goto source code'>[src]</a></div><code>impl&lt;S, T&gt; Vector for <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;<span class="where fmt-newline">  type <a href='#associatedtype.Elem' class="type">Elem</a> = T;</span></code></li>
+</ul><script type="text/javascript" async
+                         src="../../implementors/lutario/op/trait.Vector.js">
+                 </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

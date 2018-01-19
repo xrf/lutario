@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `TrsMat` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, TrsMat">
+
+    <title>lutario::tri_mat::TrsMat - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct TrsMat</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.mat">mat</a><a href="#structfield.trs">trs</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.get">get</a><a href="#method.set">set</a><a href="#method.add">add</a><a href="#method.clone_from_mat">clone_from_mat</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Vector">Vector</a><a href="#impl-VectorMut">VectorMut</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>tri_mat</a></p><script>window.sidebarCurrent = {name: 'TrsMat', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>tri_mat</a>::<wbr><a class="struct" href=''>TrsMat</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/tri_mat.rs.html#725-728' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct TrsMat&lt;S, T&gt; {
+    pub mat: <a class="struct" href="../../lutario/tri_mat/struct.TriMat.html" title="struct lutario::tri_mat::TriMat">TriMat</a>&lt;T&gt;,
+    pub trs: S,
+}</pre><div class='docblock'><p>Matrices that possess symmetry under transposition, represented as
+triangular matrices.</p>
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.mat" class="structfield small-section-header">
+                           <a href="#structfield.mat" class="anchor field"></a>
+                           <span id="mat.v" class='invisible'>
+                           <code>mat: <a class="struct" href="../../lutario/tri_mat/struct.TriMat.html" title="struct lutario::tri_mat::TriMat">TriMat</a>&lt;T&gt;</code>
+                           </span></span><span id="structfield.trs" class="structfield small-section-header">
+                           <a href="#structfield.trs" class="anchor field"></a>
+                           <span id="trs.v" class='invisible'>
+                           <code>trs: S</code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;S:&nbsp;<a class="trait" href="../../lutario/tri_mat/trait.Trs.html" title="trait lutario::tri_mat::Trs">Trs</a>&lt;T&gt;, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>&gt; <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;</code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#747-761' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>pub fn <a href='#method.get' class='fnname'>get</a>(&amp;self, i: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, j: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;T, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#748-760' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-1' class='impl'><span class='in-band'><code>impl&lt;S:&nbsp;<a class="trait" href="../../lutario/tri_mat/trait.Trs.html" title="trait lutario::tri_mat::Trs">Trs</a>&lt;T&gt;, T&gt; <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;</code><a href='#impl-1' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#763-780' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.set' class="method"><span id='set.v' class='invisible'><code>pub fn <a href='#method.set' class='fnname'>set</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;i: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;j: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;value: T<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#764-779' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-2' class='impl'><span class='in-band'><code>impl&lt;S:&nbsp;<a class="trait" href="../../lutario/tri_mat/trait.Trs.html" title="trait lutario::tri_mat::Trs">Trs</a>&lt;T&gt;, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.AddAssign.html" title="trait core::ops::arith::AddAssign">AddAssign</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.Mul.html" title="trait core::ops::arith::Mul">Mul</a>&lt;Output = T&gt; + <a class="trait" href="../../num_traits/cast/trait.FromPrimitive.html" title="trait num_traits::cast::FromPrimitive">FromPrimitive</a>&gt; <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;</code><a href='#impl-2' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#782-800' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.add' class="method"><span id='add.v' class='invisible'><code>pub fn <a href='#method.add' class='fnname'>add</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;i: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;j: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;value: T<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#783-799' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-3' class='impl'><span class='in-band'><code>impl&lt;S, T&gt; <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: <a class="trait" href="../../lutario/tri_mat/trait.Trs.html" title="trait lutario::tri_mat::Trs">Trs</a>&lt;T&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;T: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.AddAssign.html" title="trait core::ops::arith::AddAssign">AddAssign</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.Mul.html" title="trait core::ops::arith::Mul">Mul</a>&lt;Output = T&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.MulAssign.html" title="trait core::ops::arith::MulAssign">MulAssign</a> + <a class="trait" href="../../num_traits/cast/trait.FromPrimitive.html" title="trait num_traits::cast::FromPrimitive">FromPrimitive</a> + <a class="trait" href="../../num_traits/identities/trait.Zero.html" title="trait num_traits::identities::Zero">Zero</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,&nbsp;</span></code><a href='#impl-3' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#802-817' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone_from_mat' class="method"><span id='clone_from_mat.v' class='invisible'><code>pub fn <a href='#method.clone_from_mat' class='fnname'>clone_from_mat</a>(&amp;mut self, source: <a class="struct" href="../../lutario/mat/struct.MatRef.html" title="struct lutario::mat::MatRef">MatRef</a>&lt;T&gt;)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#806-816' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Vector' class='impl'><span class='in-band'><code>impl&lt;S, T&gt; <a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a> for <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;</code><a href='#impl-Vector' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#730-735' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Elem' class="type"><span id='Elem.t' class='invisible'><code>type <a href='../../lutario/op/trait.Vector.html#associatedtype.Elem' class="type">Elem</a> = T</code></span></h4>
+<h4 id='method.len' class="method"><span id='len.v' class='invisible'><code>fn <a href='../../lutario/op/trait.Vector.html#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#732-734' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-VectorMut' class='impl'><span class='in-band'><code>impl&lt;S, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.MulAssign.html" title="trait core::ops::arith::MulAssign">MulAssign</a> + <a class="trait" href="../../num_traits/identities/trait.Zero.html" title="trait num_traits::identities::Zero">Zero</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>&gt; <a class="trait" href="../../lutario/op/trait.VectorMut.html" title="trait lutario::op::VectorMut">VectorMut</a> for <a class="struct" href="../../lutario/tri_mat/struct.TrsMat.html" title="struct lutario::tri_mat::TrsMat">TrsMat</a>&lt;S, T&gt;</code><a href='#impl-VectorMut' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#737-745' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.set_zero' class="method"><span id='set_zero.v' class='invisible'><code>fn <a href='../../lutario/op/trait.VectorMut.html#tymethod.set_zero' class='fnname'>set_zero</a>(&amp;mut self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#738-740' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.scale' class="method"><span id='scale.v' class='invisible'><code>fn <a href='../../lutario/op/trait.VectorMut.html#tymethod.scale' class='fnname'>scale</a>(&amp;mut self, factor: &amp;Self::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/tri_mat.rs.html#742-744' title='goto source code'>[src]</a></span></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

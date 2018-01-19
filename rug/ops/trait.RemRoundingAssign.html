@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `RemRoundingAssign` trait in crate `rug`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, RemRoundingAssign">
+
+    <title>rug::ops::RemRoundingAssign - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc trait">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Trait RemRoundingAssign</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#required-methods">Required Methods</a><div class="sidebar-links"><a href="#tymethod.rem_trunc_assign">rem_trunc_assign</a><a href="#tymethod.rem_ceil_assign">rem_ceil_assign</a><a href="#tymethod.rem_floor_assign">rem_floor_assign</a><a href="#tymethod.rem_euc_assign">rem_euc_assign</a></div><a class="sidebar-title" href="#foreign-impls">Implementations on Foreign Types</a><div class="sidebar-links"><a href="#impl-RemRoundingAssign">i8</a><a href="#impl-RemRoundingAssign%3C%26%27a%20i8%3E">i8</a><a href="#impl-RemRoundingAssign">i16</a><a href="#impl-RemRoundingAssign%3C%26%27a%20i16%3E">i16</a><a href="#impl-RemRoundingAssign">i32</a><a href="#impl-RemRoundingAssign%3C%26%27a%20i32%3E">i32</a><a href="#impl-RemRoundingAssign">i64</a><a href="#impl-RemRoundingAssign%3C%26%27a%20i64%3E">i64</a><a href="#impl-RemRoundingAssign">isize</a><a href="#impl-RemRoundingAssign%3C%26%27a%20isize%3E">isize</a></div><a class="sidebar-title" href="#implementors">Implementors</a></div><p class='location'><a href='../index.html'>rug</a>::<wbr><a href='index.html'>ops</a></p><script>window.sidebarCurrent = {name: 'RemRoundingAssign', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Trait <a href='../index.html'>rug</a>::<wbr><a href='index.html'>ops</a>::<wbr><a class="trait" href=''>RemRoundingAssign</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/rug/ops.rs.html#1438-1447' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait RemRoundingAssign&lt;Rhs&nbsp;=&nbsp;Self&gt; {
+    fn <a href='#tymethod.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: Rhs);
+<div class='item-spacer'></div>    fn <a href='#tymethod.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: Rhs);
+<div class='item-spacer'></div>    fn <a href='#tymethod.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: Rhs);
+<div class='item-spacer'></div>    fn <a href='#tymethod.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: Rhs);
+}</pre><div class='docblock'><p>Compound assignment and rounding variants of the remainder
+operation.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">ops</span>::<span class="ident">RemRoundingAssign</span>;
+<span class="kw">struct</span> <span class="ident">I</span>(<span class="ident">i32</span>);
+<span class="kw">impl</span> <span class="ident">RemRoundingAssign</span><span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">I</span> {
+    <span class="kw">fn</span> <span class="ident">rem_trunc_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">i32</span>) {
+        <span class="self">self</span>.<span class="number">0</span> <span class="op">%=</span> <span class="ident">rhs</span>;
+    }
+    <span class="kw">fn</span> <span class="ident">rem_ceil_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">i32</span>) {
+        <span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span> <span class="op">%</span> <span class="ident">rhs</span>;
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">rhs</span> <span class="op">&gt;</span> <span class="number">0</span> { <span class="ident">r</span> <span class="op">&gt;</span> <span class="number">0</span> } <span class="kw">else</span> { <span class="ident">r</span> <span class="op">&lt;</span> <span class="number">0</span> };
+        <span class="self">self</span>.<span class="number">0</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">change</span> { <span class="ident">r</span> <span class="op">-</span> <span class="ident">rhs</span> } <span class="kw">else</span> { <span class="ident">r</span> };
+    }
+    <span class="kw">fn</span> <span class="ident">rem_floor_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">i32</span>) {
+        <span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span> <span class="op">%</span> <span class="ident">rhs</span>;
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">rhs</span> <span class="op">&gt;</span> <span class="number">0</span> { <span class="ident">r</span> <span class="op">&lt;</span> <span class="number">0</span> } <span class="kw">else</span> { <span class="ident">r</span> <span class="op">&gt;</span> <span class="number">0</span> };
+        <span class="self">self</span>.<span class="number">0</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">change</span> { <span class="ident">r</span> <span class="op">+</span> <span class="ident">rhs</span> } <span class="kw">else</span> { <span class="ident">r</span> };
+    }
+    <span class="kw">fn</span> <span class="ident">rem_euc_assign</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">rhs</span>: <span class="ident">i32</span>) {
+        <span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span> <span class="op">%</span> <span class="ident">rhs</span>;
+        <span class="self">self</span>.<span class="number">0</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">r</span> <span class="op">&lt;</span> <span class="number">0</span> {
+            <span class="kw">if</span> <span class="ident">rhs</span> <span class="op">&lt;</span> <span class="number">0</span> { <span class="ident">r</span> <span class="op">-</span> <span class="ident">rhs</span> } <span class="kw">else</span> { <span class="ident">r</span> <span class="op">+</span> <span class="ident">rhs</span> }
+        } <span class="kw">else</span> {
+            <span class="ident">r</span>
+        };
+    }
+}
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rem_floor</span> <span class="op">=</span> <span class="ident">I</span>(<span class="op">-</span><span class="number">10</span>);
+<span class="ident">rem_floor</span>.<span class="ident">rem_floor_assign</span>(<span class="number">3</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem_floor</span>.<span class="number">0</span>, <span class="number">2</span>);</pre>
+</div>
+            <h2 id='required-methods' class='small-section-header'>
+              Required Methods<a href='#required-methods' class='anchor'></a>
+            </h2>
+            <div class='methods'>
+        <h3 id='tymethod.rem_trunc_assign' class='method'><span id='rem_trunc_assign.v' class='invisible'><code>fn <a href='#tymethod.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: Rhs)</code></span></h3><div class='docblock'><p>Finds the remainder when the quotient is rounded towards zero.</p>
+</div><h3 id='tymethod.rem_ceil_assign' class='method'><span id='rem_ceil_assign.v' class='invisible'><code>fn <a href='#tymethod.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: Rhs)</code></span></h3><div class='docblock'><p>Finds the remainder when the quotient is rounded up.</p>
+</div><h3 id='tymethod.rem_floor_assign' class='method'><span id='rem_floor_assign.v' class='invisible'><code>fn <a href='#tymethod.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: Rhs)</code></span></h3><div class='docblock'><p>Finds the remainder when the quotient is rounded down.</p>
+</div><h3 id='tymethod.rem_euc_assign' class='method'><span id='rem_euc_assign.v' class='invisible'><code>fn <a href='#tymethod.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: Rhs)</code></span></h3><div class='docblock'><p>Finds the positive remainder from Euclidean division.</p>
+</div></div>
+                <h2 id='foreign-impls' class='small-section-header'>
+                  Implementations on Foreign Types<a href='#foreign-impls' class='anchor'></a>
+                </h2>
+            <h3 id='impl-RemRoundingAssign' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a> for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a></code><a href='#impl-RemRoundingAssign' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#432-449' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign' class="method"><span id='rem_trunc_assign.v-1' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#434-436' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign' class="method"><span id='rem_ceil_assign.v-1' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#438-440' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign' class="method"><span id='rem_floor_assign.v-1' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#442-444' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign' class="method"><span id='rem_euc_assign.v-1' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#446-448' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign%3C%26%27a%20i8%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a>&lt;&amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>&gt; for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a></code><a href='#impl-RemRoundingAssign%3C%26%27a%20i8%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#451-468' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-1' class="method"><span id='rem_trunc_assign.v-2' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#453-455' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-1' class="method"><span id='rem_ceil_assign.v-2' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-1' class="method"><span id='rem_floor_assign.v-2' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#461-463' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-1' class="method"><span id='rem_euc_assign.v-2' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i8.html">i8</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#465-467' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign-1' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a> for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a></code><a href='#impl-RemRoundingAssign-1' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#432-449' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-2' class="method"><span id='rem_trunc_assign.v-3' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#434-436' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-2' class="method"><span id='rem_ceil_assign.v-3' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#438-440' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-2' class="method"><span id='rem_floor_assign.v-3' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#442-444' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-2' class="method"><span id='rem_euc_assign.v-3' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#446-448' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign%3C%26%27a%20i16%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a>&lt;&amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>&gt; for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a></code><a href='#impl-RemRoundingAssign%3C%26%27a%20i16%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#451-468' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-3' class="method"><span id='rem_trunc_assign.v-4' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#453-455' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-3' class="method"><span id='rem_ceil_assign.v-4' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-3' class="method"><span id='rem_floor_assign.v-4' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#461-463' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-3' class="method"><span id='rem_euc_assign.v-4' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i16.html">i16</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#465-467' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign-2' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a> for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a></code><a href='#impl-RemRoundingAssign-2' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#432-449' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-4' class="method"><span id='rem_trunc_assign.v-5' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#434-436' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-4' class="method"><span id='rem_ceil_assign.v-5' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#438-440' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-4' class="method"><span id='rem_floor_assign.v-5' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#442-444' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-4' class="method"><span id='rem_euc_assign.v-5' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#446-448' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign%3C%26%27a%20i32%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a>&lt;&amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt; for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a></code><a href='#impl-RemRoundingAssign%3C%26%27a%20i32%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#451-468' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-5' class="method"><span id='rem_trunc_assign.v-6' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#453-455' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-5' class="method"><span id='rem_ceil_assign.v-6' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-5' class="method"><span id='rem_floor_assign.v-6' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#461-463' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-5' class="method"><span id='rem_euc_assign.v-6' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#465-467' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign-3' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a> for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a></code><a href='#impl-RemRoundingAssign-3' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#432-449' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-6' class="method"><span id='rem_trunc_assign.v-7' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#434-436' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-6' class="method"><span id='rem_ceil_assign.v-7' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#438-440' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-6' class="method"><span id='rem_floor_assign.v-7' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#442-444' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-6' class="method"><span id='rem_euc_assign.v-7' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#446-448' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign%3C%26%27a%20i64%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a>&lt;&amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>&gt; for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a></code><a href='#impl-RemRoundingAssign%3C%26%27a%20i64%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#451-468' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-7' class="method"><span id='rem_trunc_assign.v-8' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#453-455' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-7' class="method"><span id='rem_ceil_assign.v-8' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-7' class="method"><span id='rem_floor_assign.v-8' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#461-463' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-7' class="method"><span id='rem_euc_assign.v-8' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#465-467' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign-4' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a> for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a></code><a href='#impl-RemRoundingAssign-4' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#432-449' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-8' class="method"><span id='rem_trunc_assign.v-9' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#434-436' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-8' class="method"><span id='rem_ceil_assign.v-9' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#438-440' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-8' class="method"><span id='rem_floor_assign.v-9' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#442-444' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-8' class="method"><span id='rem_euc_assign.v-9' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#446-448' title='goto source code'>[src]</a></span></h4>
+</div></span><h3 id='impl-RemRoundingAssign%3C%26%27a%20isize%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/ops/trait.RemRoundingAssign.html" title="trait rug::ops::RemRoundingAssign">RemRoundingAssign</a>&lt;&amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>&gt; for <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a></code><a href='#impl-RemRoundingAssign%3C%26%27a%20isize%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#451-468' title='goto source code'>[src]</a></span></h3>
+<span class='docblock autohide'><div class='impl-items'><h4 id='method.rem_trunc_assign-9' class="method"><span id='rem_trunc_assign.v-10' class='invisible'><code>fn <a href='#method.rem_trunc_assign' class='fnname'>rem_trunc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#453-455' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_ceil_assign-9' class="method"><span id='rem_ceil_assign.v-10' class='invisible'><code>fn <a href='#method.rem_ceil_assign' class='fnname'>rem_ceil_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_floor_assign-9' class="method"><span id='rem_floor_assign.v-10' class='invisible'><code>fn <a href='#method.rem_floor_assign' class='fnname'>rem_floor_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#461-463' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.rem_euc_assign-9' class="method"><span id='rem_euc_assign.v-10' class='invisible'><code>fn <a href='#method.rem_euc_assign' class='fnname'>rem_euc_assign</a>(&amp;mut self, rhs: &amp;'a <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.isize.html">isize</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/ops_prim.rs.html#465-467' title='goto source code'>[src]</a></span></h4>
+</div></span>
+        <h2 id='implementors' class='small-section-header'>
+          Implementors<a href='#implementors' class='anchor'></a>
+        </h2>
+        <ul class='item-list' id='implementors-list'>
+    <li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#157-174' title='goto source code'>[src]</a></div><code>impl RemRoundingAssign for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#176-201' title='goto source code'>[src]</a></div><code>impl&lt;'i&gt; RemRoundingAssign&lt;&amp;'i <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a>&gt; for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#415-440' title='goto source code'>[src]</a></div><code>impl RemRoundingAssign&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt; for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#442-459' title='goto source code'>[src]</a></div><code>impl&lt;'t&gt; RemRoundingAssign&lt;&amp;'t <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt; for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#415-440' title='goto source code'>[src]</a></div><code>impl RemRoundingAssign&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt; for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+<li><div class='out-of-band'><a class='srclink' href='../../src/rug/integer/division.rs.html#442-459' title='goto source code'>[src]</a></div><code>impl&lt;'t&gt; RemRoundingAssign&lt;&amp;'t <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt; for <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></li>
+</ul><script type="text/javascript" async
+                         src="../../implementors/rug/ops/trait.RemRoundingAssign.js">
+                 </script></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "rug";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

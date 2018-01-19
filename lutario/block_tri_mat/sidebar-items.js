@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BlockTriMatMut","A mutable block-diagonal matrix."],["BlockTriMatRef","A block-diagonal matrix."],["BlockTriMatShape","ugly: there's a lot of hidden invariants here that we aren't being explicit about"]]});

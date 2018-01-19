@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["internal","Contents of this module are subject to change."],["regge",""]],"struct":[["ClebschGordan","Clebsch-Gordan coefficient"],["SignedSqrt","Signed square root of a rational number"],["Wigner3jm","Wigner 3-jm symbol"],["Wigner6j","Wigner 6-j symbol"],["Wigner9j","Wigner 9-j symbol"]]});

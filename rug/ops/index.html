@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ops` mod in crate `rug`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ops">
+
+    <title>rug::ops - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module ops</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#traits">Traits</a></li></ul></div><p class='location'><a href='../index.html'>rug</a></p><script>window.sidebarCurrent = {name: 'ops', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>rug</a>::<wbr><a class="mod" href=''>ops</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/rug/ops.rs.html#17-1493' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Operations on numbers.</p>
+
+<p>See the documentation for each trait method to see a usage
+example.</p>
+</div><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.AddAssignRound.html"
+                                  title='trait rug::ops::AddAssignRound'>AddAssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound addition and assignment with a specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.AddFrom.html"
+                                  title='trait rug::ops::AddFrom'>AddFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound addition and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.AddFromRound.html"
+                                  title='trait rug::ops::AddFromRound'>AddFromRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound addition and assignment to the rhs operand with a
+specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.AssignRound.html"
+                                  title='trait rug::ops::AssignRound'>AssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Assignment with a specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.BitAndFrom.html"
+                                  title='trait rug::ops::BitAndFrom'>BitAndFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound bitwise AND and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.BitOrFrom.html"
+                                  title='trait rug::ops::BitOrFrom'>BitOrFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound bitwise OR and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.BitXorFrom.html"
+                                  title='trait rug::ops::BitXorFrom'>BitXorFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound bitwise XOR and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivAssignRound.html"
+                                  title='trait rug::ops::DivAssignRound'>DivAssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound division and assignment with a specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivFrom.html"
+                                  title='trait rug::ops::DivFrom'>DivFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound division and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivFromRound.html"
+                                  title='trait rug::ops::DivFromRound'>DivFromRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound division and assignment to the rhs operand with a
+specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivRounding.html"
+                                  title='trait rug::ops::DivRounding'>DivRounding</a></td>
+                           <td class='docblock-short'>
+                                <p>Rounding variants of division.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivRoundingAssign.html"
+                                  title='trait rug::ops::DivRoundingAssign'>DivRoundingAssign</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound assignment and rounding variants of division.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.DivRoundingFrom.html"
+                                  title='trait rug::ops::DivRoundingFrom'>DivRoundingFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound assignment to the rhs operand and rounding variants of
+division.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.MulAssignRound.html"
+                                  title='trait rug::ops::MulAssignRound'>MulAssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound multiplication and assignment with a specified rounding
+method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.MulFrom.html"
+                                  title='trait rug::ops::MulFrom'>MulFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound multiplication and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.MulFromRound.html"
+                                  title='trait rug::ops::MulFromRound'>MulFromRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound multiplication and assignment to the rhs operand with a
+specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.NegAssign.html"
+                                  title='trait rug::ops::NegAssign'>NegAssign</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound negation and assignment.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.NotAssign.html"
+                                  title='trait rug::ops::NotAssign'>NotAssign</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound bitwise complement and assignement.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.Pow.html"
+                                  title='trait rug::ops::Pow'>Pow</a></td>
+                           <td class='docblock-short'>
+                                <p>The power operation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.PowAssign.html"
+                                  title='trait rug::ops::PowAssign'>PowAssign</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound power operation and assignment.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.PowAssignRound.html"
+                                  title='trait rug::ops::PowAssignRound'>PowAssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound power operation and assignment with a specified rounding
+method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.PowFrom.html"
+                                  title='trait rug::ops::PowFrom'>PowFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound power operation and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.PowFromRound.html"
+                                  title='trait rug::ops::PowFromRound'>PowFromRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound power operation and assignment to the rhs operand with a
+specified rounding method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.RemFrom.html"
+                                  title='trait rug::ops::RemFrom'>RemFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound remainder operation and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.RemRounding.html"
+                                  title='trait rug::ops::RemRounding'>RemRounding</a></td>
+                           <td class='docblock-short'>
+                                <p>Rounding variants of the remainder operation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.RemRoundingAssign.html"
+                                  title='trait rug::ops::RemRoundingAssign'>RemRoundingAssign</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound assignment and rounding variants of the remainder
+operation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.RemRoundingFrom.html"
+                                  title='trait rug::ops::RemRoundingFrom'>RemRoundingFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound assignment to the rhs operand and rounding variants of
+the remainder operation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.ShlFrom.html"
+                                  title='trait rug::ops::ShlFrom'>ShlFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound left shift and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.ShrFrom.html"
+                                  title='trait rug::ops::ShrFrom'>ShrFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound right shift and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.SubAssignRound.html"
+                                  title='trait rug::ops::SubAssignRound'>SubAssignRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound subtraction and assignment with a specified rounding
+method.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.SubFrom.html"
+                                  title='trait rug::ops::SubFrom'>SubFrom</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound subtraction and assignment to the rhs operand.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.SubFromRound.html"
+                                  title='trait rug::ops::SubFromRound'>SubFromRound</a></td>
+                           <td class='docblock-short'>
+                                <p>Compound subtraction and assignment to the rhs operand with a
+specified rounding method.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "rug";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

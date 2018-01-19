@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Ah","Marks an antihermitian matrix."],["As","Marks an antisymmetric matrix."],["He","Marks an Hermitian matrix."],["Sy","Marks a symmetric matrix."]]});

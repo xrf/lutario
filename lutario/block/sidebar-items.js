@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Bd","A block-diagonal matrix is a vector of matrix blocks."],["Block","A block of a block-diagonal matrix"]]});

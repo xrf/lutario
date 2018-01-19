@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `SmallRational` struct in crate `rug`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, SmallRational">
+
+    <title>rug::rational::SmallRational - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct SmallRational</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.as_nonreallocating_rational">as_nonreallocating_rational</a><a href="#method.from_canonical">from_canonical</a><a href="#method.from_canonicalized_32">from_canonicalized_32</a><a href="#method.from_canonicalized_64">from_canonicalized_64</a><a href="#method.assign_canonicalized_32">assign_canonicalized_32</a><a href="#method.assign_canonicalized_64">assign_canonicalized_64</a></div><a class="sidebar-title" href="#deref-methods">Methods from Deref&lt;Target=Rational&gt;</a><div class="sidebar-links"><a href="#method.to_integer">to_integer</a><a href="#method.copy_to_integer">copy_to_integer</a><a href="#method.to_f32">to_f32</a><a href="#method.to_f64">to_f64</a><a href="#method.to_string_radix">to_string_radix</a><a href="#method.as_raw">as_raw</a><a href="#method.numer">numer</a><a href="#method.denom">denom</a><a href="#method.as_numer_denom">as_numer_denom</a><a href="#method.as_neg">as_neg</a><a href="#method.as_abs">as_abs</a><a href="#method.as_recip">as_recip</a><a href="#method.cmp0">cmp0</a><a href="#method.abs_ref">abs_ref</a><a href="#method.signum_ref">signum_ref</a><a href="#method.clamp_ref">clamp_ref</a><a href="#method.recip_ref">recip_ref</a><a href="#method.trunc_ref">trunc_ref</a><a href="#method.fract_ref">fract_ref</a><a href="#method.rem_trunc_ref">rem_trunc_ref</a><a href="#method.fract_trunc_ref">fract_trunc_ref</a><a href="#method.ceil_ref">ceil_ref</a><a href="#method.rem_ceil_ref">rem_ceil_ref</a><a href="#method.fract_ceil_ref">fract_ceil_ref</a><a href="#method.floor_ref">floor_ref</a><a href="#method.rem_floor_ref">rem_floor_ref</a><a href="#method.fract_floor_ref">fract_floor_ref</a><a href="#method.round_ref">round_ref</a><a href="#method.rem_round_ref">rem_round_ref</a><a href="#method.fract_round_ref">fract_round_ref</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Clone">Clone</a><a href="#impl-Default">Default</a><a href="#impl-Deref">Deref</a><a href="#impl-Assign%3CNum%3E">Assign&lt;Num&gt;</a><a href="#impl-From%3CNum%3E">From&lt;Num&gt;</a><a href="#impl-Assign%3C(Num%2C%20Den)%3E">Assign&lt;(Num, Den)&gt;</a><a href="#impl-From%3C(Num%2C%20Den)%3E">From&lt;(Num, Den)&gt;</a><a href="#impl-Assign%3C%26%27a%20SmallRational%3E">Assign&lt;&amp;&#39;a SmallRational&gt;</a><a href="#impl-Assign%3CSmallRational%3E">Assign&lt;SmallRational&gt;</a></div></div><p class='location'><a href='../index.html'>rug</a>::<wbr><a href='index.html'>rational</a></p><script>window.sidebarCurrent = {name: 'SmallRational', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>rug</a>::<wbr><a href='index.html'>rational</a>::<wbr><a class="struct" href=''>SmallRational</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#58-63' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'><div class="docblock attributes">#[repr(C)]
+</div>pub struct SmallRational { /* fields omitted */ }</pre><div class='docblock'><p>A small rational number that does not require any memory
+allocation.</p>
+
+<p>This can be useful when you have a numerator and denominator that
+are primitive integer-types such as <code>i64</code> or <code>u8</code>, and you need a
+reference to a <a href="../struct.Rational.html"><code>Rational</code></a>.</p>
+
+<p>Although no allocation is required, setting the value of a
+<code>SmallRational</code> does require some computation, as the numerator
+and denominator need to be canonicalized.</p>
+
+<p>The <code>SmallRational</code> type can be coerced to a
+<a href="../struct.Rational.html"><code>Rational</code></a>, as it implements
+<code>Deref&lt;Target = Rational&gt;</code>.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="comment">// `a` requires a heap allocation</span>
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">100</span>, <span class="number">13</span>));
+<span class="comment">// `b` can reside on the stack</span>
+<span class="kw">let</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">21</span>));
+<span class="ident">a</span> <span class="op">/=</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">b</span>;
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">a</span>.<span class="ident">numer</span>(), <span class="op">-</span><span class="number">21</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">a</span>.<span class="ident">denom</span>(), <span class="number">13</span>);</pre>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#72-288' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#85-101' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a <code>SmallRational</code> with value 0.</p>
+
+<h1 id='examples-1' class='section-header'><a href='#examples-1'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">SmallRational</span>::<span class="ident">new</span>();
+<span class="comment">// Use r as if it were Rational.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">r</span>.<span class="ident">numer</span>(), <span class="number">0</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">r</span>.<span class="ident">denom</span>(), <span class="number">1</span>);</pre>
+</div><h4 id='method.as_nonreallocating_rational' class="method"><span id='as_nonreallocating_rational.v' class='invisible'><code>pub unsafe fn <a href='#method.as_nonreallocating_rational' class='fnname'>as_nonreallocating_rational</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../rug/struct.Rational.html" title="struct rug::Rational">Rational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#131-135' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a mutable reference to a
+<a href="../struct.Rational.html"><code>Rational</code></a> number for simple
+operations that do not need to allocate more space for the
+numerator or denominator.</p>
+
+<h1 id='safety' class='section-header'><a href='#safety'>Safety</a></h1>
+<p>It is undefined behaviour to perform operations that
+reallocate the internal data of the referenced
+<a href="../struct.Rational.html"><code>Rational</code></a> number or to swap it
+with another number.</p>
+
+<h1 id='examples-2' class='section-header'><a href='#examples-2'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">15i32</span>, <span class="number">47i32</span>));
+<span class="kw">let</span> <span class="ident">num_capacity</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">numer</span>().<span class="ident">capacity</span>();
+<span class="kw">let</span> <span class="ident">den_capacity</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">denom</span>().<span class="ident">capacity</span>();
+<span class="comment">// reciprocating this will not require reallocations</span>
+<span class="kw">unsafe</span> {
+    <span class="ident">r</span>.<span class="ident">as_nonreallocating_rational</span>().<span class="ident">recip_mut</span>();
+}
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">r</span>, (<span class="op">-</span><span class="number">47</span>, <span class="number">15</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r</span>.<span class="ident">numer</span>().<span class="ident">capacity</span>(), <span class="ident">num_capacity</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r</span>.<span class="ident">denom</span>().<span class="ident">capacity</span>(), <span class="ident">den_capacity</span>);</pre>
+</div><h4 id='method.from_canonical' class="method"><span id='from_canonical.v' class='invisible'><code>pub unsafe fn <a href='#method.from_canonical' class='fnname'>from_canonical</a>&lt;Num, Den&gt;(num: Num, den: Den) -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/integer/struct.SmallInteger.html" title="struct rug::integer::SmallInteger">SmallInteger</a>: <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt; + <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Den&gt;,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#157-175' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a <code>SmallRational</code> from a numerator and denominator,
+assuming they are in canonical form.</p>
+
+<h1 id='safety-1' class='section-header'><a href='#safety-1'>Safety</a></h1>
+<p>This method leads to undefined behaviour if <code>den</code> is zero or
+if <code>num</code> and <code>den</code> have common factors.</p>
+
+<h1 id='examples-3' class='section-header'><a href='#examples-3'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="kw">let</span> <span class="ident">from_unsafe</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+    <span class="ident">SmallRational</span>::<span class="ident">from_canonical</span>(<span class="op">-</span><span class="number">13</span>, <span class="number">10</span>)
+};
+<span class="comment">// from_safe is canonicalized to the same form as from_unsafe</span>
+<span class="kw">let</span> <span class="ident">from_safe</span> <span class="op">=</span> <span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="number">130</span>, <span class="op">-</span><span class="number">100</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">from_unsafe</span>.<span class="ident">numer</span>(), <span class="ident">from_safe</span>.<span class="ident">numer</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">from_unsafe</span>.<span class="ident">denom</span>(), <span class="ident">from_safe</span>.<span class="ident">denom</span>());</pre>
+</div><h4 id='method.from_canonicalized_32' class="method"><span id='from_canonicalized_32.v' class='invisible'><code>pub unsafe fn <a href='#method.from_canonicalized_32' class='fnname'>from_canonicalized_32</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;neg: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;num: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;den: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#185-195' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.2<p>: use <code>from_canonical</code> instead; for example <code>SmallRational::from_cananoicalized_32(true, 13, 10)</code> can be replaced with <code>SmallRational::from_canonical(-13, 10)</code>.</p>
+</div></div><div class='docblock'><p>Creates a <code>SmallRational</code> from a 32-bit numerator and
+denominator, assuming they are in canonical form.</p>
+</div><h4 id='method.from_canonicalized_64' class="method"><span id='from_canonicalized_64.v' class='invisible'><code>pub unsafe fn <a href='#method.from_canonicalized_64' class='fnname'>from_canonicalized_64</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;neg: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;num: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;den: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a><br>) -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#205-215' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.2<p>: use <code>from_canonical</code> instead; for example <code>SmallRational::from_cananoicalized_64(true, 13, 10)</code> can be replaced with <code>SmallRational::from_canonical(-13, 10)</code>.</p>
+</div></div><div class='docblock'><p>Creates a <code>SmallRational</code> from a 64-bit numerator and
+denominator, assuming they are in canonical form.</p>
+</div><h4 id='method.assign_canonicalized_32' class="method"><span id='assign_canonicalized_32.v' class='invisible'><code>pub unsafe fn <a href='#method.assign_canonicalized_32' class='fnname'>assign_canonicalized_32</a>(&amp;mut self, neg: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>, num: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, den: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#228-239' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.2<p>: use <code>as_nonreallocating_rational</code> and <code>assign_canonical</code> instead; for example <code>r.assign_canonicalized_32(true, 13u32, 10u32)</code> can be replaced with <code>r.as_nonreallocating_rational().assign_canonical(-13i32, 10u32)</code>.</p>
+</div></div><div class='docblock'><p>Sets a <code>SmallRational</code> to a 32-bit numerator and denominator,
+assuming they are in canonical form.</p>
+</div><h4 id='method.assign_canonicalized_64' class="method"><span id='assign_canonicalized_64.v' class='invisible'><code>pub unsafe fn <a href='#method.assign_canonicalized_64' class='fnname'>assign_canonicalized_64</a>(&amp;mut self, neg: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>, num: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>, den: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#252-263' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.2<p>: use <code>as_nonreallocating_rational</code> and <code>assign_canonical</code> instead; for example <code>r.assign_canonicalized_32(true, 13u64, 10u64)</code> can be replaced with <code>r.as_nonreallocating_rational().assign_canonical(-13i64, 10u64)</code>.</p>
+</div></div><div class='docblock'><p>Sets a <code>SmallRational</code> to a 64-bit numerator and denominator,
+assuming they are in canonical form.</p>
+</div></div>
+                    <h2 id='deref-methods' class='small-section-header'>
+                      Methods from <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html" title="trait core::ops::deref::Deref">Deref</a>&lt;Target = <a class="struct" href="../../rug/struct.Rational.html" title="struct rug::Rational">Rational</a>&gt;<a href='#deref-methods' class='anchor'></a>
+                    </h2>
+                <div class='impl-items'><h4 id='method.to_integer' class="method"><span id='to_integer.v' class='invisible'><code>pub fn <a href='#method.to_integer' class='fnname'>to_integer</a>(&amp;self) -&gt; <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#457-459' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Converts to an <a href="struct.Integer.html"><code>Integer</code></a>, rounding
+towards zero.</p>
+
+<p>Note that this method does not consume <code>self</code>, and allocates a
+new <code>Integer</code>. If <code>self</code> can be consumed, you should use
+<a href="#method.trunc"><code>trunc</code></a> instead.</p>
+
+<h1 id='examples-4' class='section-header'><a href='#examples-4'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">pos</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">139</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">posi</span> <span class="op">=</span> <span class="ident">pos</span>.<span class="ident">to_integer</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">posi</span>, <span class="number">13</span>);
+<span class="kw">let</span> <span class="ident">neg</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">139</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">negi</span> <span class="op">=</span> <span class="ident">neg</span>.<span class="ident">to_integer</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">negi</span>, <span class="op">-</span><span class="number">13</span>);</pre>
+</div><h4 id='method.copy_to_integer' class="method"><span id='copy_to_integer.v' class='invisible'><code>pub fn <a href='#method.copy_to_integer' class='fnname'>copy_to_integer</a>(&amp;self, i: &amp;mut <a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#467-469' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.2<p>: use <code>trunc_ref</code> instead; <code>r.copy_to_integer(&amp;mut i)</code> can be replaced with <code>i.assign(r.trunc_ref())</code>.</p>
+</div></div><div class='docblock'><p>Converts to an <a href="struct.Integer.html"><code>Integer</code></a> inside <code>i</code>,
+rounding towards zero.</p>
+</div><h4 id='method.to_f32' class="method"><span id='to_f32.v' class='invisible'><code>pub fn <a href='#method.to_f32' class='fnname'>to_f32</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f32.html">f32</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#488-490' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Converts to an <code>f32</code>, rounding towards zero.</p>
+
+<h1 id='examples-5' class='section-header'><a href='#examples-5'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">f32</span>;
+<span class="kw">let</span> <span class="ident">min</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from_f32</span>(<span class="ident">f32</span>::<span class="ident">MIN</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="ident">minus_small</span> <span class="op">=</span> <span class="ident">min</span> <span class="op">-</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="number">7</span>, <span class="number">2</span>));
+<span class="comment">// minus_small is truncated to f32::MIN</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">minus_small</span>.<span class="ident">to_f32</span>(), <span class="ident">f32</span>::<span class="ident">MIN</span>);
+<span class="kw">let</span> <span class="ident">times_three_two</span> <span class="op">=</span> <span class="ident">minus_small</span> <span class="op">*</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="number">3</span>, <span class="number">2</span>));
+<span class="comment">// times_three_two is too small</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">times_three_two</span>.<span class="ident">to_f32</span>(), <span class="ident">f32</span>::<span class="ident">NEG_INFINITY</span>);</pre>
+</div><h4 id='method.to_f64' class="method"><span id='to_f64.v' class='invisible'><code>pub fn <a href='#method.to_f64' class='fnname'>to_f64</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#523-525' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Converts to an <code>f64</code>, rounding towards zero.</p>
+
+<h1 id='examples-6' class='section-header'><a href='#examples-6'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">rational</span>::<span class="ident">SmallRational</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">f64</span>;
+
+<span class="comment">// An `f64` has 53 bits of precision.</span>
+<span class="kw">let</span> <span class="ident">exact</span> <span class="op">=</span> <span class="number">0x1f_1234_5678_9aff_u64</span>;
+<span class="kw">let</span> <span class="ident">den</span> <span class="op">=</span> <span class="number">0x1000_u64</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="ident">exact</span>, <span class="ident">den</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r</span>.<span class="ident">to_f64</span>(), <span class="ident">exact</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="ident">den</span> <span class="kw">as</span> <span class="ident">f64</span>);
+
+<span class="comment">// large has 56 ones</span>
+<span class="kw">let</span> <span class="ident">large</span> <span class="op">=</span> <span class="number">0xff_1234_5678_9aff_u64</span>;
+<span class="comment">// trunc has 53 ones followed by 3 zeros</span>
+<span class="kw">let</span> <span class="ident">trunc</span> <span class="op">=</span> <span class="number">0xff_1234_5678_9af8_u64</span>;
+<span class="kw">let</span> <span class="ident">j</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="ident">large</span>, <span class="ident">den</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">j</span>.<span class="ident">to_f64</span>(), <span class="ident">trunc</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">/</span> <span class="ident">den</span> <span class="kw">as</span> <span class="ident">f64</span>);
+
+<span class="kw">let</span> <span class="ident">max</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from_f64</span>(<span class="ident">f64</span>::<span class="ident">MAX</span>).<span class="ident">unwrap</span>();
+<span class="kw">let</span> <span class="ident">plus_small</span> <span class="op">=</span> <span class="ident">max</span> <span class="op">+</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="number">7</span>, <span class="number">2</span>));
+<span class="comment">// plus_small is truncated to f64::MAX</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">plus_small</span>.<span class="ident">to_f64</span>(), <span class="ident">f64</span>::<span class="ident">MAX</span>);
+<span class="kw">let</span> <span class="ident">times_three_two</span> <span class="op">=</span> <span class="ident">plus_small</span> <span class="op">*</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">SmallRational</span>::<span class="ident">from</span>((<span class="number">3</span>, <span class="number">2</span>));
+<span class="comment">// times_three_two is too large</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">times_three_two</span>.<span class="ident">to_f64</span>(), <span class="ident">f64</span>::<span class="ident">INFINITY</span>);</pre>
+</div><h4 id='method.to_string_radix' class="method"><span id='to_string_radix.v' class='invisible'><code>pub fn <a href='#method.to_string_radix' class='fnname'>to_string_radix</a>(&amp;self, radix: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#546-550' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a string representation for the specified <code>radix</code>.</p>
+
+<h1 id='examples-7' class='section-header'><a href='#examples-7'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="number">0</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r1</span>.<span class="ident">to_string_radix</span>(<span class="number">10</span>), <span class="string">&quot;0&quot;</span>);
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">15</span>, <span class="number">5</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r2</span>.<span class="ident">to_string_radix</span>(<span class="number">10</span>), <span class="string">&quot;3&quot;</span>);
+<span class="kw">let</span> <span class="ident">r3</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">10</span>, <span class="op">-</span><span class="number">6</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r3</span>.<span class="ident">to_string_radix</span>(<span class="number">10</span>), <span class="string">&quot;-5/3&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r3</span>.<span class="ident">to_string_radix</span>(<span class="number">5</span>), <span class="string">&quot;-10/3&quot;</span>);</pre>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>Panics if <code>radix</code> is less than 2 or greater than 36.</p>
+</div><h4 id='method.as_raw' class="method"><span id='as_raw.v' class='invisible'><code>pub fn <a href='#method.as_raw' class='fnname'>as_raw</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*const </a><a class="struct" href="../../gmp_mpfr_sys/gmp/struct.mpq_t.html" title="struct gmp_mpfr_sys::gmp::mpq_t">mpq_t</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#802-804' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a pointer to the internal GMP rational number.</p>
+
+<p>The returned pointer will be valid for as long as <code>self</code> is
+valid.</p>
+
+<h1 id='examples-8' class='section-header'><a href='#examples-8'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">gmp_mpfr_sys</span>;
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">rug</span>;
+<span class="kw">use</span> <span class="ident">gmp_mpfr_sys</span>::<span class="ident">gmp</span>;
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">fn</span> <span class="ident">main</span>() {
+    <span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">145</span>, <span class="number">10</span>));
+    <span class="kw">let</span> <span class="ident">q_ptr</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">as_raw</span>();
+    <span class="kw">unsafe</span> {
+        <span class="kw">let</span> <span class="ident">d</span> <span class="op">=</span> <span class="ident">gmp</span>::<span class="ident">mpq_get_d</span>(<span class="ident">q_ptr</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">d</span>, <span class="op">-</span><span class="number">14.5</span>);
+    }
+    <span class="comment">// r is still valid</span>
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">r</span>, (<span class="op">-</span><span class="number">145</span>, <span class="number">10</span>));
+}</pre>
+</div><h4 id='method.numer' class="method"><span id='numer.v' class='invisible'><code>pub fn <a href='#method.numer' class='fnname'>numer</a>(&amp;self) -&gt; &amp;<a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#844-846' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows the numerator as an <code>Integer</code>.</p>
+
+<h1 id='examples-9' class='section-header'><a href='#examples-9'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">12</span>, <span class="op">-</span><span class="number">20</span>));
+<span class="comment">// r will be canonicalized to -3 / 5</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">r</span>.<span class="ident">numer</span>(), <span class="op">-</span><span class="number">3</span>)</pre>
+</div><h4 id='method.denom' class="method"><span id='denom.v' class='invisible'><code>pub fn <a href='#method.denom' class='fnname'>denom</a>(&amp;self) -&gt; &amp;<a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#860-862' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows the denominator as an
+<a href="struct.Integer.html"><code>Integer</code></a>.</p>
+
+<h1 id='examples-10' class='section-header'><a href='#examples-10'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">12</span>, <span class="op">-</span><span class="number">20</span>));
+<span class="comment">// r will be canonicalized to -3 / 5</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">r</span>.<span class="ident">denom</span>(), <span class="number">5</span>);</pre>
+</div><h4 id='method.as_numer_denom' class="method"><span id='as_numer_denom.v' class='invisible'><code>pub fn <a href='#method.as_numer_denom' class='fnname'>as_numer_denom</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a>&amp;<a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a>, &amp;<a class="struct" href="../../rug/struct.Integer.html" title="struct rug::Integer">Integer</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#878-880' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows the numerator and denominator as
+<a href="struct.Integer.html"><code>Integer</code></a> values.</p>
+
+<h1 id='examples-11' class='section-header'><a href='#examples-11'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">12</span>, <span class="op">-</span><span class="number">20</span>));
+<span class="comment">// r will be canonicalized to -3 / 5</span>
+<span class="kw">let</span> (<span class="ident">num</span>, <span class="ident">den</span>) <span class="op">=</span> <span class="ident">r</span>.<span class="ident">as_numer_denom</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">num</span>, <span class="op">-</span><span class="number">3</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">den</span>, <span class="number">5</span>);</pre>
+</div><h4 id='method.as_neg' class="method"><span id='as_neg.v' class='invisible'><code>pub fn <a href='#method.as_neg' class='fnname'>as_neg</a>(&amp;self) -&gt; BorrowRational</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1030-1040' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows a negated copy of the <code>Rational</code> number.</p>
+
+<p>The returned object implements <code>Deref&lt;Target = Rational&gt;</code>.</p>
+
+<p>This method performs a shallow copy and negates it, and
+negation does not change the allocated data.</p>
+
+<h1 id='examples-12' class='section-header'><a href='#examples-12'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">7</span>, <span class="number">11</span>));
+<span class="kw">let</span> <span class="ident">neg_r</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">as_neg</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">neg_r</span>, (<span class="op">-</span><span class="number">7</span>, <span class="number">11</span>));
+<span class="comment">// methods taking &amp;self can be used on the returned object</span>
+<span class="kw">let</span> <span class="ident">reneg_r</span> <span class="op">=</span> <span class="ident">neg_r</span>.<span class="ident">as_neg</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">reneg_r</span>, (<span class="number">7</span>, <span class="number">11</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">reneg_r</span>, <span class="ident">r</span>);</pre>
+</div><h4 id='method.as_abs' class="method"><span id='as_abs.v' class='invisible'><code>pub fn <a href='#method.as_abs' class='fnname'>as_abs</a>(&amp;self) -&gt; BorrowRational</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1062-1072' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows an absolute copy of the <code>Rational</code> number.</p>
+
+<p>The returned object implements <code>Deref&lt;Target = Rational&gt;</code>.</p>
+
+<p>This method performs a shallow copy and possibly negates it,
+and negation does not change the allocated data.</p>
+
+<h1 id='examples-13' class='section-header'><a href='#examples-13'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">7</span>, <span class="number">11</span>));
+<span class="kw">let</span> <span class="ident">abs_r</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">as_abs</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">abs_r</span>, (<span class="number">7</span>, <span class="number">11</span>));
+<span class="comment">// methods taking &amp;self can be used on the returned object</span>
+<span class="kw">let</span> <span class="ident">reabs_r</span> <span class="op">=</span> <span class="ident">abs_r</span>.<span class="ident">as_abs</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">reabs_r</span>, (<span class="number">7</span>, <span class="number">11</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">reabs_r</span>, <span class="kw-2">*</span><span class="ident">abs_r</span>);</pre>
+</div><h4 id='method.as_recip' class="method"><span id='as_recip.v' class='invisible'><code>pub fn <a href='#method.as_recip' class='fnname'>as_recip</a>(&amp;self) -&gt; BorrowRational</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1097-1115' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Borrows a reciprocal copy of the <code>Rational</code> number.</p>
+
+<p>The returned object implements <code>Deref&lt;Target = Rational&gt;</code>.</p>
+
+<p>This method performs some shallow copying, swapping numerator
+and denominator and making sure the sign is in the numerator.</p>
+
+<h1 id='examples-14' class='section-header'><a href='#examples-14'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">7</span>, <span class="number">11</span>));
+<span class="kw">let</span> <span class="ident">recip_r</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">as_recip</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">recip_r</span>, (<span class="op">-</span><span class="number">11</span>, <span class="number">7</span>));
+<span class="comment">// methods taking &amp;self can be used on the returned object</span>
+<span class="kw">let</span> <span class="ident">rerecip_r</span> <span class="op">=</span> <span class="ident">recip_r</span>.<span class="ident">as_recip</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">rerecip_r</span>, (<span class="op">-</span><span class="number">7</span>, <span class="number">11</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">*</span><span class="ident">rerecip_r</span>, <span class="ident">r</span>);</pre>
+
+<h1 id='panics-1' class='section-header'><a href='#panics-1'>Panics</a></h1>
+<p>Panics if the value is zero.</p>
+</div><h4 id='method.cmp0' class="method"><span id='cmp0.v' class='invisible'><code>pub fn <a href='#method.cmp0' class='fnname'>cmp0</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html" title="enum core::cmp::Ordering">Ordering</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1128-1130' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the same result as <code>self.cmp(&amp;0)</code>, but is faster.</p>
+
+<h1 id='examples-15' class='section-header'><a href='#examples-15'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cmp</span>::<span class="ident">Ordering</span>;
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">5</span>, <span class="number">7</span>)).<span class="ident">cmp0</span>(), <span class="ident">Ordering</span>::<span class="ident">Less</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">Rational</span>::<span class="ident">from</span>(<span class="number">0</span>).<span class="ident">cmp0</span>(), <span class="ident">Ordering</span>::<span class="ident">Equal</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">5</span>, <span class="number">7</span>)).<span class="ident">cmp0</span>(), <span class="ident">Ordering</span>::<span class="ident">Greater</span>);</pre>
+</div><h4 id='method.abs_ref' class="method"><span id='abs_ref.v' class='invisible'><code>pub fn <a href='#method.abs_ref' class='fnname'>abs_ref</a>(&amp;self) -&gt; AbsRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the absolute value.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-16' class='section-header'><a href='#examples-16'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">abs_ref</span>();
+<span class="kw">let</span> <span class="ident">abs</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">abs</span>, (<span class="number">100</span>, <span class="number">17</span>));</pre>
+</div><h4 id='method.signum_ref' class="method"><span id='signum_ref.v' class='invisible'><code>pub fn <a href='#method.signum_ref' class='fnname'>signum_ref</a>(&amp;self) -&gt; SignumRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#119-124' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the signum.</p>
+
+<ul>
+<li>0 if the value is zero</li>
+<li>1 if the value is positive</li>
+<li>−1 if the value is negative</li>
+</ul>
+
+<h1 id='examples-17' class='section-header'><a href='#examples-17'>Examples</a></h1>
+<p><code>Assign&lt;Src&gt; for Integer</code> and <code>From&lt;Src&gt; for Integer</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">signum_ref</span>();
+<span class="kw">let</span> <span class="ident">signum</span> <span class="op">=</span> <span class="ident">Integer</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">signum</span>, <span class="op">-</span><span class="number">1</span>);</pre>
+</div><h4 id='method.clamp_ref' class="method"><span id='clamp_ref.v' class='invisible'><code>pub fn <a href='#method.clamp_ref' class='fnname'>clamp_ref</a>&lt;'a, Min, Max&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;'a self, <br>&nbsp;&nbsp;&nbsp;&nbsp;min: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a </a>Min, <br>&nbsp;&nbsp;&nbsp;&nbsp;max: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a </a>Max<br>) -&gt; ClampRef&lt;'a, Min, Max&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/struct.Rational.html" title="struct rug::Rational">Rational</a>: <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html" title="trait core::cmp::PartialOrd">PartialOrd</a>&lt;Min&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html" title="trait core::cmp::PartialOrd">PartialOrd</a>&lt;Max&gt; + <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a </a>Min&gt; + <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;'a </a>Max&gt;,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1327-1343' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Clamps the value within the specified bounds.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-18' class='section-header'><a href='#examples-18'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">min</span> <span class="op">=</span> (<span class="op">-</span><span class="number">3</span>, <span class="number">2</span>);
+<span class="kw">let</span> <span class="ident">max</span> <span class="op">=</span> (<span class="number">3</span>, <span class="number">2</span>);
+<span class="kw">let</span> <span class="ident">too_small</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">5</span>, <span class="number">2</span>));
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">too_small</span>.<span class="ident">clamp_ref</span>(<span class="kw-2">&amp;</span><span class="ident">min</span>, <span class="kw-2">&amp;</span><span class="ident">max</span>);
+<span class="kw">let</span> <span class="ident">clamped1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r1</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">clamped1</span>, (<span class="op">-</span><span class="number">3</span>, <span class="number">2</span>));
+<span class="kw">let</span> <span class="ident">in_range</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">1</span>, <span class="number">2</span>));
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">in_range</span>.<span class="ident">clamp_ref</span>(<span class="kw-2">&amp;</span><span class="ident">min</span>, <span class="kw-2">&amp;</span><span class="ident">max</span>);
+<span class="kw">let</span> <span class="ident">clamped2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r2</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">clamped2</span>, (<span class="number">1</span>, <span class="number">2</span>));</pre>
+
+<h1 id='panics-2' class='section-header'><a href='#panics-2'>Panics</a></h1>
+<p>Panics if the maximum value is less than the minimum value.</p>
+</div><h4 id='method.recip_ref' class="method"><span id='recip_ref.v' class='invisible'><code>pub fn <a href='#method.recip_ref' class='fnname'>recip_ref</a>(&amp;self) -&gt; RecipRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the reciprocal.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-19' class='section-header'><a href='#examples-19'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">recip_ref</span>();
+<span class="kw">let</span> <span class="ident">recip</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">recip</span>, (<span class="op">-</span><span class="number">17</span>, <span class="number">100</span>));</pre>
+</div><h4 id='method.trunc_ref' class="method"><span id='trunc_ref.v' class='invisible'><code>pub fn <a href='#method.trunc_ref' class='fnname'>trunc_ref</a>(&amp;self) -&gt; TruncRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#119-124' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Rounds the number towards zero.</p>
+
+<p><code>Assign&lt;Src&gt; for Integer</code> and <code>From&lt;Src&gt; for Integer</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-20' class='section-header'><a href='#examples-20'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">trunc</span> <span class="op">=</span> <span class="ident">Integer</span>::<span class="ident">new</span>();
+<span class="comment">// -3.7</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">37</span>, <span class="number">10</span>));
+<span class="ident">trunc</span>.<span class="ident">assign</span>(<span class="ident">r1</span>.<span class="ident">trunc_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">trunc</span>, <span class="op">-</span><span class="number">3</span>);
+<span class="comment">// 3.3</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">33</span>, <span class="number">10</span>));
+<span class="ident">trunc</span>.<span class="ident">assign</span>(<span class="ident">r2</span>.<span class="ident">trunc_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">trunc</span>, <span class="number">3</span>);</pre>
+</div><h4 id='method.fract_ref' class="method"><span id='fract_ref.v' class='invisible'><code>pub fn <a href='#method.fract_ref' class='fnname'>fract_ref</a>(&amp;self) -&gt; RemTruncRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#1467-1469' title='goto source code'>[src]</a></span></h4>
+<div class='stability'><div class='stab deprecated'>Deprecated since 0.9.0<p>: renamed to <code>rem_trunc_ref</code></p>
+</div></div><div class='docblock'><p>Computes the fractional part of the number.</p>
+</div><h4 id='method.rem_trunc_ref' class="method"><span id='rem_trunc_ref.v' class='invisible'><code>pub fn <a href='#method.rem_trunc_ref' class='fnname'>rem_trunc_ref</a>(&amp;self) -&gt; RemTruncRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the fractional part of the number.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-21' class='section-header'><a href='#examples-21'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="comment">// -100/17 = -5 - 15/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">rem_trunc_ref</span>();
+<span class="kw">let</span> <span class="ident">rem</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem</span>, (<span class="op">-</span><span class="number">15</span>, <span class="number">17</span>));</pre>
+</div><h4 id='method.fract_trunc_ref' class="method"><span id='fract_trunc_ref.v' class='invisible'><code>pub fn <a href='#method.fract_trunc_ref' class='fnname'>fract_trunc_ref</a>(&amp;self) -&gt; FractTruncRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#194-199' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the fractional and truncated parts of the number.</p>
+
+<p><code>Assign&lt;Src&gt; for (Rational, Integer)</code>,
+<code>Assign&lt;Src&gt; for (&amp;mut Rational, &amp;mut Integer)</code> and
+<code>From&lt;Src&gt; for (Rational, Integer)</code> are implemented with
+the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-22' class='section-header'><a href='#examples-22'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="comment">// -100/17 = -5 - 15/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">fract_trunc_ref</span>();
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">mut</span> <span class="ident">trunc</span>) <span class="op">=</span> (<span class="ident">Rational</span>::<span class="ident">new</span>(), <span class="ident">Integer</span>::<span class="ident">new</span>());
+(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">trunc</span>).<span class="ident">assign</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">fract</span>, (<span class="op">-</span><span class="number">15</span>, <span class="number">17</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">trunc</span>, <span class="op">-</span><span class="number">5</span>);</pre>
+</div><h4 id='method.ceil_ref' class="method"><span id='ceil_ref.v' class='invisible'><code>pub fn <a href='#method.ceil_ref' class='fnname'>ceil_ref</a>(&amp;self) -&gt; CeilRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#119-124' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Rounds the number upwards (towards plus infinity).</p>
+
+<p><code>Assign&lt;Src&gt; for Integer</code> and <code>From&lt;Src&gt; for Integer</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-23' class='section-header'><a href='#examples-23'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ceil</span> <span class="op">=</span> <span class="ident">Integer</span>::<span class="ident">new</span>();
+<span class="comment">// -3.7</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">37</span>, <span class="number">10</span>));
+<span class="ident">ceil</span>.<span class="ident">assign</span>(<span class="ident">r1</span>.<span class="ident">ceil_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">ceil</span>, <span class="op">-</span><span class="number">3</span>);
+<span class="comment">// 3.3</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">33</span>, <span class="number">10</span>));
+<span class="ident">ceil</span>.<span class="ident">assign</span>(<span class="ident">r2</span>.<span class="ident">ceil_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">ceil</span>, <span class="number">4</span>);</pre>
+</div><h4 id='method.rem_ceil_ref' class="method"><span id='rem_ceil_ref.v' class='invisible'><code>pub fn <a href='#method.rem_ceil_ref' class='fnname'>rem_ceil_ref</a>(&amp;self) -&gt; RemCeilRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the non-positive remainder after rounding up.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-24' class='section-header'><a href='#examples-24'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="comment">// 100/17 = 6 - 2/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">rem_ceil_ref</span>();
+<span class="kw">let</span> <span class="ident">rem</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem</span>, (<span class="op">-</span><span class="number">2</span>, <span class="number">17</span>));</pre>
+</div><h4 id='method.fract_ceil_ref' class="method"><span id='fract_ceil_ref.v' class='invisible'><code>pub fn <a href='#method.fract_ceil_ref' class='fnname'>fract_ceil_ref</a>(&amp;self) -&gt; FractCeilRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#194-199' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the fractional and ceil parts of the number.</p>
+
+<p>The fractional part cannot be greater than zero.</p>
+
+<p><code>Assign&lt;Src&gt; for (Rational, Integer)</code>,
+<code>Assign&lt;Src&gt; for (&amp;mut Rational, &amp;mut Integer)</code> and
+<code>From&lt;Src&gt; for (Rational, Integer)</code> are implemented with
+the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-25' class='section-header'><a href='#examples-25'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="comment">// 100/17 = 6 - 2/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">fract_ceil_ref</span>();
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">mut</span> <span class="ident">ceil</span>) <span class="op">=</span> (<span class="ident">Rational</span>::<span class="ident">new</span>(), <span class="ident">Integer</span>::<span class="ident">new</span>());
+(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ceil</span>).<span class="ident">assign</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">fract</span>, (<span class="op">-</span><span class="number">2</span>, <span class="number">17</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">ceil</span>, <span class="number">6</span>);</pre>
+</div><h4 id='method.floor_ref' class="method"><span id='floor_ref.v' class='invisible'><code>pub fn <a href='#method.floor_ref' class='fnname'>floor_ref</a>(&amp;self) -&gt; FloorRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#119-124' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Rounds the number downwards (towards minus infinity).</p>
+
+<p><code>Assign&lt;Src&gt; for Integer</code> and <code>From&lt;Src&gt; for Integer</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-26' class='section-header'><a href='#examples-26'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">floor</span> <span class="op">=</span> <span class="ident">Integer</span>::<span class="ident">new</span>();
+<span class="comment">// -3.7</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">37</span>, <span class="number">10</span>));
+<span class="ident">floor</span>.<span class="ident">assign</span>(<span class="ident">r1</span>.<span class="ident">floor_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">floor</span>, <span class="op">-</span><span class="number">4</span>);
+<span class="comment">// 3.3</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">33</span>, <span class="number">10</span>));
+<span class="ident">floor</span>.<span class="ident">assign</span>(<span class="ident">r2</span>.<span class="ident">floor_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">floor</span>, <span class="number">3</span>);</pre>
+</div><h4 id='method.rem_floor_ref' class="method"><span id='rem_floor_ref.v' class='invisible'><code>pub fn <a href='#method.rem_floor_ref' class='fnname'>rem_floor_ref</a>(&amp;self) -&gt; RemFloorRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the non-negative remainder after rounding down.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-27' class='section-header'><a href='#examples-27'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="comment">// -100/17 = -6 + 2/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">rem_floor_ref</span>();
+<span class="kw">let</span> <span class="ident">rem</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem</span>, (<span class="number">2</span>, <span class="number">17</span>));</pre>
+</div><h4 id='method.fract_floor_ref' class="method"><span id='fract_floor_ref.v' class='invisible'><code>pub fn <a href='#method.fract_floor_ref' class='fnname'>fract_floor_ref</a>(&amp;self) -&gt; FractFloorRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#194-199' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the fractional and floor parts of the number.</p>
+
+<p>The fractional part cannot be negative.</p>
+
+<p><code>Assign&lt;Src&gt; for (Rational, Integer)</code>,
+<code>Assign&lt;Src&gt; for (&amp;mut Rational, &amp;mut Integer)</code> and
+<code>From&lt;Src&gt; for (Rational, Integer)</code> are implemented with
+the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-28' class='section-header'><a href='#examples-28'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="comment">// -100/17 = -6 + 2/17</span>
+<span class="kw">let</span> <span class="ident">r</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">100</span>, <span class="number">17</span>));
+<span class="kw">let</span> <span class="ident">r_ref</span> <span class="op">=</span> <span class="ident">r</span>.<span class="ident">fract_floor_ref</span>();
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">mut</span> <span class="ident">floor</span>) <span class="op">=</span> (<span class="ident">Rational</span>::<span class="ident">new</span>(), <span class="ident">Integer</span>::<span class="ident">new</span>());
+(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fract</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">floor</span>).<span class="ident">assign</span>(<span class="ident">r_ref</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">fract</span>, (<span class="number">2</span>, <span class="number">17</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">floor</span>, <span class="op">-</span><span class="number">6</span>);</pre>
+</div><h4 id='method.round_ref' class="method"><span id='round_ref.v' class='invisible'><code>pub fn <a href='#method.round_ref' class='fnname'>round_ref</a>(&amp;self) -&gt; RoundRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#119-124' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Rounds the number to the nearest integer.</p>
+
+<p>When the number lies exactly between two integers, it is
+rounded away from zero.</p>
+
+<p><code>Assign&lt;Src&gt; for Integer</code> and <code>From&lt;Src&gt; for Integer</code> are
+implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-29' class='section-header'><a href='#examples-29'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">round</span> <span class="op">=</span> <span class="ident">Integer</span>::<span class="ident">new</span>();
+<span class="comment">// -3.5</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">35</span>, <span class="number">10</span>));
+<span class="ident">round</span>.<span class="ident">assign</span>(<span class="ident">r1</span>.<span class="ident">round_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">round</span>, <span class="op">-</span><span class="number">4</span>);
+<span class="comment">// 3.7</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">37</span>, <span class="number">10</span>));
+<span class="ident">round</span>.<span class="ident">assign</span>(<span class="ident">r2</span>.<span class="ident">round_ref</span>());
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">round</span>, <span class="number">4</span>);</pre>
+</div><h4 id='method.rem_round_ref' class="method"><span id='rem_round_ref.v' class='invisible'><code>pub fn <a href='#method.rem_round_ref' class='fnname'>rem_round_ref</a>(&amp;self) -&gt; RemRoundRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/macros.rs.html#183-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the remainder after rounding to the nearest
+integer.</p>
+
+<p><code>Assign&lt;Src&gt; for Rational</code> and <code>From&lt;Src&gt; for Rational</code>
+are implemented with the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-30' class='section-header'><a href='#examples-30'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::<span class="ident">Rational</span>;
+<span class="comment">// -3.5 = -4 + 0.5 = -4 + 1/2</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">35</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">r_ref1</span> <span class="op">=</span> <span class="ident">r1</span>.<span class="ident">rem_round_ref</span>();
+<span class="kw">let</span> <span class="ident">rem1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref1</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem1</span>, (<span class="number">1</span>, <span class="number">2</span>));
+<span class="comment">// 3.7 = 4 - 0.3 = 4 - 3/10</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">37</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">r_ref2</span> <span class="op">=</span> <span class="ident">r2</span>.<span class="ident">rem_round_ref</span>();
+<span class="kw">let</span> <span class="ident">rem2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>(<span class="ident">r_ref2</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">rem2</span>, (<span class="op">-</span><span class="number">3</span>, <span class="number">10</span>));</pre>
+</div><h4 id='method.fract_round_ref' class="method"><span id='fract_round_ref.v' class='invisible'><code>pub fn <a href='#method.fract_round_ref' class='fnname'>fract_round_ref</a>(&amp;self) -&gt; FractRoundRef</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/big_rational.rs.html#194-199' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Computes the fractional and round parts of the number.</p>
+
+<p>The fractional part is positive when the number is rounded
+down and negative when the number is rounded up. When the
+number lies exactly between two integers, it is rounded away
+from zero.</p>
+
+<p><code>Assign&lt;Src&gt; for (Rational, Integer)</code>,
+<code>Assign&lt;Src&gt; for (&amp;mut Rational, &amp;mut Integer)</code> and
+<code>From&lt;Src&gt; for (Rational, Integer)</code> are implemented with
+the returned object as <code>Src</code>.</p>
+
+<h1 id='examples-31' class='section-header'><a href='#examples-31'>Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">rug</span>::{<span class="ident">Assign</span>, <span class="ident">Integer</span>, <span class="ident">Rational</span>};
+<span class="comment">// -3.5 = -4 + 0.5 = -4 + 1/2</span>
+<span class="kw">let</span> <span class="ident">r1</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="op">-</span><span class="number">35</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">r_ref1</span> <span class="op">=</span> <span class="ident">r1</span>.<span class="ident">fract_round_ref</span>();
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">fract1</span>, <span class="kw-2">mut</span> <span class="ident">round1</span>) <span class="op">=</span> (<span class="ident">Rational</span>::<span class="ident">new</span>(), <span class="ident">Integer</span>::<span class="ident">new</span>());
+(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fract1</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">round1</span>).<span class="ident">assign</span>(<span class="ident">r_ref1</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">fract1</span>, (<span class="number">1</span>, <span class="number">2</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">round1</span>, <span class="op">-</span><span class="number">4</span>);
+<span class="comment">// 3.7 = 4 - 0.3 = 4 - 3/10</span>
+<span class="kw">let</span> <span class="ident">r2</span> <span class="op">=</span> <span class="ident">Rational</span>::<span class="ident">from</span>((<span class="number">37</span>, <span class="number">10</span>));
+<span class="kw">let</span> <span class="ident">r_ref2</span> <span class="op">=</span> <span class="ident">r2</span>.<span class="ident">fract_round_ref</span>();
+<span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">fract2</span>, <span class="kw-2">mut</span> <span class="ident">round2</span>) <span class="op">=</span> (<span class="ident">Rational</span>::<span class="ident">new</span>(), <span class="ident">Integer</span>::<span class="ident">new</span>());
+(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fract2</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">round2</span>).<span class="ident">assign</span>(<span class="ident">r_ref2</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">fract2</span>, (<span class="op">-</span><span class="number">3</span>, <span class="number">10</span>));
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">round2</span>, <span class="number">4</span>);</pre>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#56' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#56' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Default' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl-Default' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#65-70' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.default' class="method"><span id='default.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#67-69' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the &quot;default value&quot; for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
+</div></div><h3 id='impl-Deref' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html" title="trait core::ops::deref::Deref">Deref</a> for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl-Deref' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#290-298' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Target' class="type"><span id='Target.t' class='invisible'><code>type <a href='https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html#associatedtype.Target' class="type">Target</a> = <a class="struct" href="../../rug/struct.Rational.html" title="struct rug::Rational">Rational</a></code></span></h4>
+<div class='docblock'><p>The resulting type after dereferencing.</p>
+</div><h4 id='method.deref' class="method"><span id='deref.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html#tymethod.deref' class='fnname'>deref</a>(&amp;self) -&gt; &amp;<a class="struct" href="../../rug/struct.Rational.html" title="struct rug::Rational">Rational</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#293-297' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Dereferences the value.</p>
+</div></div><h3 id='impl-Assign%3CNum%3E' class='impl'><span class='in-band'><code>impl&lt;Num&gt; <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/integer/struct.SmallInteger.html" title="struct rug::integer::SmallInteger">SmallInteger</a>: <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt;,&nbsp;</span></code><a href='#impl-Assign%3CNum%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#300-321' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.assign' class="method"><span id='assign.v' class='invisible'><code>fn <a href='../../rug/trait.Assign.html#tymethod.assign' class='fnname'>assign</a>(&amp;mut self, num: Num)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#305-320' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Peforms the assignement. <a href="../../rug/trait.Assign.html#tymethod.assign">Read more</a></p>
+</div></div><h3 id='impl-From%3CNum%3E' class='impl'><span class='in-band'><code>impl&lt;Num&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;Num&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/integer/struct.SmallInteger.html" title="struct rug::integer::SmallInteger">SmallInteger</a>: <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt;,&nbsp;</span></code><a href='#impl-From%3CNum%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#323-333' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from' class="method"><span id='from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html#tymethod.from' class='fnname'>from</a>(val: Num) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#328-332' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs the conversion.</p>
+</div></div><h3 id='impl-Assign%3C(Num%2C%20Den)%3E' class='impl'><span class='in-band'><code>impl&lt;Num, Den&gt; <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a>Num, Den<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/integer/struct.SmallInteger.html" title="struct rug::integer::SmallInteger">SmallInteger</a>: <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt; + <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Den&gt;,&nbsp;</span></code><a href='#impl-Assign%3C(Num%2C%20Den)%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#335-368' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.assign-1' class="method"><span id='assign.v-1' class='invisible'><code>fn <a href='../../rug/trait.Assign.html#tymethod.assign' class='fnname'>assign</a>(&amp;mut self, (num, den): <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a>Num, Den<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#340-367' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Peforms the assignement. <a href="../../rug/trait.Assign.html#tymethod.assign">Read more</a></p>
+</div></div><h3 id='impl-From%3C(Num%2C%20Den)%3E' class='impl'><span class='in-band'><code>impl&lt;Num, Den&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a>Num, Den<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;<a class="struct" href="../../rug/integer/struct.SmallInteger.html" title="struct rug::integer::SmallInteger">SmallInteger</a>: <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Num&gt; + <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;Den&gt;,&nbsp;</span></code><a href='#impl-From%3C(Num%2C%20Den)%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#370-380' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from-1' class="method"><span id='from.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html#tymethod.from' class='fnname'>from</a>(val: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a>Num, Den<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#375-379' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs the conversion.</p>
+</div></div><h3 id='impl-Assign%3C%26%27a%20SmallRational%3E' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;&amp;'a <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a>&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl-Assign%3C%26%27a%20SmallRational%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#382-387' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.assign-2' class="method"><span id='assign.v-2' class='invisible'><code>fn <a href='../../rug/trait.Assign.html#tymethod.assign' class='fnname'>assign</a>(&amp;mut self, other: &amp;'a <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#384-386' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Peforms the assignement. <a href="../../rug/trait.Assign.html#tymethod.assign">Read more</a></p>
+</div></div><h3 id='impl-Assign%3CSmallRational%3E' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../rug/trait.Assign.html" title="trait rug::Assign">Assign</a>&lt;<a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a>&gt; for <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a></code><a href='#impl-Assign%3CSmallRational%3E' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#389-394' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.assign-3' class="method"><span id='assign.v-3' class='invisible'><code>fn <a href='../../rug/trait.Assign.html#tymethod.assign' class='fnname'>assign</a>(&amp;mut self, other: <a class="struct" href="../../rug/rational/struct.SmallRational.html" title="struct rug::rational::SmallRational">SmallRational</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/rug/rational/small_rational.rs.html#391-393' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Peforms the assignement. <a href="../../rug/trait.Assign.html#tymethod.assign">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "rug";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `LzmaOptions` struct in crate `xz2`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, LzmaOptions">
+
+    <title>xz2::stream::LzmaOptions - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct LzmaOptions</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new_preset">new_preset</a><a href="#method.dict_size">dict_size</a><a href="#method.literal_context_bits">literal_context_bits</a><a href="#method.literal_position_bits">literal_position_bits</a><a href="#method.position_bits">position_bits</a><a href="#method.mode">mode</a><a href="#method.nice_len">nice_len</a><a href="#method.match_finder">match_finder</a><a href="#method.depth">depth</a></div></div><p class='location'><a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a></p><script>window.sidebarCurrent = {name: 'LzmaOptions', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a>::<wbr><a class="struct" href=''>LzmaOptions</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/xz2/stream.rs.html#27-29' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct LzmaOptions { /* fields omitted */ }</pre><div class='docblock'><p>Options that can be used to configure how LZMA encoding happens.</p>
+
+<p>This builder is consumed by a number of other methods.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#431-567' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new_preset' class="method"><span id='new_preset.v' class='invisible'><code>pub fn <a href='#method.new_preset' class='fnname'>new_preset</a>(preset: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a>, <a class="enum" href="../../xz2/stream/enum.Error.html" title="enum xz2::stream::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#436-446' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a new blank set of options for encoding.</p>
+
+<p>The <code>preset</code> argument is the compression level to use, typically in the
+range of 0-9.</p>
+</div><h4 id='method.dict_size' class="method"><span id='dict_size.v' class='invisible'><code>pub fn <a href='#method.dict_size' class='fnname'>dict_size</a>(&amp;mut self, size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#454-457' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the dictionary size, in bytes</p>
+
+<p>Dictionary size indicates how many bytes of the recently processed
+uncompressed data is kept in memory.</p>
+
+<p>The minimum dictionary size is 4096 bytes and the default is 2<sup>23,</sup> 8MB.</p>
+</div><h4 id='method.literal_context_bits' class="method"><span id='literal_context_bits.v' class='invisible'><code>pub fn <a href='#method.literal_context_bits' class='fnname'>literal_context_bits</a>(&amp;mut self, bits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#467-470' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the number of literal context bits.</p>
+
+<p>How many of the highest bits of the previous uncompressed eight-bit byte
+(also known as `literal&#39;) are taken into account when predicting the
+bits of the next literal.</p>
+
+<p>The maximum value to this is 4 and the default is 3. It is not currently
+supported if this plus <code>literal_position_bits</code> is greater than 4.</p>
+</div><h4 id='method.literal_position_bits' class="method"><span id='literal_position_bits.v' class='invisible'><code>pub fn <a href='#method.literal_position_bits' class='fnname'>literal_position_bits</a>(&amp;mut self, bits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#479-482' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the number of literal position bits.</p>
+
+<p>This affects what kind of alignment in the uncompressed data is assumed
+when encoding literals. A literal is a single 8-bit byte. See
+<code>position_bits</code> for more information about alignment.</p>
+
+<p>The default for this is 0.</p>
+</div><h4 id='method.position_bits' class="method"><span id='position_bits.v' class='invisible'><code>pub fn <a href='#method.position_bits' class='fnname'>position_bits</a>(&amp;mut self, bits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#500-503' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the number of position bits.</p>
+
+<p>Position bits affects what kind of alignment in the uncompressed data is
+assumed in general. The default of 2 means four-byte alignment (2^ pb
+=2<sup>2=4),</sup> which is often a good choice when there&#39;s no better guess.</p>
+
+<p>When the aligment is known, setting pb accordingly may reduce the file
+size a little. E.g. with text files having one-byte alignment (US-ASCII,
+ISO-8859-*, UTF-8), setting pb=0 can improve compression slightly. For
+UTF-16 text, pb=1 is a good choice. If the alignment is an odd number
+like 3 bytes, pb=0 might be the best choice.</p>
+
+<p>Even though the assumed alignment can be adjusted with pb and lp, LZMA1
+and LZMA2 still slightly favor 16-byte alignment. It might be worth
+taking into account when designing file formats that are likely to be
+often compressed with LZMA1 or LZMA2.</p>
+</div><h4 id='method.mode' class="method"><span id='mode.v' class='invisible'><code>pub fn <a href='#method.mode' class='fnname'>mode</a>(&amp;mut self, mode: <a class="enum" href="../../xz2/stream/enum.Mode.html" title="enum xz2::stream::Mode">Mode</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#506-509' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the compression mode.</p>
+</div><h4 id='method.nice_len' class="method"><span id='nice_len.v' class='invisible'><code>pub fn <a href='#method.nice_len' class='fnname'>nice_len</a>(&amp;mut self, len: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#526-529' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the nice length of a match.</p>
+
+<p>This determines how many bytes the encoder compares from the match
+candidates when looking for the best match. Once a match of at least
+<code>nice_len</code> bytes long is found, the encoder stops looking for better
+candidates and encodes the match. (Naturally, if the found match is
+actually longer than <code>nice_len</code>, the actual length is encoded; it&#39;s not
+truncated to <code>nice_len</code>.)</p>
+
+<p>Bigger values usually increase the compression ratio and compression
+time. For most files, 32 to 128 is a good value, which gives very good
+compression ratio at good speed.</p>
+
+<p>The exact minimum value depends on the match finder. The maximum is 273,
+which is the maximum length of a match that LZMA1 and LZMA2 can encode.</p>
+</div><h4 id='method.match_finder' class="method"><span id='match_finder.v' class='invisible'><code>pub fn <a href='#method.match_finder' class='fnname'>match_finder</a>(&amp;mut self, mf: <a class="enum" href="../../xz2/stream/enum.MatchFinder.html" title="enum xz2::stream::MatchFinder">MatchFinder</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#532-535' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the match finder ID.</p>
+</div><h4 id='method.depth' class="method"><span id='depth.v' class='invisible'><code>pub fn <a href='#method.depth' class='fnname'>depth</a>(&amp;mut self, depth: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#563-566' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Maximum search depth in the match finder.</p>
+
+<p>For every input byte, match finder searches through the hash chain or
+binary tree in a loop, each iteration going one step deeper in the chain
+or tree. The searching stops if</p>
+
+<ul>
+<li>a match of at least <code>nice_len</code> bytes long is found;</li>
+<li>all match candidates from the hash chain or binary tree have
+been checked; or</li>
+<li>maximum search depth is reached.</li>
+</ul>
+
+<p>Maximum search depth is needed to prevent the match finder from wasting
+too much time in case there are lots of short match candidates. On the
+other hand, stopping the search before all candidates have been checked
+can reduce compression ratio.</p>
+
+<p>Setting depth to zero tells liblzma to use an automatic default value,
+that depends on the selected match finder and nice_len.  The default is
+in the range [4, 200] or so (it may vary between liblzma versions).</p>
+
+<p>Using a bigger depth value than the default can increase compression
+ratio in some cases. There is no strict maximum value, but high values
+(thousands or millions) should be used with care: the encoder could
+remain fast enough with typical input, but malicious input could cause
+the match finder to slow down dramatically, possibly creating a denial
+of service attack.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "xz2";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

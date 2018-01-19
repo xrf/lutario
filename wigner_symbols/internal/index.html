@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `internal` mod in crate `wigner_symbols`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, internal">
+
+    <title>wigner_symbols::internal - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module internal</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../index.html'>wigner_symbols</a></p><script>window.sidebarCurrent = {name: 'internal', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>wigner_symbols</a>::<wbr><a class="mod" href=''>internal</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/wigner_symbols/internal.rs.html#1-401' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Contents of this module are subject to change.</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Step.html"
+                                  title='struct wigner_symbols::internal::Step'>Step</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.binomial.html"
+                                  title='fn wigner_symbols::internal::binomial'>binomial</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the binomial coefficient <code>C(n, k)</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.factorial.html"
+                                  title='fn wigner_symbols::internal::factorial'>factorial</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the factorial <code>n!</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.falling_factorial.html"
+                                  title='fn wigner_symbols::internal::falling_factorial'>falling_factorial</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the falling factorial, i.e. the product of the integers <code>[n, n - k)</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_3tjms.html"
+                                  title='fn wigner_symbols::internal::get_3tjms'>get_3tjms</a></td>
+                           <td class='docblock-short'>
+                                <p>Get all possible arguments of the Wigner 3-j symbol that satisfy the
+selection rules up to a maximum of <code>j_max</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_6tjs.html"
+                                  title='fn wigner_symbols::internal::get_6tjs'>get_6tjs</a></td>
+                           <td class='docblock-short'>
+                                <p>Get all possible arguments of the Wigner 6-j symbol that satisfy the
+selection rules up to a maximum of <code>j_max</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_9tjs.html"
+                                  title='fn wigner_symbols::internal::get_9tjs'>get_9tjs</a></td>
+                           <td class='docblock-short'>
+                                <p>Get all possible arguments of the Wigner 9-j symbol that satisfy the
+selection rules up to a maximum of <code>j_max</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_bitriangular_tjs.html"
+                                  title='fn wigner_symbols::internal::get_bitriangular_tjs'>get_bitriangular_tjs</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_tms.html"
+                                  title='fn wigner_symbols::internal::get_tms'>get_tms</a></td>
+                           <td class='docblock-short'>
+                                <p>Get all projection quantum numbers that lie within the multiplet of <code>j</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.get_triangular_tjs.html"
+                                  title='fn wigner_symbols::internal::get_triangular_tjs'>get_triangular_tjs</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.intersect_ranges.html"
+                                  title='fn wigner_symbols::internal::intersect_ranges'>intersect_ranges</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.ordering_to_i32.html"
+                                  title='fn wigner_symbols::internal::ordering_to_i32'>ordering_to_i32</a></td>
+                           <td class='docblock-short'>
+                                <p>Reinterpret ordering as a sign:</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.phase.html"
+                                  title='fn wigner_symbols::internal::phase'>phase</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.sort2.html"
+                                  title='fn wigner_symbols::internal::sort2'>sort2</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.sort3.html"
+                                  title='fn wigner_symbols::internal::sort3'>sort3</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.sort4.html"
+                                  title='fn wigner_symbols::internal::sort4'>sort4</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.tetrahedral_sum.html"
+                                  title='fn wigner_symbols::internal::tetrahedral_sum'>tetrahedral_sum</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the symbol in the paper by L. Wei that is enclosed in square
+brackets:</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.triangle_condition.html"
+                                  title='fn wigner_symbols::internal::triangle_condition'>triangle_condition</a></td>
+                           <td class='docblock-short'>
+                                <p>Check <code>|j1 − j2| ≤ j3 ≤ j1 + j2</code> and <code>j1 + j2 + j3 ∈ ℤ</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.triangular_factor.html"
+                                  title='fn wigner_symbols::internal::triangular_factor'>triangular_factor</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the triangular factor:</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.triangular_factor_raw.html"
+                                  title='fn wigner_symbols::internal::triangular_factor_raw'>triangular_factor_raw</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate <code>ja! jb! jc! / jd!</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.wigner_3jm_raw.html"
+                                  title='fn wigner_symbols::internal::wigner_3jm_raw'>wigner_3jm_raw</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the Wigner 3-jm symbol times <code>(−1) ^ (j1 − j2 − m3)</code>.
+The selection rules are not checked.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.wigner_3jm_raw_c.html"
+                                  title='fn wigner_symbols::internal::wigner_3jm_raw_c'>wigner_3jm_raw_c</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the Wigner 3-jm symbol times <code>(−1) ^ (j1 − j2 − m3)</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.wigner_6j_raw.html"
+                                  title='fn wigner_symbols::internal::wigner_6j_raw'>wigner_6j_raw</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the Wigner 6-j symbol.  The selection rules are not checked.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.wigner_9j_raw.html"
+                                  title='fn wigner_symbols::internal::wigner_9j_raw'>wigner_9j_raw</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the Wigner 9-j symbol.  The selection rules are not checked.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "wigner_symbols";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

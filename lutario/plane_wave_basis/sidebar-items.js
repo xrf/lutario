@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["is_sum_of_3_squares","Test if this integer can be expressed as a sum of three squares using Legendre’s three-square theorem."]],"struct":[["HarmSpin",""],["HarmSpinIso",""],["HarmTable",""]]});

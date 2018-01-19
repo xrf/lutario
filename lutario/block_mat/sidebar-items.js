@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["block_gemm",""],["block_heevr",""],["block_mat_extent",""]],"struct":[["BlockMatMut","A mutable block-diagonal matrix."],["BlockMatRef","A block-diagonal matrix."],["RawBlockMatRef","A block-diagonal matrix with unspecified lifetime and unspecified type."]]});

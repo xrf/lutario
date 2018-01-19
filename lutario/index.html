@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `lutario` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, lutario">
+
+    <title>lutario - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Crate lutario</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'lutario', ty: 'mod', relpath: '../'};</script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>lutario</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/lutario/lib.rs.html#1-72' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Lutario is an implementation of IM-SRG(2) and QDPT3.</p>
+
+<p>The best way to get started is to look at the tests and examples.  The
+code is always in flux, but the test and examples within the codebase are
+guaranteed to stay up to date thanks to automated testing.</p>
+
+<p>The code is currently organized in a very monolithic manner to enable
+rapid development and prototyping.  When the various submodules stabilize
+and become sufficiently generic, they may eventually graduate to become
+their own separate crates, which would help reduce bloat as well as
+compilation times.</p>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="ang_mom/index.html"
+                                  title='mod lutario::ang_mom'>ang_mom</a></td>
+                           <td class='docblock-short'>
+                                <p>Angular momentum coupling.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="basis/index.html"
+                                  title='mod lutario::basis'>basis</a></td>
+                           <td class='docblock-short'>
+                                <p>Basis manipulation.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="block/index.html"
+                                  title='mod lutario::block'>block</a></td>
+                           <td class='docblock-short'>
+                                <p>Block-diagonal matrices and similar things.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="block_mat/index.html"
+                                  title='mod lutario::block_mat'>block_mat</a></td>
+                           <td class='docblock-short'>
+                                <p>Packed block-diagonal matrices.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="block_tri_mat/index.html"
+                                  title='mod lutario::block_tri_mat'>block_tri_mat</a></td>
+                           <td class='docblock-short'>
+                                <p>Packed block-diagonal lower-triangular matrices.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="btree_cache/index.html"
+                                  title='mod lutario::btree_cache'>btree_cache</a></td>
+                           <td class='docblock-short'>
+                                <p>Insert-only B-tree map</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="cache/index.html"
+                                  title='mod lutario::cache'>cache</a></td>
+                           <td class='docblock-short'>
+                                <p>Insert-only caching of arbitrary data</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="cache2/index.html"
+                                  title='mod lutario::cache2'>cache2</a></td>
+                           <td class='docblock-short'>
+                                <p>Reference-counted caching of arbitrary data</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="half/index.html"
+                                  title='mod lutario::half'>half</a></td>
+                           <td class='docblock-short'>
+                                <p>Half-integers for angular momentum quantities.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="hf/index.html"
+                                  title='mod lutario::hf'>hf</a></td>
+                           <td class='docblock-short'>
+                                <p>Hartree–Fock method and normal ordering</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="imsrg/index.html"
+                                  title='mod lutario::imsrg'>imsrg</a></td>
+                           <td class='docblock-short'>
+                                <p>Implementation of IM-SRG(2)</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="inf_matter/index.html"
+                                  title='mod lutario::inf_matter'>inf_matter</a></td>
+                           <td class='docblock-short'>
+                                <p>Infinite matter, both electronic and nuclear</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="io/index.html"
+                                  title='mod lutario::io'>io</a></td>
+                           <td class='docblock-short'>
+                                <p>Input and output utility.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="isqrt/index.html"
+                                  title='mod lutario::isqrt'>isqrt</a></td>
+                           <td class='docblock-short'>
+                                <p>Integer square root</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="j_scheme/index.html"
+                                  title='mod lutario::j_scheme'>j_scheme</a></td>
+                           <td class='docblock-short'>
+                                <p>Implementation of the J-scheme abstraction.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="linalg/index.html"
+                                  title='mod lutario::linalg'>linalg</a></td>
+                           <td class='docblock-short'>
+                                <p>Linear algebra things</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="mat/index.html"
+                                  title='mod lutario::mat'>mat</a></td>
+                           <td class='docblock-short'>
+                                <p>BLAS-compatible matrix data types.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="minnesota/index.html"
+                                  title='mod lutario::minnesota'>minnesota</a></td>
+                           <td class='docblock-short'>
+                                <p>Minnesota interaction of nucleons</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="nuclei/index.html"
+                                  title='mod lutario::nuclei'>nuclei</a></td>
+                           <td class='docblock-short'>
+                                <p>Nuclei systems.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="op/index.html"
+                                  title='mod lutario::op'>op</a></td>
+                           <td class='docblock-short'>
+                                <p>Quantum operators</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="parity/index.html"
+                                  title='mod lutario::parity'>parity</a></td>
+                           <td class='docblock-short'>
+                                <p>Parity data type.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="phys_consts/index.html"
+                                  title='mod lutario::phys_consts'>phys_consts</a></td>
+                           <td class='docblock-short'>
+                                <p>Physical constants.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="plane_wave_basis/index.html"
+                                  title='mod lutario::plane_wave_basis'>plane_wave_basis</a></td>
+                           <td class='docblock-short'>
+                                <p>3D plane-wave basis.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="qdots/index.html"
+                                  title='mod lutario::qdots'>qdots</a></td>
+                           <td class='docblock-short'>
+                                <p>Quantum dots.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="qdpt/index.html"
+                                  title='mod lutario::qdpt'>qdpt</a></td>
+                           <td class='docblock-short'>
+                                <p>Quasidegenerate perturbation theory.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="sg_ode/index.html"
+                                  title='mod lutario::sg_ode'>sg_ode</a></td>
+                           <td class='docblock-short'>
+                                <p>Shampine-Gordon ODE solver.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="tri_mat/index.html"
+                                  title='mod lutario::tri_mat'>tri_mat</a></td>
+                           <td class='docblock-short'>
+                                <p>Row-major, lower-triangular matrices (<code>i ≥ j</code>).</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="utils/index.html"
+                                  title='mod lutario::utils'>utils</a></td>
+                           <td class='docblock-short'>
+                                <p>Everything else and the kitchen sink</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="vecn/index.html"
+                                  title='mod lutario::vecn'>vecn</a></td>
+                           <td class='docblock-short'>
+                                <p>A tiny module for tiny fixed-length vectors.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="vector_driver/index.html"
+                                  title='mod lutario::vector_driver'>vector_driver</a></td>
+                           <td class='docblock-short'>
+                                <p>Generalizes the idea of vector operations to enable transparent
+parallelization.</p>
+                           </td>
+                       </tr></table><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="macro" href="macro.move_ref.html"
+                                  title='macro lutario::move_ref'>move_ref</a></td>
+                           <td class='docblock-short'>
+                                <p>Force a mutable reference to be moved instead of reborrowed.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="macro" href="macro.re.html"
+                                  title='macro lutario::re'>re</a></td>
+                           <td class='docblock-short'>
+                                <p>Declare a regular expression (<code>Regex</code>) cached via <code>lazy_static!</code>.
+This macro is mainly for internal use.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="macro" href="macro.toler_assert_eq.html"
+                                  title='macro lutario::toler_assert_eq'>toler_assert_eq</a></td>
+                           <td class='docblock-short'>
+                                <p>Check whether two <code>f64</code> numbers are equal within the given
+<a href="utils/struct.Toler.html"><code>Toler</code></a>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="macro" href="macro.vec_apply.html"
+                                  title='macro lutario::vec_apply'>vec_apply</a></td>
+                           <td class='docblock-short'>
+                                <p>Apply an applicative, multi-vector operation.
+See <a href="vector_driver/index.html"><code>vector_driver</code></a>.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

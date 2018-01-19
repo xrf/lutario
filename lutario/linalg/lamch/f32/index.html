@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `f32` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, f32">
+
+    <title>lutario::linalg::lamch::f32 - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module f32</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#constants">Constants</a></li></ul></div><p class='location'><a href='../../../index.html'>lutario</a>::<wbr><a href='../../index.html'>linalg</a>::<wbr><a href='../index.html'>lamch</a></p><script>window.sidebarCurrent = {name: 'f32', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../../../index.html'>lutario</a>::<wbr><a href='../../index.html'>linalg</a>::<wbr><a href='../index.html'>lamch</a>::<wbr><a class="mod" href=''>f32</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../../../src/lutario/linalg.rs.html#22-44' title='goto source code'>[src]</a></span></h1>
+<h2 id='constants' class='section-header'><a href="#constants">Constants</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.BASE.html"
+                                  title='constant lutario::linalg::lamch::f32::BASE'>BASE</a></td>
+                           <td class='docblock-short'>
+                                <p>The radix or base of the internal representation of <code>f32</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.EMAX.html"
+                                  title='constant lutario::linalg::lamch::f32::EMAX'>EMAX</a></td>
+                           <td class='docblock-short'>
+                                <p>Maximum possible power of 2 exponent.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.EMIN.html"
+                                  title='constant lutario::linalg::lamch::f32::EMIN'>EMIN</a></td>
+                           <td class='docblock-short'>
+                                <p>One greater than the minimum possible normal power of 2 exponent.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.EPS.html"
+                                  title='constant lutario::linalg::lamch::f32::EPS'>EPS</a></td>
+                           <td class='docblock-short'>
+                                <p>Relative machine epsilon according to the LAPACK convention.
+Equal to half of <code>std::*::EPSILON</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.PREC.html"
+                                  title='constant lutario::linalg::lamch::f32::PREC'>PREC</a></td>
+                           <td class='docblock-short'>
+                                <p>Difference between <code>1.0</code> and the next largest representable number.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.RMAX.html"
+                                  title='constant lutario::linalg::lamch::f32::RMAX'>RMAX</a></td>
+                           <td class='docblock-short'>
+                                <p>Largest finite <code>f32</code> value.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.RMIN.html"
+                                  title='constant lutario::linalg::lamch::f32::RMIN'>RMIN</a></td>
+                           <td class='docblock-short'>
+                                <p>Smallest positive normal <code>f32</code> value.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.RND.html"
+                                  title='constant lutario::linalg::lamch::f32::RND'>RND</a></td>
+                           <td class='docblock-short'>
+                                <p>Whether proper rounding (<code>true</code>) or chopping (<code>false</code>) occurs in
+addition.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.SFMIN.html"
+                                  title='constant lutario::linalg::lamch::f32::SFMIN'>SFMIN</a></td>
+                           <td class='docblock-short'>
+                                <p>Safe minimum such that <code>1.0 / SFMIN</code> does not overflow.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="constant" href="constant.T.html"
+                                  title='constant lutario::linalg::lamch::f32::T'>T</a></td>
+                           <td class='docblock-short'>
+                                <p>Number of significant digits in base 2.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../../../main.js"></script>
+    <script defer src="../../../../search-index.js"></script>
+</body>
+</html>

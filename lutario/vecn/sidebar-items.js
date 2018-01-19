@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Vec3",""],["Vec3I8","Specialization for 3D vectors of `i8` to avoid overflow problems."]]});

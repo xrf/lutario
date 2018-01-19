@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `basis` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, basis">
+
+    <title>lutario::basis - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module basis</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'><a href='../index.html'>lutario</a></p><script>window.sidebarCurrent = {name: 'basis', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lutario</a>::<wbr><a class="mod" href=''>basis</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/basis.rs.html#1-850' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Basis manipulation.</p>
+
+<p>We make heavy use of block-diagonal matrices here.  Conceptually, a
+block-diagonal matrix is equivalent to a list of blocks, which need not be
+the same size nor do they have to be square.  Many operations on
+block-diagonal matrices translate to just operations on each block, which
+can be easily parallelized in principle.</p>
+
+<ul>
+<li>&quot;Channels&quot; are labels that uniquely identifies each block.</li>
+<li>&quot;Auxiliary&quot; are labels that identify each row or column within a block.</li>
+</ul>
+
+<p>The combination of channel and auxiliary must, by definition, uniquely
+identify a state.</p>
+
+<p>We further subdivide each block into subblocks.  This is needed for, say,
+separating the particle vs hole states.</p>
+
+<ul>
+<li>&quot;Parts&quot; are labels that identify the subblocks along one of the axes.</li>
+</ul>
+
+<p>The use of parts has both pros and cons.  The advantage is that things
+like diagonalization of a block matrix is very simple because each block
+can be diagonalized independently.  The disadvantage is that it adds
+another layer of complication and overhead.</p>
+
+<p>Naming convention:</p>
+
+<ul>
+<li><code>l</code> = channel (in text, <code>λ</code> is sometimes used)</li>
+<li><code>u</code> = auxiliary</li>
+<li><code>x</code> = part (&quot;eXcitation&quot; / unoccupancy)</li>
+<li><code>p</code> = state index, isomorphic to <code>(l, u)</code></li>
+<li><code>i</code> = state ID, isomorphic to state index but in channelized order</li>
+</ul>
+
+<p>These letters could refer to either indices or the concrete objects.  When
+there is ambiguity, indicial variables are prefixed with <code>i</code>.</p>
+
+<p>Be aware that these labels may also have other meanings in more concrete
+contexts (e.g. <code>l</code> can mean orbital angular momentum, and <code>p</code> can mean
+parity).</p>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="occ/index.html"
+                                  title='mod lutario::basis::occ'>occ</a></td>
+                           <td class='docblock-short'>
+                                <p>Convenient aliases for occupancies.</p>
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisChart.html"
+                                  title='struct lutario::basis::BasisChart'>BasisChart</a></td>
+                           <td class='docblock-short'>
+                                <p>A basis chart contains information needed to interpret an axis of a
+block-diagonal matrix.  The type is parametrized by:</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BasisLayout.html"
+                                  title='struct lutario::basis::BasisLayout'>BasisLayout</a></td>
+                           <td class='docblock-short'>
+                                <p>A basis layout has only enough information to understand the structure of
+a matrix along one axis, but not to interpret its elements.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CACHE.html"
+                                  title='struct lutario::basis::CACHE'>CACHE</a></td>
+                           <td class='docblock-short'>
+                                <p>Global cache for storing basis information.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChanState.html"
+                                  title='struct lutario::basis::ChanState'>ChanState</a></td>
+                           <td class='docblock-short'>
+                                <p>Channelized state index.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Fence.html"
+                                  title='struct lutario::basis::Fence'>Fence</a></td>
+                           <td class='docblock-short'>
+                                <p>Iterator over <code>Option&lt;impl Increment&gt;</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.HashChart.html"
+                                  title='struct lutario::basis::HashChart'>HashChart</a></td>
+                           <td class='docblock-short'>
+                                <p>A chart is a bijection between a zero-based interval (i.e. indices) and an
+arbitrary set of objects of type <code>T</code>.  <code>HashChart</code> is an implementation of
+this idea using <code>HashMap</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.HashChartInsertResult.html"
+                                  title='struct lutario::basis::HashChartInsertResult'>HashChartInsertResult</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Hashed.html"
+                                  title='struct lutario::basis::Hashed'>Hashed</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.MatChart.html"
+                                  title='struct lutario::basis::MatChart'>MatChart</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.MatLayout.html"
+                                  title='struct lutario::basis::MatLayout'>MatLayout</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Orb.html"
+                                  title='struct lutario::basis::Orb'>Orb</a></td>
+                           <td class='docblock-short'>
+                                <p>Orbital ID <code>i</code>, in channelized order.  Not to be confused with orbital
+index.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.OrbIx.html"
+                                  title='struct lutario::basis::OrbIx'>OrbIx</a></td>
+                           <td class='docblock-short'>
+                                <p>Orbital index <code>p</code>, in the original basis order.  Not to be confused with
+orbital ID.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.PackedOptChanState.html"
+                                  title='struct lutario::basis::PackedOptChanState'>PackedOptChanState</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.PartState.html"
+                                  title='struct lutario::basis::PartState'>PartState</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.Occ.html"
+                                  title='enum lutario::basis::Occ'>Occ</a></td>
+                           <td class='docblock-short'>
+                                <p>Occupancy of an orbital (single-particle state).</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.Occ20.html"
+                                  title='enum lutario::basis::Occ20'>Occ20</a></td>
+                           <td class='docblock-short'>
+                                <p>Occupancy of antisymmetrized two-particle states.</p>
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.FromUsize.html"
+                                  title='trait lutario::basis::FromUsize'>FromUsize</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.Increment.html"
+                                  title='trait lutario::basis::Increment'>Increment</a></td>
+                           <td class='docblock-short'>
+                                <p>Associates data types with sequences.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.IntoUsize.html"
+                                  title='trait lutario::basis::IntoUsize'>IntoUsize</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.siphash128.html"
+                                  title='fn lutario::basis::siphash128'>siphash128</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.State2.html"
+                                  title='type lutario::basis::State2'>State2</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

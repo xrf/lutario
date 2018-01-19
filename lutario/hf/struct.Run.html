@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Run` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Run">
+
+    <title>lutario::hf::Run - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Run</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.conf">conf</a><a href="#structfield.h1">h1</a><a href="#structfield.h2">h2</a><a href="#structfield.energies">energies</a><a href="#structfield.dcoeff">dcoeff</a><a href="#structfield.qcoeff">qcoeff</a><a href="#structfield.fock">fock</a><a href="#structfield.fock_old">fock_old</a><a href="#structfield.energy_sum">energy_sum</a><a href="#structfield.energy_change">energy_change</a><a href="#structfield.mix_factor">mix_factor</a><a href="#structfield.first">first</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.step">step</a><a href="#method.do_run">do_run</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>hf</a></p><script>window.sidebarCurrent = {name: 'Run', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>hf</a>::<wbr><a class="struct" href=''>Run</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/hf.rs.html#80-93' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Run&lt;'a&gt; {
+    pub conf: <a class="struct" href="../../lutario/hf/struct.Conf.html" title="struct lutario::hf::Conf">Conf</a>,
+    pub h1: &amp;'a <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub h2: &amp;'a <a class="type" href="../../lutario/j_scheme/type.OpJ200.html" title="type lutario::j_scheme::OpJ200">OpJ200</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub energies: <a class="type" href="../../lutario/j_scheme/type.DiagOpJ10.html" title="type lutario::j_scheme::DiagOpJ10">DiagOpJ10</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub dcoeff: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub qcoeff: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub fock: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub fock_old: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub energy_sum: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+    pub energy_change: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+    pub mix_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+    pub first: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
+}</pre><div class='docblock'><p>A Hartree–Fock run with ad hoc linear mixing</p>
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.conf" class="structfield small-section-header">
+                           <a href="#structfield.conf" class="anchor field"></a>
+                           <span id="conf.v" class='invisible'>
+                           <code>conf: <a class="struct" href="../../lutario/hf/struct.Conf.html" title="struct lutario::hf::Conf">Conf</a></code>
+                           </span></span><span id="structfield.h1" class="structfield small-section-header">
+                           <a href="#structfield.h1" class="anchor field"></a>
+                           <span id="h1.v" class='invisible'>
+                           <code>h1: &amp;'a <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.h2" class="structfield small-section-header">
+                           <a href="#structfield.h2" class="anchor field"></a>
+                           <span id="h2.v" class='invisible'>
+                           <code>h2: &amp;'a <a class="type" href="../../lutario/j_scheme/type.OpJ200.html" title="type lutario::j_scheme::OpJ200">OpJ200</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.energies" class="structfield small-section-header">
+                           <a href="#structfield.energies" class="anchor field"></a>
+                           <span id="energies.v" class='invisible'>
+                           <code>energies: <a class="type" href="../../lutario/j_scheme/type.DiagOpJ10.html" title="type lutario::j_scheme::DiagOpJ10">DiagOpJ10</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.dcoeff" class="structfield small-section-header">
+                           <a href="#structfield.dcoeff" class="anchor field"></a>
+                           <span id="dcoeff.v" class='invisible'>
+                           <code>dcoeff: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.qcoeff" class="structfield small-section-header">
+                           <a href="#structfield.qcoeff" class="anchor field"></a>
+                           <span id="qcoeff.v" class='invisible'>
+                           <code>qcoeff: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.fock" class="structfield small-section-header">
+                           <a href="#structfield.fock" class="anchor field"></a>
+                           <span id="fock.v" class='invisible'>
+                           <code>fock: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.fock_old" class="structfield small-section-header">
+                           <a href="#structfield.fock_old" class="anchor field"></a>
+                           <span id="fock_old.v" class='invisible'>
+                           <code>fock_old: <a class="type" href="../../lutario/j_scheme/type.OpJ100.html" title="type lutario::j_scheme::OpJ100">OpJ100</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.energy_sum" class="structfield small-section-header">
+                           <a href="#structfield.energy_sum" class="anchor field"></a>
+                           <span id="energy_sum.v" class='invisible'>
+                           <code>energy_sum: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><span id="structfield.energy_change" class="structfield small-section-header">
+                           <a href="#structfield.energy_change" class="anchor field"></a>
+                           <span id="energy_change.v" class='invisible'>
+                           <code>energy_change: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><span id="structfield.mix_factor" class="structfield small-section-header">
+                           <a href="#structfield.mix_factor" class="anchor field"></a>
+                           <span id="mix_factor.v" class='invisible'>
+                           <code>mix_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><span id="structfield.first" class="structfield small-section-header">
+                           <a href="#structfield.first" class="anchor field"></a>
+                           <span id="first.v" class='invisible'>
+                           <code>first: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="struct" href="../../lutario/hf/struct.Run.html" title="struct lutario::hf::Run">Run</a>&lt;'a&gt;</code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/hf.rs.html#95-164' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.step' class="method"><span id='step.v' class='invisible'><code>pub fn <a href='#method.step' class='fnname'>step</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/hf.rs.html#96-148' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.do_run' class="method"><span id='do_run.v' class='invisible'><code>pub fn <a href='#method.do_run' class='fnname'>do_run</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/hf.rs.html#151-163' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Iterates until the convergence criterion has been met.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

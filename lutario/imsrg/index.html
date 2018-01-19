@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `imsrg` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, imsrg">
+
+    <title>lutario::imsrg - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module imsrg</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../index.html'>lutario</a></p><script>window.sidebarCurrent = {name: 'imsrg', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lutario</a>::<wbr><a class="mod" href=''>imsrg</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/imsrg.rs.html#1-639' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Implementation of IM-SRG(2)</p>
+
+<p>This module contains all the terms of IM-SRG(2) commutator or linked
+product, implemented for J-scheme.  It also contains a set of helper
+routines for driving the IM-SRG evolution (<a href="struct.Run.html"><code>Run</code></a>).</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Conf.html"
+                                  title='struct lutario::imsrg::Conf'>Conf</a></td>
+                           <td class='docblock-short'>
+                                <p>Configuration for an IM-SRG(2) run</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Run.html"
+                                  title='struct lutario::imsrg::Run'>Run</a></td>
+                           <td class='docblock-short'>
+                                <p>The state of an IM-SRG(2) run</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.DenomType.html"
+                                  title='enum lutario::imsrg::DenomType'>DenomType</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.Error.html"
+                                  title='enum lutario::imsrg::Error'>Error</a></td>
+                           <td class='docblock-short'>
+                                <p>Error type for <code>Run</code>.</p>
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c011.html"
+                                  title='fn lutario::imsrg::c011'>c011</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 011</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c022.html"
+                                  title='fn lutario::imsrg::c022'>c022</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 022</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c111.html"
+                                  title='fn lutario::imsrg::c111'>c111</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 111</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c112.html"
+                                  title='fn lutario::imsrg::c112'>c112</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 112</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c121.html"
+                                  title='fn lutario::imsrg::c121'>c121</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 121</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c212.html"
+                                  title='fn lutario::imsrg::c212'>c212</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 212</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c221.html"
+                                  title='fn lutario::imsrg::c221'>c221</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 221</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c1220.html"
+                                  title='fn lutario::imsrg::c1220'>c1220</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 1220</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c1221.html"
+                                  title='fn lutario::imsrg::c1221'>c1221</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 1221</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c2220.html"
+                                  title='fn lutario::imsrg::c2220'>c2220</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 2220</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c2221.html"
+                                  title='fn lutario::imsrg::c2221'>c2221</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 2221 (particle-hole term)</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c2222.html"
+                                  title='fn lutario::imsrg::c2222'>c2222</a></td>
+                           <td class='docblock-short'>
+                                <p>Term 2222</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.c2222_base.html"
+                                  title='fn lutario::imsrg::c2222_base'>c2222_base</a></td>
+                           <td class='docblock-short'>
+                                <p>Generic 2220/2222-type term</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.commut.html"
+                                  title='fn lutario::imsrg::commut'>commut</a></td>
+                           <td class='docblock-short'>
+                                <p>Commutator of two many-body operators</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.linked.html"
+                                  title='fn lutario::imsrg::linked'>linked</a></td>
+                           <td class='docblock-short'>
+                                <p>Linked product of two many-body operators</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.monopole_elem.html"
+                                  title='fn lutario::imsrg::monopole_elem'>monopole_elem</a></td>
+                           <td class='docblock-short'>
+                                <p>Compute the monopole matrix element.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.white_gen.html"
+                                  title='fn lutario::imsrg::white_gen'>white_gen</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the White generator, multiply by <code>alpha</code>, and then add it to
+<code>eta</code>.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

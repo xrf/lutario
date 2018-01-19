@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `JScheme` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, JScheme">
+
+    <title>lutario::j_scheme::JScheme - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct JScheme</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.basis_10">basis_10</a><a href="#structfield.basis_20">basis_20</a><a href="#structfield.basis_21">basis_21</a><a href="#structfield.pandya">pandya</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.pandya">pandya</a><a href="#method.parted_orb">parted_orb</a><a href="#method.state_10">state_10</a><a href="#method.state_20">state_20</a><a href="#method.raw_state_20">raw_state_20</a><a href="#method.raw_state_20_ord">raw_state_20_ord</a><a href="#method.state_21">state_21</a><a href="#method.raw_state_21">raw_state_21</a><a href="#method.states_10">states_10</a><a href="#method.states_20">states_20</a><a href="#method.costates_10">costates_10</a><a href="#method.costates_20">costates_20</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>j_scheme</a></p><script>window.sidebarCurrent = {name: 'JScheme', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>j_scheme</a>::<wbr><a class="struct" href=''>JScheme</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1184-1189' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct JScheme {
+    pub basis_10: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ10.html" title="struct lutario::j_scheme::BasisSchemeJ10">BasisSchemeJ10</a>,
+    pub basis_20: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ20.html" title="struct lutario::j_scheme::BasisSchemeJ20">BasisSchemeJ20</a>,
+    pub basis_21: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ21.html" title="struct lutario::j_scheme::BasisSchemeJ21">BasisSchemeJ21</a>,
+    pub pandya: <a class="struct" href="https://doc.rust-lang.org/nightly/std/sync/mutex/struct.Mutex.html" title="struct std::sync::mutex::Mutex">Mutex</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.PandyaScheme.html" title="struct lutario::j_scheme::PandyaScheme">PandyaScheme</a>&gt;&gt;&gt;,
+}</pre><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.basis_10" class="structfield small-section-header">
+                           <a href="#structfield.basis_10" class="anchor field"></a>
+                           <span id="basis_10.v" class='invisible'>
+                           <code>basis_10: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ10.html" title="struct lutario::j_scheme::BasisSchemeJ10">BasisSchemeJ10</a></code>
+                           </span></span><span id="structfield.basis_20" class="structfield small-section-header">
+                           <a href="#structfield.basis_20" class="anchor field"></a>
+                           <span id="basis_20.v" class='invisible'>
+                           <code>basis_20: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ20.html" title="struct lutario::j_scheme::BasisSchemeJ20">BasisSchemeJ20</a></code>
+                           </span></span><span id="structfield.basis_21" class="structfield small-section-header">
+                           <a href="#structfield.basis_21" class="anchor field"></a>
+                           <span id="basis_21.v" class='invisible'>
+                           <code>basis_21: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ21.html" title="struct lutario::j_scheme::BasisSchemeJ21">BasisSchemeJ21</a></code>
+                           </span></span><span id="structfield.pandya" class="structfield small-section-header">
+                           <a href="#structfield.pandya" class="anchor field"></a>
+                           <span id="pandya.v" class='invisible'>
+                           <code>pandya: <a class="struct" href="https://doc.rust-lang.org/nightly/std/sync/mutex/struct.Mutex.html" title="struct std::sync::mutex::Mutex">Mutex</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.PandyaScheme.html" title="struct lutario::j_scheme::PandyaScheme">PandyaScheme</a>&gt;&gt;&gt;</code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1191-1302' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;basis_10: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ10.html" title="struct lutario::j_scheme::BasisSchemeJ10">BasisSchemeJ10</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;basis_20: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ20.html" title="struct lutario::j_scheme::BasisSchemeJ20">BasisSchemeJ20</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;basis_21: <a class="struct" href="../../lutario/j_scheme/struct.BasisSchemeJ21.html" title="struct lutario::j_scheme::BasisSchemeJ21">BasisSchemeJ21</a><br>) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;Self&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1192-1208' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.pandya' class="method"><span id='pandya.v-1' class='invisible'><code>pub fn <a href='#method.pandya' class='fnname'>pandya</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.PandyaScheme.html" title="struct lutario::j_scheme::PandyaScheme">PandyaScheme</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1210-1212' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.parted_orb' class="method"><span id='parted_orb.v' class='invisible'><code>pub fn <a href='#method.parted_orb' class='fnname'>parted_orb</a>(&amp;self, lu: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.JPartedOrb.html" title="struct lutario::j_scheme::JPartedOrb">JPartedOrb</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1215-1221' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.state_10' class="method"><span id='state_10.v' class='invisible'><code>pub fn <a href='#method.state_10' class='fnname'>state_10</a>(&amp;self, lu1: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ10.html" title="struct lutario::j_scheme::StateJ10">StateJ10</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1224-1229' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.state_20' class="method"><span id='state_20.v' class='invisible'><code>pub fn <a href='#method.state_20' class='fnname'>state_20</a>(&amp;self, lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1232-1235' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.raw_state_20' class="method"><span id='raw_state_20.v' class='invisible'><code>pub fn <a href='#method.raw_state_20' class='fnname'>raw_state_20</a>(&amp;self, lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>, s1: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>, s2: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1238-1245' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.raw_state_20_ord' class="method"><span id='raw_state_20_ord.v' class='invisible'><code>pub fn <a href='#method.raw_state_20_ord' class='fnname'>raw_state_20_ord</a>(&amp;self, lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>, s1: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>, s2: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1250-1264' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Note: s1 and s2 must be in natural order.  Otherwise, the caller is
+responsible for adjust the permut.</p>
+</div><h4 id='method.state_21' class="method"><span id='state_21.v' class='invisible'><code>pub fn <a href='#method.state_21' class='fnname'>state_21</a>(&amp;self, lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ21.html" title="struct lutario::j_scheme::StateJ21">StateJ21</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1267-1270' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.raw_state_21' class="method"><span id='raw_state_21.v' class='invisible'><code>pub fn <a href='#method.raw_state_21' class='fnname'>raw_state_21</a>(&amp;self, lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>, s1: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>, s2: <a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ21.html" title="struct lutario::j_scheme::StateJ21">StateJ21</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1273-1281' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.states_10' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ10.html" title="struct lutario::j_scheme::StatesJ10">StatesJ10</a>&lt;'a&gt;</span></div><div class="content hidden"><h3 class="important">Important traits for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ10.html" title="struct lutario::j_scheme::StatesJ10">StatesJ10</a>&lt;'a&gt;</h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a> for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ10.html" title="struct lutario::j_scheme::StatesJ10">StatesJ10</a>&lt;'a&gt;</span><span class="where fmt-newline">    type <a href='https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html#associatedtype.Item' class="type">Item</a> = <a class="struct" href="../../lutario/j_scheme/struct.StateJ10.html" title="struct lutario::j_scheme::StateJ10">StateJ10</a>&lt;'a&gt;;</span></code></div></div><span id='states_10.v' class='invisible'><code>pub fn <a href='#method.states_10' class='fnname'>states_10</a>(&amp;self, xs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="enum" href="../../lutario/basis/enum.Occ.html" title="enum lutario::basis::Occ">Occ</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StatesJ10.html" title="struct lutario::j_scheme::StatesJ10">StatesJ10</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1284-1286' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.states_20' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ20.html" title="struct lutario::j_scheme::StatesJ20">StatesJ20</a>&lt;'a&gt;</span></div><div class="content hidden"><h3 class="important">Important traits for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ20.html" title="struct lutario::j_scheme::StatesJ20">StatesJ20</a>&lt;'a&gt;</h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a> for <a class="struct" href="../../lutario/j_scheme/struct.StatesJ20.html" title="struct lutario::j_scheme::StatesJ20">StatesJ20</a>&lt;'a&gt;</span><span class="where fmt-newline">    type <a href='https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html#associatedtype.Item' class="type">Item</a> = <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;;</span></code></div></div><span id='states_20.v' class='invisible'><code>pub fn <a href='#method.states_20' class='fnname'>states_20</a>(&amp;self, xs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="enum" href="../../lutario/basis/enum.Occ.html" title="enum lutario::basis::Occ">Occ</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 2]</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StatesJ20.html" title="struct lutario::j_scheme::StatesJ20">StatesJ20</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1289-1291' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.costates_10' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ10.html" title="struct lutario::j_scheme::CostatesJ10">CostatesJ10</a>&lt;'a&gt;</span></div><div class="content hidden"><h3 class="important">Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ10.html" title="struct lutario::j_scheme::CostatesJ10">CostatesJ10</a>&lt;'a&gt;</h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a> for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ10.html" title="struct lutario::j_scheme::CostatesJ10">CostatesJ10</a>&lt;'a&gt;</span><span class="where fmt-newline">    type <a href='https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html#associatedtype.Item' class="type">Item</a> = <a class="struct" href="../../lutario/j_scheme/struct.StateJ10.html" title="struct lutario::j_scheme::StateJ10">StateJ10</a>&lt;'a&gt;;</span></code></div></div><span id='costates_10.v' class='invisible'><code>pub fn <a href='#method.costates_10' class='fnname'>costates_10</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, xs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="enum" href="../../lutario/basis/enum.Occ.html" title="enum lutario::basis::Occ">Occ</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ10.html" title="struct lutario::j_scheme::CostatesJ10">CostatesJ10</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1294-1296' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.costates_20' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</span></div><div class="content hidden"><h3 class="important">Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a> for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</span><span class="where fmt-newline">    type <a href='https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html#associatedtype.Item' class="type">Item</a> = <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;;</span></code></div></div><span id='costates_20.v' class='invisible'><code>pub fn <a href='#method.costates_20' class='fnname'>costates_20</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, xs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="enum" href="../../lutario/basis/enum.Occ.html" title="enum lutario::basis::Occ">Occ</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 2]</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1299-1301' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1183' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1183' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

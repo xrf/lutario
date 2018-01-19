@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["integer","Aribtrary-precision integers."],["ops","Operations on numbers."],["rational","Arbitrary-precision rational numbers."]],"struct":[["Integer","An arbitrary-precision integer."],["Rational","An arbitrary-precision rational number."]],"trait":[["Assign","Assigns to a number from another value."]]});

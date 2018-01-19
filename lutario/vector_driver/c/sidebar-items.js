@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["ffi",""]],"struct":[["CVectorDriver","This is a reified vector driver that is compatible with C vector driver interface."]]});

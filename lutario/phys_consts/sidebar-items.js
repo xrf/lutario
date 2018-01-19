@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["HBAR_C_MEVFM","ħ c /(MeV fm)"],["M_NEUTRON_MEVPC2","Mass of neutron /(MeV c⁻²)"],["M_PROTON_MEVPC2","Mass of proton /(MeV c⁻²)"]]});

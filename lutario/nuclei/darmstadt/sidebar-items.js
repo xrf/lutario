@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["TPP_FACTOR","This factor is used to adjust ME2J matrix elements for the pairwise dot product of momentum (`tpp` elements)."]],"fn":[["load_me2j_j",""],["load_me2j_jt",""]],"struct":[["Me2j",""],["Me2jGuessLoader","ME2J loader that tries to guess parameters based on filename unless explicitly overridden."],["Me2jLoader",""]]});

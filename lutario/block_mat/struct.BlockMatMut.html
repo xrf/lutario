@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `BlockMatMut` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, BlockMatMut">
+
+    <title>lutario::block_mat::BlockMatMut - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct BlockMatMut</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.from_raw">from_raw</a><a href="#method.as_ptr">as_ptr</a><a href="#method.into_ref">into_ref</a><a href="#method.as_ref">as_ref</a><a href="#method.as_mut">as_mut</a><a href="#method.get">get</a><a href="#method.get_unchecked">get_unchecked</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Send">Send</a><a href="#impl-Sync">Sync</a><a href="#impl-Vector">Vector</a><a href="#impl-IndexBlockMatRef">IndexBlockMatRef</a><a href="#impl-IndexBlockMatMut">IndexBlockMatMut</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>block_mat</a></p><script>window.sidebarCurrent = {name: 'BlockMatMut', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>block_mat</a>::<wbr><a class="struct" href=''>BlockMatMut</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/block_mat.rs.html#236-239' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct BlockMatMut&lt;'a, T:&nbsp;'a&gt; { /* fields omitted */ }</pre><div class='docblock'><p>A mutable block-diagonal matrix.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;'a, T&gt; <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#244-277' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from_raw' class="method"><span id='from_raw.v' class='invisible'><code>pub unsafe fn <a href='#method.from_raw' class='fnname'>from_raw</a>(raw: <a class="struct" href="../../lutario/block_mat/struct.RawBlockMatRef.html" title="struct lutario::block_mat::RawBlockMatRef">RawBlockMatRef</a>) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#245-247' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.as_ptr' class="method"><span id='as_ptr.v' class='invisible'><code>pub fn <a href='#method.as_ptr' class='fnname'>as_ptr</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*mut T</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#249-251' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.into_ref' class="method"><span id='into_ref.v' class='invisible'><code>pub fn <a href='#method.into_ref' class='fnname'>into_ref</a>(self) -&gt; <a class="struct" href="../../lutario/block_mat/struct.BlockMatRef.html" title="struct lutario::block_mat::BlockMatRef">BlockMatRef</a>&lt;'a, T&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#253-255' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.as_ref' class="method"><span id='as_ref.v' class='invisible'><code>pub fn <a href='#method.as_ref' class='fnname'>as_ref</a>&lt;'b&gt;(&amp;'b self) -&gt; <a class="struct" href="../../lutario/block_mat/struct.BlockMatRef.html" title="struct lutario::block_mat::BlockMatRef">BlockMatRef</a>&lt;'b, T&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#257-259' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.as_mut' class="method"><span id='as_mut.v' class='invisible'><code>pub fn <a href='#method.as_mut' class='fnname'>as_mut</a>&lt;'b&gt;(&amp;'b mut self) -&gt; <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'b, T&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#261-263' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>pub fn <a href='#method.get' class='fnname'>get</a>(self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../../lutario/mat/struct.MatMut.html" title="struct lutario::mat::MatMut">MatMut</a>&lt;'a, T&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#265-271' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.get_unchecked' class="method"><span id='get_unchecked.v' class='invisible'><code>pub unsafe fn <a href='#method.get_unchecked' class='fnname'>get_unchecked</a>(self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="struct" href="../../lutario/mat/struct.MatMut.html" title="struct lutario::mat::MatMut">MatMut</a>&lt;'a, T&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#273-276' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Send' class='impl'><span class='in-band'><code>impl&lt;'a, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a>&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl-Send' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#241' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Sync' class='impl'><span class='in-band'><code>impl&lt;'a, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a>&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl-Sync' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#242' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Vector' class='impl'><span class='in-band'><code>impl&lt;'a, T&gt; <a class="trait" href="../../lutario/op/trait.Vector.html" title="trait lutario::op::Vector">Vector</a> for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl-Vector' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#279-286' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Elem' class="type"><span id='Elem.t' class='invisible'><code>type <a href='../../lutario/op/trait.Vector.html#associatedtype.Elem' class="type">Elem</a> = T</code></span></h4>
+<h4 id='method.len' class="method"><span id='len.v' class='invisible'><code>fn <a href='../../lutario/op/trait.Vector.html#tymethod.len' class='fnname'>len</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#281-285' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-IndexBlockMatRef' class='impl'><span class='in-band'><code>impl&lt;'a, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>&gt; <a class="trait" href="../../lutario/op/trait.IndexBlockMatRef.html" title="trait lutario::op::IndexBlockMatRef">IndexBlockMatRef</a> for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl-IndexBlockMatRef' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#288-292' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.at_block_mat' class="method"><span id='at_block_mat.v' class='invisible'><code>fn <a href='../../lutario/op/trait.IndexBlockMatRef.html#tymethod.at_block_mat' class='fnname'>at_block_mat</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u1: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u2: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Self::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#289-291' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-IndexBlockMatMut' class='impl'><span class='in-band'><code>impl&lt;'a, T:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/arith/trait.AddAssign.html" title="trait core::ops::arith::AddAssign">AddAssign</a>&gt; <a class="trait" href="../../lutario/op/trait.IndexBlockMatMut.html" title="trait lutario::op::IndexBlockMatMut">IndexBlockMatMut</a> for <a class="struct" href="../../lutario/block_mat/struct.BlockMatMut.html" title="struct lutario::block_mat::BlockMatMut">BlockMatMut</a>&lt;'a, T&gt;</code><a href='#impl-IndexBlockMatMut' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#294-316' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.set_block_mat' class="method"><span id='set_block_mat.v' class='invisible'><code>fn <a href='../../lutario/op/trait.IndexBlockMatMut.html#tymethod.set_block_mat' class='fnname'>set_block_mat</a>(&amp;mut self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u1: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u2: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, value: Self::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#295-304' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.add_block_mat' class="method"><span id='add_block_mat.v' class='invisible'><code>fn <a href='../../lutario/op/trait.IndexBlockMatMut.html#tymethod.add_block_mat' class='fnname'>add_block_mat</a>(&amp;mut self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u1: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, u2: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, value: Self::<a class="type" href="../../lutario/op/trait.Vector.html#associatedtype.Elem" title="type lutario::op::Vector::Elem">Elem</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/block_mat.rs.html#306-315' title='goto source code'>[src]</a></span></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

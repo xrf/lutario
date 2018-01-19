@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `cblas_sys` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, cblas_sys">
+
+    <title>cblas_sys - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Crate cblas_sys</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#reexports">Reexports</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'cblas_sys', ty: 'mod', relpath: '../'};</script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>cblas_sys</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/cblas_sys/lib.rs.html#1-1542' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Bindings to <a href="https://en.wikipedia.org/wiki/BLAS">CBLAS</a> (C).</p>
+
+<p>The usage of the package is explained <a href="https://blas-lapack-rs.github.io/usage">here</a>.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::<a class="enum" href="../cblas_sys/enum.CBLAS_LAYOUT.html" title="enum cblas_sys::CBLAS_LAYOUT">CBLAS_LAYOUT</a>::*;</code></td></tr><tr><td><code>pub use self::<a class="enum" href="../cblas_sys/enum.CBLAS_TRANSPOSE.html" title="enum cblas_sys::CBLAS_TRANSPOSE">CBLAS_TRANSPOSE</a>::*;</code></td></tr><tr><td><code>pub use self::<a class="enum" href="../cblas_sys/enum.CBLAS_UPLO.html" title="enum cblas_sys::CBLAS_UPLO">CBLAS_UPLO</a>::*;</code></td></tr><tr><td><code>pub use self::<a class="enum" href="../cblas_sys/enum.CBLAS_DIAG.html" title="enum cblas_sys::CBLAS_DIAG">CBLAS_DIAG</a>::*;</code></td></tr><tr><td><code>pub use self::<a class="enum" href="../cblas_sys/enum.CBLAS_SIDE.html" title="enum cblas_sys::CBLAS_SIDE">CBLAS_SIDE</a>::*;</code></td></tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.CBLAS_DIAG.html"
+                                  title='enum cblas_sys::CBLAS_DIAG'>CBLAS_DIAG</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.CBLAS_LAYOUT.html"
+                                  title='enum cblas_sys::CBLAS_LAYOUT'>CBLAS_LAYOUT</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.CBLAS_SIDE.html"
+                                  title='enum cblas_sys::CBLAS_SIDE'>CBLAS_SIDE</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.CBLAS_TRANSPOSE.html"
+                                  title='enum cblas_sys::CBLAS_TRANSPOSE'>CBLAS_TRANSPOSE</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.CBLAS_UPLO.html"
+                                  title='enum cblas_sys::CBLAS_UPLO'>CBLAS_UPLO</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_caxpy.html"
+                                  title='fn cblas_sys::cblas_caxpy'>cblas_caxpy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ccopy.html"
+                                  title='fn cblas_sys::cblas_ccopy'>cblas_ccopy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cdotc_sub.html"
+                                  title='fn cblas_sys::cblas_cdotc_sub'>cblas_cdotc_sub</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cdotu_sub.html"
+                                  title='fn cblas_sys::cblas_cdotu_sub'>cblas_cdotu_sub</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cgbmv.html"
+                                  title='fn cblas_sys::cblas_cgbmv'>cblas_cgbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cgemm.html"
+                                  title='fn cblas_sys::cblas_cgemm'>cblas_cgemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cgemv.html"
+                                  title='fn cblas_sys::cblas_cgemv'>cblas_cgemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cgerc.html"
+                                  title='fn cblas_sys::cblas_cgerc'>cblas_cgerc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cgeru.html"
+                                  title='fn cblas_sys::cblas_cgeru'>cblas_cgeru</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chbmv.html"
+                                  title='fn cblas_sys::cblas_chbmv'>cblas_chbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chemm.html"
+                                  title='fn cblas_sys::cblas_chemm'>cblas_chemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chemv.html"
+                                  title='fn cblas_sys::cblas_chemv'>cblas_chemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cher.html"
+                                  title='fn cblas_sys::cblas_cher'>cblas_cher</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cher2.html"
+                                  title='fn cblas_sys::cblas_cher2'>cblas_cher2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cher2k.html"
+                                  title='fn cblas_sys::cblas_cher2k'>cblas_cher2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cherk.html"
+                                  title='fn cblas_sys::cblas_cherk'>cblas_cherk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chpmv.html"
+                                  title='fn cblas_sys::cblas_chpmv'>cblas_chpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chpr.html"
+                                  title='fn cblas_sys::cblas_chpr'>cblas_chpr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_chpr2.html"
+                                  title='fn cblas_sys::cblas_chpr2'>cblas_chpr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cscal.html"
+                                  title='fn cblas_sys::cblas_cscal'>cblas_cscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_csscal.html"
+                                  title='fn cblas_sys::cblas_csscal'>cblas_csscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_cswap.html"
+                                  title='fn cblas_sys::cblas_cswap'>cblas_cswap</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_csymm.html"
+                                  title='fn cblas_sys::cblas_csymm'>cblas_csymm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_csyr2k.html"
+                                  title='fn cblas_sys::cblas_csyr2k'>cblas_csyr2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_csyrk.html"
+                                  title='fn cblas_sys::cblas_csyrk'>cblas_csyrk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctbmv.html"
+                                  title='fn cblas_sys::cblas_ctbmv'>cblas_ctbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctbsv.html"
+                                  title='fn cblas_sys::cblas_ctbsv'>cblas_ctbsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctpmv.html"
+                                  title='fn cblas_sys::cblas_ctpmv'>cblas_ctpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctpsv.html"
+                                  title='fn cblas_sys::cblas_ctpsv'>cblas_ctpsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctrmm.html"
+                                  title='fn cblas_sys::cblas_ctrmm'>cblas_ctrmm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctrmv.html"
+                                  title='fn cblas_sys::cblas_ctrmv'>cblas_ctrmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctrsm.html"
+                                  title='fn cblas_sys::cblas_ctrsm'>cblas_ctrsm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ctrsv.html"
+                                  title='fn cblas_sys::cblas_ctrsv'>cblas_ctrsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dasum.html"
+                                  title='fn cblas_sys::cblas_dasum'>cblas_dasum</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_daxpy.html"
+                                  title='fn cblas_sys::cblas_daxpy'>cblas_daxpy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dcabs1.html"
+                                  title='fn cblas_sys::cblas_dcabs1'>cblas_dcabs1</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dcopy.html"
+                                  title='fn cblas_sys::cblas_dcopy'>cblas_dcopy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ddot.html"
+                                  title='fn cblas_sys::cblas_ddot'>cblas_ddot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dgbmv.html"
+                                  title='fn cblas_sys::cblas_dgbmv'>cblas_dgbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dgemm.html"
+                                  title='fn cblas_sys::cblas_dgemm'>cblas_dgemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dgemv.html"
+                                  title='fn cblas_sys::cblas_dgemv'>cblas_dgemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dger.html"
+                                  title='fn cblas_sys::cblas_dger'>cblas_dger</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dnrm2.html"
+                                  title='fn cblas_sys::cblas_dnrm2'>cblas_dnrm2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_drot.html"
+                                  title='fn cblas_sys::cblas_drot'>cblas_drot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_drotg.html"
+                                  title='fn cblas_sys::cblas_drotg'>cblas_drotg</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_drotm.html"
+                                  title='fn cblas_sys::cblas_drotm'>cblas_drotm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_drotmg.html"
+                                  title='fn cblas_sys::cblas_drotmg'>cblas_drotmg</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsbmv.html"
+                                  title='fn cblas_sys::cblas_dsbmv'>cblas_dsbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dscal.html"
+                                  title='fn cblas_sys::cblas_dscal'>cblas_dscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsdot.html"
+                                  title='fn cblas_sys::cblas_dsdot'>cblas_dsdot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dspmv.html"
+                                  title='fn cblas_sys::cblas_dspmv'>cblas_dspmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dspr.html"
+                                  title='fn cblas_sys::cblas_dspr'>cblas_dspr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dspr2.html"
+                                  title='fn cblas_sys::cblas_dspr2'>cblas_dspr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dswap.html"
+                                  title='fn cblas_sys::cblas_dswap'>cblas_dswap</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsymm.html"
+                                  title='fn cblas_sys::cblas_dsymm'>cblas_dsymm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsymv.html"
+                                  title='fn cblas_sys::cblas_dsymv'>cblas_dsymv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsyr.html"
+                                  title='fn cblas_sys::cblas_dsyr'>cblas_dsyr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsyr2.html"
+                                  title='fn cblas_sys::cblas_dsyr2'>cblas_dsyr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsyr2k.html"
+                                  title='fn cblas_sys::cblas_dsyr2k'>cblas_dsyr2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dsyrk.html"
+                                  title='fn cblas_sys::cblas_dsyrk'>cblas_dsyrk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtbmv.html"
+                                  title='fn cblas_sys::cblas_dtbmv'>cblas_dtbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtbsv.html"
+                                  title='fn cblas_sys::cblas_dtbsv'>cblas_dtbsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtpmv.html"
+                                  title='fn cblas_sys::cblas_dtpmv'>cblas_dtpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtpsv.html"
+                                  title='fn cblas_sys::cblas_dtpsv'>cblas_dtpsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtrmm.html"
+                                  title='fn cblas_sys::cblas_dtrmm'>cblas_dtrmm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtrmv.html"
+                                  title='fn cblas_sys::cblas_dtrmv'>cblas_dtrmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtrsm.html"
+                                  title='fn cblas_sys::cblas_dtrsm'>cblas_dtrsm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dtrsv.html"
+                                  title='fn cblas_sys::cblas_dtrsv'>cblas_dtrsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dzasum.html"
+                                  title='fn cblas_sys::cblas_dzasum'>cblas_dzasum</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_dznrm2.html"
+                                  title='fn cblas_sys::cblas_dznrm2'>cblas_dznrm2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_icamax.html"
+                                  title='fn cblas_sys::cblas_icamax'>cblas_icamax</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_idamax.html"
+                                  title='fn cblas_sys::cblas_idamax'>cblas_idamax</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_isamax.html"
+                                  title='fn cblas_sys::cblas_isamax'>cblas_isamax</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_izamax.html"
+                                  title='fn cblas_sys::cblas_izamax'>cblas_izamax</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sasum.html"
+                                  title='fn cblas_sys::cblas_sasum'>cblas_sasum</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_saxpy.html"
+                                  title='fn cblas_sys::cblas_saxpy'>cblas_saxpy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_scabs1.html"
+                                  title='fn cblas_sys::cblas_scabs1'>cblas_scabs1</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_scasum.html"
+                                  title='fn cblas_sys::cblas_scasum'>cblas_scasum</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_scnrm2.html"
+                                  title='fn cblas_sys::cblas_scnrm2'>cblas_scnrm2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_scopy.html"
+                                  title='fn cblas_sys::cblas_scopy'>cblas_scopy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sdot.html"
+                                  title='fn cblas_sys::cblas_sdot'>cblas_sdot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sdsdot.html"
+                                  title='fn cblas_sys::cblas_sdsdot'>cblas_sdsdot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sgbmv.html"
+                                  title='fn cblas_sys::cblas_sgbmv'>cblas_sgbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sgemm.html"
+                                  title='fn cblas_sys::cblas_sgemm'>cblas_sgemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sgemv.html"
+                                  title='fn cblas_sys::cblas_sgemv'>cblas_sgemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sger.html"
+                                  title='fn cblas_sys::cblas_sger'>cblas_sger</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_snrm2.html"
+                                  title='fn cblas_sys::cblas_snrm2'>cblas_snrm2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_srot.html"
+                                  title='fn cblas_sys::cblas_srot'>cblas_srot</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_srotg.html"
+                                  title='fn cblas_sys::cblas_srotg'>cblas_srotg</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_srotm.html"
+                                  title='fn cblas_sys::cblas_srotm'>cblas_srotm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_srotmg.html"
+                                  title='fn cblas_sys::cblas_srotmg'>cblas_srotmg</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssbmv.html"
+                                  title='fn cblas_sys::cblas_ssbmv'>cblas_ssbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sscal.html"
+                                  title='fn cblas_sys::cblas_sscal'>cblas_sscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sspmv.html"
+                                  title='fn cblas_sys::cblas_sspmv'>cblas_sspmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sspr.html"
+                                  title='fn cblas_sys::cblas_sspr'>cblas_sspr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sspr2.html"
+                                  title='fn cblas_sys::cblas_sspr2'>cblas_sspr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_sswap.html"
+                                  title='fn cblas_sys::cblas_sswap'>cblas_sswap</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssymm.html"
+                                  title='fn cblas_sys::cblas_ssymm'>cblas_ssymm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssymv.html"
+                                  title='fn cblas_sys::cblas_ssymv'>cblas_ssymv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssyr.html"
+                                  title='fn cblas_sys::cblas_ssyr'>cblas_ssyr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssyr2.html"
+                                  title='fn cblas_sys::cblas_ssyr2'>cblas_ssyr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssyr2k.html"
+                                  title='fn cblas_sys::cblas_ssyr2k'>cblas_ssyr2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ssyrk.html"
+                                  title='fn cblas_sys::cblas_ssyrk'>cblas_ssyrk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_stbmv.html"
+                                  title='fn cblas_sys::cblas_stbmv'>cblas_stbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_stbsv.html"
+                                  title='fn cblas_sys::cblas_stbsv'>cblas_stbsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_stpmv.html"
+                                  title='fn cblas_sys::cblas_stpmv'>cblas_stpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_stpsv.html"
+                                  title='fn cblas_sys::cblas_stpsv'>cblas_stpsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_strmm.html"
+                                  title='fn cblas_sys::cblas_strmm'>cblas_strmm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_strmv.html"
+                                  title='fn cblas_sys::cblas_strmv'>cblas_strmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_strsm.html"
+                                  title='fn cblas_sys::cblas_strsm'>cblas_strsm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_strsv.html"
+                                  title='fn cblas_sys::cblas_strsv'>cblas_strsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_xerbla.html"
+                                  title='fn cblas_sys::cblas_xerbla'>cblas_xerbla</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zaxpy.html"
+                                  title='fn cblas_sys::cblas_zaxpy'>cblas_zaxpy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zcopy.html"
+                                  title='fn cblas_sys::cblas_zcopy'>cblas_zcopy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zdotc_sub.html"
+                                  title='fn cblas_sys::cblas_zdotc_sub'>cblas_zdotc_sub</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zdotu_sub.html"
+                                  title='fn cblas_sys::cblas_zdotu_sub'>cblas_zdotu_sub</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zdscal.html"
+                                  title='fn cblas_sys::cblas_zdscal'>cblas_zdscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zgbmv.html"
+                                  title='fn cblas_sys::cblas_zgbmv'>cblas_zgbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zgemm.html"
+                                  title='fn cblas_sys::cblas_zgemm'>cblas_zgemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zgemv.html"
+                                  title='fn cblas_sys::cblas_zgemv'>cblas_zgemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zgerc.html"
+                                  title='fn cblas_sys::cblas_zgerc'>cblas_zgerc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zgeru.html"
+                                  title='fn cblas_sys::cblas_zgeru'>cblas_zgeru</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhbmv.html"
+                                  title='fn cblas_sys::cblas_zhbmv'>cblas_zhbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhemm.html"
+                                  title='fn cblas_sys::cblas_zhemm'>cblas_zhemm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhemv.html"
+                                  title='fn cblas_sys::cblas_zhemv'>cblas_zhemv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zher.html"
+                                  title='fn cblas_sys::cblas_zher'>cblas_zher</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zher2.html"
+                                  title='fn cblas_sys::cblas_zher2'>cblas_zher2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zher2k.html"
+                                  title='fn cblas_sys::cblas_zher2k'>cblas_zher2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zherk.html"
+                                  title='fn cblas_sys::cblas_zherk'>cblas_zherk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhpmv.html"
+                                  title='fn cblas_sys::cblas_zhpmv'>cblas_zhpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhpr.html"
+                                  title='fn cblas_sys::cblas_zhpr'>cblas_zhpr</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zhpr2.html"
+                                  title='fn cblas_sys::cblas_zhpr2'>cblas_zhpr2</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zscal.html"
+                                  title='fn cblas_sys::cblas_zscal'>cblas_zscal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zswap.html"
+                                  title='fn cblas_sys::cblas_zswap'>cblas_zswap</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zsymm.html"
+                                  title='fn cblas_sys::cblas_zsymm'>cblas_zsymm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zsyr2k.html"
+                                  title='fn cblas_sys::cblas_zsyr2k'>cblas_zsyr2k</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_zsyrk.html"
+                                  title='fn cblas_sys::cblas_zsyrk'>cblas_zsyrk</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztbmv.html"
+                                  title='fn cblas_sys::cblas_ztbmv'>cblas_ztbmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztbsv.html"
+                                  title='fn cblas_sys::cblas_ztbsv'>cblas_ztbsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztpmv.html"
+                                  title='fn cblas_sys::cblas_ztpmv'>cblas_ztpmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztpsv.html"
+                                  title='fn cblas_sys::cblas_ztpsv'>cblas_ztpsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztrmm.html"
+                                  title='fn cblas_sys::cblas_ztrmm'>cblas_ztrmm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztrmv.html"
+                                  title='fn cblas_sys::cblas_ztrmv'>cblas_ztrmv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztrsm.html"
+                                  title='fn cblas_sys::cblas_ztrsm'>cblas_ztrsm</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.cblas_ztrsv.html"
+                                  title='fn cblas_sys::cblas_ztrsv'>cblas_ztrsv</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.CBLAS_INDEX.html"
+                                  title='type cblas_sys::CBLAS_INDEX'>CBLAS_INDEX</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.CBLAS_ORDER.html"
+                                  title='type cblas_sys::CBLAS_ORDER'>CBLAS_ORDER</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.c_double_complex.html"
+                                  title='type cblas_sys::c_double_complex'>c_double_complex</a></td>
+                           <td class='docblock-short'>
+                                <p>A complex number with 64-bit parts.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.c_float_complex.html"
+                                  title='type cblas_sys::c_float_complex'>c_float_complex</a></td>
+                           <td class='docblock-short'>
+                                <p>A complex number with 32-bit parts.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "cblas_sys";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

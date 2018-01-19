@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CanonicalRegge3jm",""],["CanonicalRegge6j",""],["Regge3jm","Regge square for Wigner 3-jm symbols, arranged in row-major order."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Half","Type that logically behaves like half-integers, but what is actually stored is twice its logical value."]]});

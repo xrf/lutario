@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `io` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, io">
+
+    <title>lutario::io - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module io</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#reexports">Reexports</a></li><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../index.html'>lutario</a></p><script>window.sidebarCurrent = {name: 'io', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lutario</a>::<wbr><a class="mod" href=''>io</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/io/mod.rs.html#1-253' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Input and output utility.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::parser::<a class="struct" href="../../lutario/io/parser/struct.Parser.html" title="struct lutario::io::parser::Parser">Parser</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="parser/index.html"
+                                  title='mod lutario::io::parser'>parser</a></td>
+                           <td class='docblock-short'>
+                                <p>Utility for parsing byte strings.</p>
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BinArrayParser.html"
+                                  title='struct lutario::io::BinArrayParser'>BinArrayParser</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.MapleTableParser.html"
+                                  title='struct lutario::io::MapleTableParser'>MapleTableParser</a></td>
+                           <td class='docblock-short'>
+                                <p>Parse numbers from a white-space separated text file.
+Comments delimited by <code>(* … *)</code> are ignored.</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.Compression.html"
+                                  title='enum lutario::io::Compression'>Compression</a></td>
+                           <td class='docblock-short'>
+                                <p>Supported compression formats for input files</p>
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.ReadBinFrom.html"
+                                  title='trait lutario::io::ReadBinFrom'>ReadBinFrom</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.copy_while.html"
+                                  title='fn lutario::io::copy_while'>copy_while</a></td>
+                           <td class='docblock-short'>
+                                <p>Copy data from a source to a sink while the predicate remains true.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode_compressed.html"
+                                  title='fn lutario::io::decode_compressed'>decode_compressed</a></td>
+                           <td class='docblock-short'>
+                                <p>Open a compressed file and decode based on the file extension.
+If the extension does not end in &quot;z&quot;, the file is read as-is.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.fill_buf_with_retry.html"
+                                  title='fn lutario::io::fill_buf_with_retry'>fill_buf_with_retry</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.guess_compression.html"
+                                  title='fn lutario::io::guess_compression'>guess_compression</a></td>
+                           <td class='docblock-short'>
+                                <p>Guess the compression based on the file extension.
+If the extension does not end in &quot;z&quot;, then no compression is assumed.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.invalid_data.html"
+                                  title='fn lutario::io::invalid_data'>invalid_data</a></td>
+                           <td class='docblock-short'>
+                                <p>Helper function for creating <code>io::Error</code> with
+<code>io::ErrorKind::InvalidData</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.split_extension.html"
+                                  title='fn lutario::io::split_extension'>split_extension</a></td>
+                           <td class='docblock-short'>
+                                <p>Works just like Python&#39;s <code>os.path.splitext</code>.  Note that the returned
+extension includes the dot.  If there is no extension, returns an empty
+string as the extension.  Only works on UTF-8 strings due to limitations
+of the <code>std::path::Path</code> API.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

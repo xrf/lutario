@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `gmp_mpfr_sys` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, gmp_mpfr_sys">
+
+    <title>gmp_mpfr_sys - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Crate gmp_mpfr_sys</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#modules">Modules</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'gmp_mpfr_sys', ty: 'mod', relpath: '../'};</script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>gmp_mpfr_sys</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/gmp_mpfr_sys/lib.rs.html#17-206' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'>
+<h1 id='rust-low-level-bindings-for-gmp-mpfr-and-mpc' class='section-header'><a href='#rust-low-level-bindings-for-gmp-mpfr-and-mpc'>Rust low-level bindings for GMP, MPFR and MPC</a></h1>
+<p>The <code>gmp-mpfr-sys</code> crate provides Rust FFI bindings for:</p>
+
+<ul>
+<li>the <a href="https://gmplib.org/">GNU Multiple Precision Arithmetic Library</a> (GMP)
+version 6.1.2, a library for arbitrary precision arithmetic,</li>
+<li>the <a href="http://www.mpfr.org/">GNU MPFR Library</a> version 4.0.0, a library for
+multiple-precision floating-point computations with correct
+rounding, and</li>
+<li><a href="http://www.multiprecision.org/">GNU MPC</a> version 1.1.0, a library for the arithmetic of
+complex numbers with arbitrarily high precision and correct
+rounding.</li>
+</ul>
+
+<p>The source of the three libraries is included in the package.</p>
+
+<p>This crate is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version. See the full text
+of the <a href="https://www.gnu.org/licenses/lgpl-3.0.en.html">GNU LGPL</a> and <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU GPL</a> for details.</p>
+
+<h2 id='basic-use' class='section-header'><a href='#basic-use'>Basic use</a></h2>
+<p>This crate required rustc version 1.13.0.</p>
+
+<p>This crate provides a low-level interface to GMP, MPFR and MPC in
+three modules. The documentation of the three modules contains
+links for each function, constant and type into the respective
+documentation of <a href="https://tspiteri.gitlab.io/gmp-mpfr-sys/gmp/index.html">GMP</a>, <a href="https://tspiteri.gitlab.io/gmp-mpfr-sys/mpfr/index.html">MPFR</a> and
+<a href="https://tspiteri.gitlab.io/gmp-mpfr-sys/mpc/index.html">MPC</a> libraries. The three modules of this crate are:</p>
+
+<ul>
+<li><a href="gmp/index.html"><code>gmp</code></a> provides external FFI bindings to GMP.</li>
+<li><a href="mpfr/index.html"><code>mpfr</code></a> provides external FFI bindings to MPFR.</li>
+<li><a href="mpc/index.html"><code>mpc</code></a> provides external FFI bindings to MPC.</li>
+</ul>
+
+<p>If you want a high-level API, consider using the <a href="https://docs.rs/rug/*/rug/index.html"><code>rug</code></a> crate,
+which provides big integer and floating-point numbers. Its main
+features are:</p>
+
+<ul>
+<li>big <a href="https://docs.rs/rug/*/rug/struct.Integer.html">integers</a> with arbitrary precision based on GMP,</li>
+<li>big <a href="https://docs.rs/rug/*/rug/struct.Rational.html">rational numbers</a> with arbitrary precision based
+on GMP,</li>
+<li>multi-precision <a href="https://docs.rs/rug/*/rug/struct.Float.html">floating-point numbers</a> with correct
+rounding based on MPFR, and</li>
+<li>multi-precision <a href="https://docs.rs/rug/*/rug/struct.Complex.html">complex numbers</a> with correct rounding
+based on MPC.</li>
+</ul>
+
+<h2 id='notes' class='section-header'><a href='#notes'>Notes</a></h2>
+<h3 id='name-prefixes' class='section-header'><a href='#name-prefixes'>Name prefixes</a></h3>
+<p>Since modules and enumerated types provide namespacing, most
+prefixes in the C names are removed. However, when the prefix is
+not a whole word it is not removed, for example
+<code>mp_set_memory_functions()</code> becomes <code>gmp::set_memory_functions()</code>,
+but <code>mpz_init()</code> becomes <code>gmp::mpz_init()</code> not <code>gmp::z_init()</code>,
+and <code>MPFR_RNDN</code> in <code>enum MPFR_RND_T</code> becomes <code>mpfr::rnd_t::RNDN</code>
+not <code>mpfr::rnd_t::N</code>.  Also, the types <code>mpfr::mpfr_t</code> and
+<code>mpc::mpc_t</code> are <em>not</em> shortened to <code>mpfr::t</code> or <code>mpc::t</code>.</p>
+
+<h3 id='types' class='section-header'><a href='#types'>Types</a></h3>
+<p>Unlike in the C libraries, the types <code>gmp::mpz_t</code>, <code>gmp::mpq_t</code>,
+<code>gmp::mpf_t</code>, <code>gmp::rand_state_t</code>, <code>mpfr::mpfr_t</code> and <code>mpc::mpc_t</code>
+are defined directly as structs, not as single-element arrays.</p>
+
+<h3 id='undocumented-or-obsolete-functions' class='section-header'><a href='#undocumented-or-obsolete-functions'>Undocumented or obsolete functions</a></h3>
+<p>The bindings do not cover undocumented or obsolete functions and
+macros.</p>
+
+<h2 id='usage' class='section-header'><a href='#usage'>Usage</a></h2>
+<p>To use <code>gmp-mpfr-sys</code> in your crate, add
+<code>extern crate gmp_mpfr_sys;</code> to the crate root and add
+<code>gmp-mpfr-sys</code> as a dependency in <code>Cargo.toml</code>:</p>
+
+<pre><code class="language-toml">[dependencies]
+gmp-mpfr-sys = &quot;1.1.0&quot;
+</code></pre>
+
+<h3 id='optional-features' class='section-header'><a href='#optional-features'>Optional features</a></h3>
+<p>The <code>gmp-mpfr-sys</code> crate has two optional features <code>mpfr</code> and
+<code>mpc</code> to include the MPFR and MPC libraries respectively. The GMP
+library is always included. The optional features are enabled by
+default; to disable them add this to <code>Cargo.toml</code>:</p>
+
+<pre><code class="language-toml">[dependencies.gmp-mpfr-sys]
+version = &quot;1.1.0&quot;
+default-features = false
+</code></pre>
+
+<p>To use features selectively, you can add this to <code>Cargo.toml</code>:</p>
+
+<pre><code class="language-toml">[dependencies.gmp-mpfr-sys]
+version = &quot;1.1.0&quot;
+default-features = false
+# Pick which features to use
+features = [&quot;mpfr&quot;]
+</code></pre>
+
+<p>Note that the the <code>mpc</code> feature depends on, and will enable, the
+<code>mpfr</code> feature.</p>
+
+<h3 id='building-on-gnulinux' class='section-header'><a href='#building-on-gnulinux'>Building on GNU/Linux</a></h3>
+<p>To build on GNU/Linux, simply make sure you have <code>diffutils</code>,
+<code>gcc</code>, <code>make</code> and <code>m4</code> installed on your system. For example on
+Fedora:</p>
+
+<pre><code class="language-sh">sudo dnf install diffutils gcc make m4
+</code></pre>
+
+<h3 id='building-on-macos' class='section-header'><a href='#building-on-macos'>Building on macOS</a></h3>
+<p>To build on macOS, you need the command-line developer tools. An
+easy way to install them is to start building the crate using
+<code>cargo build</code>. If the tools are not installed yet, a popup should
+appear which should help you install them.</p>
+
+<h3 id='building-on-windows' class='section-header'><a href='#building-on-windows'>Building on Windows</a></h3>
+<p>You can build on Windows with the Rust GNU toolchain and an
+up-to-date MSYS2 installation. Some steps for a 64-bit environment
+are listed below. (32-bit: Changes for a 32-bit environment are
+written in brackets like this comment.)</p>
+
+<p>To install MSYS2:</p>
+
+<ol>
+<li><p>Install MSYS2 using the <a href="https://msys2.github.io/">installer</a>.</p></li>
+<li><p>Launch the MSYS2 MinGW 64-bit terminal from the start
+menu. (32-bit: Launch the MSYS2 MinGW 32-bit terminal instead.)</p></li>
+<li><p>Install the required tools.</p>
+
+<pre><code class="language-sh">pacman -S pacman-mirrors
+pacman -S diffutils make mingw-w64-x86_64-gcc
+</code></pre>
+
+<p>(32-bit: Install <code>mingw-w64-i686-gcc</code> instead of
+<code>mingw-w64-x86_64-gcc</code>.)</p></li>
+</ol>
+
+<p>Then, to build a crate with a dependency on this crate:</p>
+
+<ol>
+<li><p>Launch the MSYS MinGW 64-bit terminal from the start menu.
+(32-bit: Launch the MSYS2 MinGW 32-bit terminal instead.)</p></li>
+<li><p>Change to the crate directory.</p>
+
+<p>Note that building the GMP, MPFR and MPC libraries in MSYS with
+absolute paths does not work very well, so relative paths are
+used. If your crate is inside <code>C:\msys64</code> and the <code>.cargo</code>
+directory is outside <code>C:\msys64</code>, this will not work. Please
+move your crate to the same side of <code>C:\msys64</code> as <code>.cargo</code>.</p></li>
+<li><p>Build the crate using <code>cargo</code>.</p></li>
+</ol>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="gmp/index.html"
+                                  title='mod gmp_mpfr_sys::gmp'>gmp</a></td>
+                           <td class='docblock-short'>
+                                <p>Function and type bindings for the GMP library.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "gmp_mpfr_sys";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `hf` mod in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, hf">
+
+    <title>lutario::hf - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Module hf</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../index.html'>lutario</a></p><script>window.sidebarCurrent = {name: 'hf', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lutario</a>::<wbr><a class="mod" href=''>hf</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/hf.rs.html#1-402' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Hartree–Fock method and normal ordering</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Conf.html"
+                                  title='struct lutario::hf::Conf'>Conf</a></td>
+                           <td class='docblock-short'>
+                                <p>Configuration for a Hartree–Fock run</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Run.html"
+                                  title='struct lutario::hf::Run'>Run</a></td>
+                           <td class='docblock-short'>
+                                <p>A Hartree–Fock run with ad hoc linear mixing</p>
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.block_heevr.html"
+                                  title='fn lutario::hf::block_heevr'>block_heevr</a></td>
+                           <td class='docblock-short'>
+                                <p>Solve the eigenvalue problem for a Hermitian block-diagonal matrix.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.block_mat_axpby.html"
+                                  title='fn lutario::hf::block_mat_axpby'>block_mat_axpby</a></td>
+                           <td class='docblock-short'>
+                                <p><code>y ← α x + β y</code></p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.fock2.html"
+                                  title='fn lutario::hf::fock2'>fock2</a></td>
+                           <td class='docblock-short'>
+                                <p>Compute the Fock operator.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.hf_energy.html"
+                                  title='fn lutario::hf::hf_energy'>hf_energy</a></td>
+                           <td class='docblock-short'>
+                                <p>Calculate the Hartree–Fock energy from transformed operators</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.normord.html"
+                                  title='fn lutario::hf::normord'>normord</a></td>
+                           <td class='docblock-short'>
+                                <p>Normal order an operator <code>h</code> and store the results in <code>r</code>.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.qcoeff.html"
+                                  title='fn lutario::hf::qcoeff'>qcoeff</a></td>
+                           <td class='docblock-short'>
+                                <p>Compute the combined coefficient matrix.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.transform_h1.html"
+                                  title='fn lutario::hf::transform_h1'>transform_h1</a></td>
+                           <td class='docblock-short'>
+                                <p>Perform the HF transformation on a one-body operator.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.transform_h2.html"
+                                  title='fn lutario::hf::transform_h2'>transform_h2</a></td>
+                           <td class='docblock-short'>
+                                <p>Perform the HF transformation on a two-body operator.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.weighted_sum.html"
+                                  title='fn lutario::hf::weighted_sum'>weighted_sum</a></td>
+                           <td class='docblock-short'>
+                                <p>Compute the J-weighted sum of orbital energies.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

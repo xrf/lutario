@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["reflect_16th","Reflection about the 22.5° axis."]],"struct":[["Coupled2HalfSpins",""],["Coupled2HalfSpinsBlock",""],["Uncoupled2HalfSpins",""],["Uncoupled2HalfSpinsBlock",""],["Wigner3jmCtx",""],["Wigner6jCtx",""]]});

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `MtStreamBuilder` struct in crate `xz2`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, MtStreamBuilder">
+
+    <title>xz2::stream::MtStreamBuilder - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct MtStreamBuilder</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.threads">threads</a><a href="#method.block_size">block_size</a><a href="#method.timeout_ms">timeout_ms</a><a href="#method.preset">preset</a><a href="#method.filters">filters</a><a href="#method.check">check</a><a href="#method.memusage">memusage</a><a href="#method.encoder">encoder</a></div></div><p class='location'><a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a></p><script>window.sidebarCurrent = {name: 'MtStreamBuilder', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a>::<wbr><a class="struct" href=''>MtStreamBuilder</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/xz2/stream.rs.html#32-35' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct MtStreamBuilder { /* fields omitted */ }</pre><div class='docblock'><p>Builder to create a multi-threaded stream encoder.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../xz2/stream/struct.MtStreamBuilder.html" title="struct xz2::stream::MtStreamBuilder">MtStreamBuilder</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#691-797' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class="struct" href="../../xz2/stream/struct.MtStreamBuilder.html" title="struct xz2::stream::MtStreamBuilder">MtStreamBuilder</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#693-702' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a new blank builder to create a multithreaded encoding <code>Stream</code>.</p>
+</div><h4 id='method.threads' class="method"><span id='threads.v' class='invisible'><code>pub fn <a href='#method.threads' class='fnname'>threads</a>(&amp;mut self, threads: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#705-708' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the number of worker threads to use</p>
+</div><h4 id='method.block_size' class="method"><span id='block_size.v' class='invisible'><code>pub fn <a href='#method.block_size' class='fnname'>block_size</a>(&amp;mut self, block_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#731-734' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the maximum uncompressed size of a block</p>
+
+<p>The encoder will start a new .xz block every <code>block_size</code> bytes.
+Using <code>FullFlush</code> or <code>FullBarrier</code> with <code>process</code> the caller may tell
+liblzma to start a new block earlier.</p>
+
+<p>With LZMA2, a recommended block size is 2-4 times the LZMA2 dictionary
+size. With very small dictionaries, it is recommended to use at least 1
+MiB block size for good compression ratio, even if this is more than
+four times the dictionary size. Note that these are only recommendations
+for typical use cases; feel free to use other values. Just keep in mind
+that using a block size less than the LZMA2 dictionary size is waste of
+RAM.</p>
+
+<p>Set this to 0 to let liblzma choose the block size depending on the
+compression options. For LZMA2 it will be 3*<code>dict_size</code> or 1 MiB,
+whichever is more.</p>
+
+<p>For each thread, about 3 * <code>block_size</code> bytes of memory will be
+allocated. This may change in later liblzma versions. If so, the memory
+usage will probably be reduced, not increased.</p>
+</div><h4 id='method.timeout_ms' class="method"><span id='timeout_ms.v' class='invisible'><code>pub fn <a href='#method.timeout_ms' class='fnname'>timeout_ms</a>(&amp;mut self, timeout: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#756-759' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Timeout to allow <code>process</code> to return early</p>
+
+<p>Multithreading can make liblzma to consume input and produce output in a
+very bursty way: it may first read a lot of input to fill internal
+buffers, then no input or output occurs for a while.</p>
+
+<p>In single-threaded mode, <code>process</code> won&#39;t return until it has either
+consumed all the input or filled the output buffer. If this is done in
+multithreaded mode, it may cause a call <code>process</code> to take even tens of
+seconds, which isn&#39;t acceptable in all applications.</p>
+
+<p>To avoid very long blocking times in <code>process</code>, a timeout (in
+milliseconds) may be set here. If <code>process would block longer than this number of milliseconds, it will return with</code>Ok`. Reasonable
+values are 100 ms or more. The xz command line tool uses 300 ms.</p>
+
+<p>If long blocking times are fine for you, set timeout to a special
+value of 0, which will disable the timeout mechanism and will make
+<code>process</code> block until all the input is consumed or the output
+buffer has been filled.</p>
+</div><h4 id='method.preset' class="method"><span id='preset.v' class='invisible'><code>pub fn <a href='#method.preset' class='fnname'>preset</a>(&amp;mut self, preset: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#765-768' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Compression preset (level and possible flags)</p>
+
+<p>The preset is set just like with <code>Stream::new_easy_encoder</code>. The preset
+is ignored if filters below have been specified.</p>
+</div><h4 id='method.filters' class="method"><span id='filters.v' class='invisible'><code>pub fn <a href='#method.filters' class='fnname'>filters</a>(&amp;mut self, filters: <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#771-775' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configure a custom filter chain</p>
+</div><h4 id='method.check' class="method"><span id='check.v' class='invisible'><code>pub fn <a href='#method.check' class='fnname'>check</a>(&amp;mut self, check: <a class="enum" href="../../xz2/stream/enum.Check.html" title="enum xz2::stream::Check">Check</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#778-781' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Configures the integrity check type</p>
+</div><h4 id='method.memusage' class="method"><span id='memusage.v' class='invisible'><code>pub fn <a href='#method.memusage' class='fnname'>memusage</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u64.html">u64</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#784-786' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Calculate approximate memory usage of multithreaded .xz encoder</p>
+</div><h4 id='method.encoder' class="method"><span id='encoder.v' class='invisible'><code>pub fn <a href='#method.encoder' class='fnname'>encoder</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../xz2/stream/struct.Stream.html" title="struct xz2::stream::Stream">Stream</a>, <a class="enum" href="../../xz2/stream/enum.Error.html" title="enum xz2::stream::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#789-796' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Initialize multithreaded .xz stream encoder.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "xz2";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

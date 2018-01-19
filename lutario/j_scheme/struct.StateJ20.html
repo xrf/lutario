@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `StateJ20` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, StateJ20">
+
+    <title>lutario::j_scheme::StateJ20 - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct StateJ20</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.scheme">scheme</a><a href="#structfield.lu12">lu12</a><a href="#structfield.j12">j12</a><a href="#structfield.s1">s1</a><a href="#structfield.s2">s2</a><a href="#structfield.permut">permut</a><a href="#structfield.num_permut">num_permut</a><a href="#structfield.get_factor">get_factor</a><a href="#structfield.set_factor">set_factor</a><a href="#structfield.add_factor">add_factor</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.next_permut">next_permut</a><a href="#method.next">next</a><a href="#method.j">j</a><a href="#method.lu">lu</a><a href="#method.jweight">jweight</a><a href="#method.costates_20">costates_20</a><a href="#method.split_to_10_10">split_to_10_10</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Clone">Clone</a><a href="#impl-Copy">Copy</a><a href="#impl-Debug">Debug</a><a href="#impl-Display">Display</a><a href="#impl-ReifyState">ReifyState</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>j_scheme</a></p><script>window.sidebarCurrent = {name: 'StateJ20', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>j_scheme</a>::<wbr><a class="struct" href=''>StateJ20</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1063-1077' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct StateJ20&lt;'a&gt; {
+    pub scheme: &amp;'a <a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a>,
+    pub lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>,
+    pub j12: <a class="struct" href="../../lutario/half/struct.Half.html" title="struct lutario::half::Half">Half</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt;,
+    pub s1: <a class="struct" href="../../lutario/j_scheme/struct.JPartedOrb.html" title="struct lutario::j_scheme::JPartedOrb">JPartedOrb</a>,
+    pub s2: <a class="struct" href="../../lutario/j_scheme/struct.JPartedOrb.html" title="struct lutario::j_scheme::JPartedOrb">JPartedOrb</a>,
+    pub permut: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>,
+    pub num_permut: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>,
+    pub get_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+    pub set_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+    pub add_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+}</pre><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.scheme" class="structfield small-section-header">
+                           <a href="#structfield.scheme" class="anchor field"></a>
+                           <span id="scheme.v" class='invisible'>
+                           <code>scheme: &amp;'a <a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a></code>
+                           </span></span><span id="structfield.lu12" class="structfield small-section-header">
+                           <a href="#structfield.lu12" class="anchor field"></a>
+                           <span id="lu12.v" class='invisible'>
+                           <code>lu12: <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a></code>
+                           </span></span><span id="structfield.j12" class="structfield small-section-header">
+                           <a href="#structfield.j12" class="anchor field"></a>
+                           <span id="j12.v" class='invisible'>
+                           <code>j12: <a class="struct" href="../../lutario/half/struct.Half.html" title="struct lutario::half::Half">Half</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt;</code>
+                           </span></span><span id="structfield.s1" class="structfield small-section-header">
+                           <a href="#structfield.s1" class="anchor field"></a>
+                           <span id="s1.v" class='invisible'>
+                           <code>s1: <a class="struct" href="../../lutario/j_scheme/struct.JPartedOrb.html" title="struct lutario::j_scheme::JPartedOrb">JPartedOrb</a></code>
+                           </span></span><span id="structfield.s2" class="structfield small-section-header">
+                           <a href="#structfield.s2" class="anchor field"></a>
+                           <span id="s2.v" class='invisible'>
+                           <code>s2: <a class="struct" href="../../lutario/j_scheme/struct.JPartedOrb.html" title="struct lutario::j_scheme::JPartedOrb">JPartedOrb</a></code>
+                           </span></span><span id="structfield.permut" class="structfield small-section-header">
+                           <a href="#structfield.permut" class="anchor field"></a>
+                           <span id="permut.v" class='invisible'>
+                           <code>permut: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a></code>
+                           </span></span><span id="structfield.num_permut" class="structfield small-section-header">
+                           <a href="#structfield.num_permut" class="anchor field"></a>
+                           <span id="num_permut.v" class='invisible'>
+                           <code>num_permut: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a></code>
+                           </span></span><div class='docblock'><p>Number of states related by antisymmetry</p>
+</div><span id="structfield.get_factor" class="structfield small-section-header">
+                           <a href="#structfield.get_factor" class="anchor field"></a>
+                           <span id="get_factor.v" class='invisible'>
+                           <code>get_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><span id="structfield.set_factor" class="structfield small-section-header">
+                           <a href="#structfield.set_factor" class="anchor field"></a>
+                           <span id="set_factor.v" class='invisible'>
+                           <code>set_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><div class='docblock'><p><code>set_factor == 1.0 / get_factor</code></p>
+</div><span id="structfield.add_factor" class="structfield small-section-header">
+                           <a href="#structfield.add_factor" class="anchor field"></a>
+                           <span id="add_factor.v" class='invisible'>
+                           <code>add_factor: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span><div class='docblock'><p><code>add_factor == 1.0 / (get_factor * num_permut)</code></p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1085-1136' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.next_permut' class="method"><span id='next_permut.v' class='invisible'><code>pub fn <a href='#method.next_permut' class='fnname'>next_permut</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1087-1098' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.next' class="method"><span id='next.v' class='invisible'><code>pub fn <a href='#method.next' class='fnname'>next</a>(this: &amp;mut <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self&gt;) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1101-1107' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.j' class="method"><span id='j.v' class='invisible'><code>pub fn <a href='#method.j' class='fnname'>j</a>(self) -&gt; <a class="struct" href="../../lutario/half/struct.Half.html" title="struct lutario::half::Half">Half</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1110-1112' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.lu' class="method"><span id='lu.v' class='invisible'><code>pub fn <a href='#method.lu' class='fnname'>lu</a>(self) -&gt; <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1115-1117' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.jweight' class="method"><span id='jweight.v' class='invisible'><code>pub fn <a href='#method.jweight' class='fnname'>jweight</a>(self, exponent: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1120-1122' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.costates_20' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</span></div><div class="content hidden"><h3 class="important">Important traits for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a> for <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</span><span class="where fmt-newline">    type <a href='https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html#associatedtype.Item' class="type">Item</a> = <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;;</span></code></div></div><span id='costates_20.v' class='invisible'><code>pub fn <a href='#method.costates_20' class='fnname'>costates_20</a>(self, xs: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="enum" href="../../lutario/basis/enum.Occ.html" title="enum lutario::basis::Occ">Occ</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 2]</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.CostatesJ20.html" title="struct lutario::j_scheme::CostatesJ20">CostatesJ20</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1125-1127' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.split_to_10_10' class="method"><span id='split_to_10_10.v' class='invisible'><code>pub fn <a href='#method.split_to_10_10' class='fnname'>split_to_10_10</a>(self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="struct" href="../../lutario/j_scheme/struct.StateJ10.html" title="struct lutario::j_scheme::StateJ10">StateJ10</a>&lt;'a&gt;, <a class="struct" href="../../lutario/j_scheme/struct.StateJ10.html" title="struct lutario::j_scheme::StateJ10">StateJ10</a>&lt;'a&gt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1130-1135' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1062' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1062' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Copy' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html" title="trait core::marker::Copy">Copy</a> for <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl-Copy' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1062' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1062' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1062' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Display' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a> for <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl-Display' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1079-1083' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt-1' class="method"><span id='fmt.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1080-1082' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-ReifyState' class='impl'><span class='in-band'><code>impl&lt;'a&gt; <a class="trait" href="../../lutario/op/trait.ReifyState.html" title="trait lutario::op::ReifyState">ReifyState</a> for <a class="struct" href="../../lutario/j_scheme/struct.StateJ20.html" title="struct lutario::j_scheme::StateJ20">StateJ20</a>&lt;'a&gt;</code><a href='#impl-ReifyState' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1343-1360' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Scheme' class="type"><span id='Scheme.t' class='invisible'><code>type <a href='../../lutario/op/trait.ReifyState.html#associatedtype.Scheme' class="type">Scheme</a> = <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a>&gt;</code></span></h4>
+<h4 id='associatedtype.Basis' class="type"><span id='Basis.t' class='invisible'><code>type <a href='../../lutario/op/trait.ReifyState.html#associatedtype.Basis' class="type">Basis</a> = <a class="struct" href="../../lutario/j_scheme/struct.BasisJ20.html" title="struct lutario::j_scheme::BasisJ20">BasisJ20</a></code></span></h4>
+<h4 id='method.reify_state' class="method"><span id='reify_state.v' class='invisible'><code>fn <a href='../../lutario/op/trait.ReifyState.html#tymethod.reify_state' class='fnname'>reify_state</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;_scheme: &amp;Self::<a class="type" href="../../lutario/op/trait.ReifyState.html#associatedtype.Scheme" title="type lutario::op::ReifyState::Scheme">Scheme</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;_basis: &amp;Self::<a class="type" href="../../lutario/op/trait.ReifyState.html#associatedtype.Basis" title="type lutario::op::ReifyState::Basis">Basis</a><br>) -&gt; <a class="struct" href="../../lutario/op/struct.ReifiedState.html" title="struct lutario::op::ReifiedState">ReifiedState</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/j_scheme.rs.html#1346-1359' title='goto source code'>[src]</a></span></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

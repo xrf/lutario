@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Cache","An associative array that weakly owns its elements and can store entries of arbitrary type."],["Cached","A cached value."]],"trait":[["Key",""]]});

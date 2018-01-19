@@ -1,0 +1,1 @@
+initSidebarItems({"macro":[["debugit","Print a message, and then each value's debug representation (if it has one)"]],"struct":[["DebugIt","This type always implements `Debug`. Uses specialization to use the inner value's Debug (which it should basically always have)."]]});

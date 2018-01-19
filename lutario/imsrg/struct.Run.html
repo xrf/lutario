@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Run` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Run">
+
+    <title>lutario::imsrg::Run - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Run</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.conf">conf</a><a href="#structfield.scheme">scheme</a><a href="#structfield.w6j_ctx">w6j_ctx</a><a href="#structfield.solver">solver</a><a href="#structfield.hamil">hamil</a><a href="#structfield.flow">flow</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.conf">conf</a><a href="#method.conf_mut">conf_mut</a><a href="#method.energy">energy</a><a href="#method.flow">flow</a><a href="#method.hamil">hamil</a><a href="#method.step">step</a><a href="#method.do_run">do_run</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>imsrg</a></p><script>window.sidebarCurrent = {name: 'Run', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>imsrg</a>::<wbr><a class="struct" href=''>Run</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/imsrg.rs.html#577-586' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Run {
+    pub conf: <a class="struct" href="../../lutario/imsrg/struct.Conf.html" title="struct lutario::imsrg::Conf">Conf</a>,
+    pub scheme: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a>&gt;,
+    pub w6j_ctx: <a class="struct" href="../../lutario/ang_mom/struct.Wigner6jCtx.html" title="struct lutario::ang_mom::Wigner6jCtx">Wigner6jCtx</a>,
+    pub solver: <a class="struct" href="../../lutario/sg_ode/struct.Solver.html" title="struct lutario::sg_ode::Solver">Solver</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/vector_driver/basic/struct.BasicVectorDriver.html" title="struct lutario::vector_driver::basic::BasicVectorDriver">BasicVectorDriver</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;&gt;&gt;,
+    pub hamil: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;,
+    pub flow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>,
+}</pre><div class='docblock'><p>The state of an IM-SRG(2) run</p>
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.conf" class="structfield small-section-header">
+                           <a href="#structfield.conf" class="anchor field"></a>
+                           <span id="conf.v" class='invisible'>
+                           <code>conf: <a class="struct" href="../../lutario/imsrg/struct.Conf.html" title="struct lutario::imsrg::Conf">Conf</a></code>
+                           </span></span><div class='docblock'><p>You can modify <code>conf</code> while the run is ongoing, but changing
+<code>conf.solver_conf</code> has no effect.</p>
+</div><span id="structfield.scheme" class="structfield small-section-header">
+                           <a href="#structfield.scheme" class="anchor field"></a>
+                           <span id="scheme.v" class='invisible'>
+                           <code>scheme: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/j_scheme/struct.JScheme.html" title="struct lutario::j_scheme::JScheme">JScheme</a>&gt;</code>
+                           </span></span><span id="structfield.w6j_ctx" class="structfield small-section-header">
+                           <a href="#structfield.w6j_ctx" class="anchor field"></a>
+                           <span id="w6j_ctx.v" class='invisible'>
+                           <code>w6j_ctx: <a class="struct" href="../../lutario/ang_mom/struct.Wigner6jCtx.html" title="struct lutario::ang_mom::Wigner6jCtx">Wigner6jCtx</a></code>
+                           </span></span><span id="structfield.solver" class="structfield small-section-header">
+                           <a href="#structfield.solver" class="anchor field"></a>
+                           <span id="solver.v" class='invisible'>
+                           <code>solver: <a class="struct" href="../../lutario/sg_ode/struct.Solver.html" title="struct lutario::sg_ode::Solver">Solver</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html" title="struct alloc::arc::Arc">Arc</a>&lt;<a class="struct" href="../../lutario/vector_driver/basic/struct.BasicVectorDriver.html" title="struct lutario::vector_driver::basic::BasicVectorDriver">BasicVectorDriver</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;&gt;&gt;</code>
+                           </span></span><span id="structfield.hamil" class="structfield small-section-header">
+                           <a href="#structfield.hamil" class="anchor field"></a>
+                           <span id="hamil.v" class='invisible'>
+                           <code>hamil: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code>
+                           </span></span><span id="structfield.flow" class="structfield small-section-header">
+                           <a href="#structfield.flow" class="anchor field"></a>
+                           <span id="flow.v" class='invisible'>
+                           <code>flow: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../lutario/imsrg/struct.Run.html" title="struct lutario::imsrg::Run">Run</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#588-639' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.conf' class="method"><span id='conf.v-1' class='invisible'><code>pub fn <a href='#method.conf' class='fnname'>conf</a>(&amp;self) -&gt; &amp;<a class="struct" href="../../lutario/imsrg/struct.Conf.html" title="struct lutario::imsrg::Conf">Conf</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#589-591' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.conf_mut' class="method"><span id='conf_mut.v' class='invisible'><code>pub fn <a href='#method.conf_mut' class='fnname'>conf_mut</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../lutario/imsrg/struct.Conf.html" title="struct lutario::imsrg::Conf">Conf</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#593-595' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.energy' class="method"><span id='energy.v' class='invisible'><code>pub fn <a href='#method.energy' class='fnname'>energy</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#597-599' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.flow' class="method"><span id='flow.v-1' class='invisible'><code>pub fn <a href='#method.flow' class='fnname'>flow</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#602-604' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Retrieve the current flow parameter</p>
+</div><h4 id='method.hamil' class="method"><span id='hamil.v-1' class='invisible'><code>pub fn <a href='#method.hamil' class='fnname'>hamil</a>(&amp;self) -&gt; <a class="type" href="../../lutario/j_scheme/type.MopJ012.html" title="type lutario::j_scheme::MopJ012">MopJ012</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#606-610' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.step' class="method"><span id='step.v' class='invisible'><code>pub fn <a href='#method.step' class='fnname'>step</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="../../lutario/sg_ode/enum.Error.html" title="enum lutario::sg_ode::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#612-624' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.do_run' class="method"><span id='do_run.v' class='invisible'><code>pub fn <a href='#method.do_run' class='fnname'>do_run</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="../../lutario/imsrg/enum.Error.html" title="enum lutario::imsrg::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#626-638' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../lutario/imsrg/struct.Run.html" title="struct lutario::imsrg::Run">Run</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#576' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/imsrg.rs.html#576' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

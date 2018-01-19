@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Parser` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Parser">
+
+    <title>lutario::io::parser::Parser - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Parser</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.with_capacity">with_capacity</a><a href="#method.save">save</a><a href="#method.restore">restore</a><a href="#method.refill">refill</a><a href="#method.get">get</a><a href="#method.match_pred">match_pred</a><a href="#method.match_bytes">match_bytes</a><a href="#method.munch_whitespace">munch_whitespace</a><a href="#method.munch_space">munch_space</a><a href="#method.get_token">get_token</a><a href="#method.get_line">get_line</a><a href="#method.next_line">next_line</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a><a href="#impl-Drop">Drop</a></div></div><p class='location'><a href='../../index.html'>lutario</a>::<wbr><a href='../index.html'>io</a>::<wbr><a href='index.html'>parser</a></p><script>window.sidebarCurrent = {name: 'Parser', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>lutario</a>::<wbr><a href='../index.html'>io</a>::<wbr><a href='index.html'>parser</a>::<wbr><a class="struct" href=''>Parser</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../../src/lutario/io/parser.rs.html#157-163' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Parser&lt;R&gt; { /* fields omitted */ }</pre><div class='docblock'><p>Adds infinite lookahead to a <code>Read</code> stream and the ability to save and
+restore parsing state arbitrarily.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;R&gt; <a class="struct" href="../../../lutario/io/parser/struct.Parser.html" title="struct lutario::io::parser::Parser">Parser</a>&lt;R&gt;</code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#173-216' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>(reader: R) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#174-176' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.with_capacity' class="method"><span id='with_capacity.v' class='invisible'><code>pub fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(reader: R, buf_cap: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#181-190' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The <code>buf_cap</code> sets the capacity of a single buffer chunk.  This
+doesn&#39;t affect the size of the lookahead (it&#39;s always infinite), as
+multiple chunks are permitted; this only affects the efficiency.</p>
+</div><h4 id='method.save' class="method"><span id='save.v' class='invisible'><code>pub fn <a href='#method.save' class='fnname'>save</a>(&amp;self) -&gt; <a class="struct" href="../../../lutario/io/parser/struct.State.html" title="struct lutario::io::parser::State">State</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#196-201' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Save the parser state for later.  While the state object lives, it
+will store all the bytes between the saved point and the current
+parser point in memory, so it&#39;s important to dispose of the state when
+it&#39;s no longer needed.</p>
+</div><h4 id='method.restore' class="method"><span id='restore.v' class='invisible'><code>pub fn <a href='#method.restore' class='fnname'>restore</a>(&amp;mut self, state: <a class="struct" href="../../../lutario/io/parser/struct.State.html" title="struct lutario::io::parser::State">State</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#204-215' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Restore the parser state.</p>
+</div></div><h3 id='impl-1' class='impl'><span class='in-band'><code>impl&lt;R:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a>&gt; <a class="struct" href="../../../lutario/io/parser/struct.Parser.html" title="struct lutario::io::parser::Parser">Parser</a>&lt;R&gt;</code><a href='#impl-1' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#218-322' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.refill' class="method"><span id='refill.v' class='invisible'><code>pub fn <a href='#method.refill' class='fnname'>refill</a>(&amp;mut self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#219-231' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>pub fn <a href='#method.get' class='fnname'>get</a>(&amp;mut self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#233-246' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.match_pred' class="method"><span id='match_pred.v' class='invisible'><code>pub fn <a href='#method.match_pred' class='fnname'>match_pred</a>&lt;F&gt;(&amp;mut self, pred: F) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>&gt;&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>(<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#248-259' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.match_bytes' class="method"><span id='match_bytes.v' class='invisible'><code>pub fn <a href='#method.match_bytes' class='fnname'>match_bytes</a>(&amp;mut self, s: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#261-270' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.munch_whitespace' class="method"><span id='munch_whitespace.v' class='invisible'><code>pub fn <a href='#method.munch_whitespace' class='fnname'>munch_whitespace</a>&lt;'a&gt;(&amp;mut self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#272-278' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.munch_space' class="method"><span id='munch_space.v' class='invisible'><code>pub fn <a href='#method.munch_space' class='fnname'>munch_space</a>&lt;'a&gt;(&amp;mut self) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#280-288' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.get_token' class="method"><span id='get_token.v' class='invisible'><code>pub fn <a href='#method.get_token' class='fnname'>get_token</a>&lt;'a&gt;(&amp;mut self, s: &amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;&amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#291-298' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Get the next non-whitespace token.  This may return an empty string.</p>
+</div><h4 id='method.get_line' class="method"><span id='get_line.v' class='invisible'><code>pub fn <a href='#method.get_line' class='fnname'>get_line</a>&lt;'a&gt;(&amp;mut self, line: &amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;&amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#302-312' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Get the next line, including the line terminator.  Returns the empty
+string at EOF.</p>
+</div><h4 id='method.next_line' class="method"><span id='next_line.v' class='invisible'><code>pub fn <a href='#method.next_line' class='fnname'>next_line</a>&lt;'a&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;line: &amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;index: &amp;mut <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><br>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/std/io/error/type.Result.html" title="type std::io::error::Result">Result</a>&lt;&amp;'a mut <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#314-321' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl&lt;R:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../../lutario/io/parser/struct.Parser.html" title="struct lutario::io::parser::Parser">Parser</a>&lt;R&gt;</code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#156' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#156' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Drop' class='impl'><span class='in-band'><code>impl&lt;R&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html" title="trait core::ops::drop::Drop">Drop</a> for <a class="struct" href="../../../lutario/io/parser/struct.Parser.html" title="struct lutario::io::parser::Parser">Parser</a>&lt;R&gt;</code><a href='#impl-Drop' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#165-171' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.drop' class="method"><span id='drop.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop' class='fnname'>drop</a>(&amp;mut self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../../src/lutario/io/parser.rs.html#166-170' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Executes the destructor for this type. <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../../main.js"></script>
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

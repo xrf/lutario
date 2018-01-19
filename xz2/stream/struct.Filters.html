@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Filters` struct in crate `xz2`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Filters">
+
+    <title>xz2::stream::Filters - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Filters</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.lzma1">lzma1</a><a href="#method.lzma2">lzma2</a><a href="#method.x86">x86</a><a href="#method.powerpc">powerpc</a><a href="#method.ia64">ia64</a><a href="#method.arm">arm</a><a href="#method.arm_thumb">arm_thumb</a><a href="#method.sparc">sparc</a></div></div><p class='location'><a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a></p><script>window.sidebarCurrent = {name: 'Filters', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>xz2</a>::<wbr><a href='index.html'>stream</a>::<wbr><a class="struct" href=''>Filters</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/xz2/stream.rs.html#38-41' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Filters { /* fields omitted */ }</pre><div class='docblock'><p>A custom chain of filters to configure an encoding stream.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#589-689' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#591-599' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a new filter chain with no filters.</p>
+</div><h4 id='method.lzma1' class="method"><span id='lzma1.v' class='invisible'><code>pub fn <a href='#method.lzma1' class='fnname'>lzma1</a>(&amp;mut self, opts: &amp;<a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#609-616' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add an LZMA1 filter.</p>
+
+<p>LZMA1 is the very same thing as what was called just LZMA in LZMA Utils,
+7-Zip, and LZMA SDK. It&#39;s called LZMA1 here to prevent developers from
+accidentally using LZMA when they actually want LZMA2.</p>
+
+<p>LZMA1 shouldn&#39;t be used for new applications unless you <em>really</em> know
+what you are doing.  LZMA2 is almost always a better choice.</p>
+</div><h4 id='method.lzma2' class="method"><span id='lzma2.v' class='invisible'><code>pub fn <a href='#method.lzma2' class='fnname'>lzma2</a>(&amp;mut self, opts: &amp;<a class="struct" href="../../xz2/stream/struct.LzmaOptions.html" title="struct xz2::stream::LzmaOptions">LzmaOptions</a>) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#625-632' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add an LZMA2 filter.</p>
+
+<p>Usually you want this instead of LZMA1. Compared to LZMA1, LZMA2 adds
+support for <code>SyncFlush</code>, uncompressed chunks (smaller expansion when
+trying to compress uncompressible data), possibility to change
+<code>literal_context_bits</code>/<code>literal_position_bits</code>/<code>position_bits</code> in the
+middle of encoding, and some other internal improvements.</p>
+</div><h4 id='method.x86' class="method"><span id='x86.v' class='invisible'><code>pub fn <a href='#method.x86' class='fnname'>x86</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#637-642' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for x86 binaries.</p>
+</div><h4 id='method.powerpc' class="method"><span id='powerpc.v' class='invisible'><code>pub fn <a href='#method.powerpc' class='fnname'>powerpc</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#645-650' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for PowerPC binaries.</p>
+</div><h4 id='method.ia64' class="method"><span id='ia64.v' class='invisible'><code>pub fn <a href='#method.ia64' class='fnname'>ia64</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#653-658' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for IA-64 (itanium) binaries.</p>
+</div><h4 id='method.arm' class="method"><span id='arm.v' class='invisible'><code>pub fn <a href='#method.arm' class='fnname'>arm</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#661-666' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for ARM binaries.</p>
+</div><h4 id='method.arm_thumb' class="method"><span id='arm_thumb.v' class='invisible'><code>pub fn <a href='#method.arm_thumb' class='fnname'>arm_thumb</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#669-674' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for ARM-Thumb binaries.</p>
+</div><h4 id='method.sparc' class="method"><span id='sparc.v' class='invisible'><code>pub fn <a href='#method.sparc' class='fnname'>sparc</a>(&amp;mut self) -&gt; &amp;mut <a class="struct" href="../../xz2/stream/struct.Filters.html" title="struct xz2::stream::Filters">Filters</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/xz2/stream.rs.html#677-682' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Add a filter for SPARC binaries.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "xz2";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

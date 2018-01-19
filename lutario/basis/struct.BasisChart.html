@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `BasisChart` struct in crate `lutario`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, BasisChart">
+
+    <title>lutario::basis::BasisChart - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct BasisChart</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.chan_chart">chan_chart</a><a href="#structfield.part_chart">part_chart</a><a href="#structfield.aux_encoder">aux_encoder</a><a href="#structfield.aux_decoder">aux_decoder</a><a href="#structfield.orb_from_ix">orb_from_ix</a><a href="#structfield.orb_to_ix">orb_to_ix</a><a href="#structfield.layout">layout</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.new_with">new_with</a><a href="#method.layout">layout</a><a href="#method.decode_chan">decode_chan</a><a href="#method.decode_part">decode_part</a><a href="#method.decode_aux">decode_aux</a><a href="#method.encode_chan">encode_chan</a><a href="#method.encode_part">encode_part</a><a href="#method.encode_aux">encode_aux</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Clone">Clone</a><a href="#impl-Default">Default</a><a href="#impl-Debug">Debug</a><a href="#impl-Display">Display</a></div></div><p class='location'><a href='../index.html'>lutario</a>::<wbr><a href='index.html'>basis</a></p><script>window.sidebarCurrent = {name: 'BasisChart', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lutario</a>::<wbr><a href='index.html'>basis</a>::<wbr><a class="struct" href=''>BasisChart</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lutario/basis.rs.html#326-338' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct BasisChart&lt;L, X, U&gt; {
+    pub chan_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;L, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;,
+    pub part_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;X, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;,
+    pub aux_encoder: <a class="type" href="../../fnv/type.FnvHashMap.html" title="type fnv::FnvHashMap">FnvHashMap</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, U<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;,
+    pub aux_decoder: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a>U<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;,
+    pub orb_from_ix: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;,
+    pub orb_to_ix: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="struct" href="../../lutario/basis/struct.OrbIx.html" title="struct lutario::basis::OrbIx">OrbIx</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;,
+    pub layout: <a class="struct" href="../../lutario/basis/struct.BasisLayout.html" title="struct lutario::basis::BasisLayout">BasisLayout</a>,
+}</pre><div class='docblock'><p>A basis chart contains information needed to interpret an axis of a
+block-diagonal matrix.  The type is parametrized by:</p>
+
+<ul>
+<li><code>L</code> (<code>λ</code>): channel type,</li>
+<li><code>X</code> (<code>χ</code>): part type, and</li>
+<li><code>U</code> (<code>μ</code>): auxiliary type.</li>
+</ul>
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.chan_chart" class="structfield small-section-header">
+                           <a href="#structfield.chan_chart" class="anchor field"></a>
+                           <span id="chan_chart.v" class='invisible'>
+                           <code>chan_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;L, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code>
+                           </span></span><span id="structfield.part_chart" class="structfield small-section-header">
+                           <a href="#structfield.part_chart" class="anchor field"></a>
+                           <span id="part_chart.v" class='invisible'>
+                           <code>part_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;X, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code>
+                           </span></span><span id="structfield.aux_encoder" class="structfield small-section-header">
+                           <a href="#structfield.aux_encoder" class="anchor field"></a>
+                           <span id="aux_encoder.v" class='invisible'>
+                           <code>aux_encoder: <a class="type" href="../../fnv/type.FnvHashMap.html" title="type fnv::FnvHashMap">FnvHashMap</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, U<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code>
+                           </span></span><div class='docblock'><p><code>(l, μ) → u</code></p>
+</div><span id="structfield.aux_decoder" class="structfield small-section-header">
+                           <a href="#structfield.aux_decoder" class="anchor field"></a>
+                           <span id="aux_decoder.v" class='invisible'>
+                           <code>aux_decoder: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a>U<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;</code>
+                           </span></span><div class='docblock'><p><code>(p ≡ chan_offset(l) + u) → μ</code></p>
+</div><span id="structfield.orb_from_ix" class="structfield small-section-header">
+                           <a href="#structfield.orb_from_ix" class="anchor field"></a>
+                           <span id="orb_from_ix.v" class='invisible'>
+                           <code>orb_from_ix: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="struct" href="../../lutario/basis/struct.Orb.html" title="struct lutario::basis::Orb">Orb</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;</code>
+                           </span></span><div class='docblock'><p><code>p → i</code></p>
+</div><span id="structfield.orb_to_ix" class="structfield small-section-header">
+                           <a href="#structfield.orb_to_ix" class="anchor field"></a>
+                           <span id="orb_to_ix.v" class='invisible'>
+                           <code>orb_to_ix: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="struct" href="../../lutario/basis/struct.OrbIx.html" title="struct lutario::basis::OrbIx">OrbIx</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;</code>
+                           </span></span><div class='docblock'><p><code>i → p</code></p>
+</div><span id="structfield.layout" class="structfield small-section-header">
+                           <a href="#structfield.layout" class="anchor field"></a>
+                           <span id="layout.v" class='invisible'>
+                           <code>layout: <a class="struct" href="../../lutario/basis/struct.BasisLayout.html" title="struct lutario::basis::BasisLayout">BasisLayout</a></code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl&lt;L, X, U&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;L: <a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;X: <a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,&nbsp;</span></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#398-481' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>&lt;I&gt;(states: I) -&gt; Self <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;I: <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a>&lt;Item = <a class="struct" href="../../lutario/basis/struct.PartState.html" title="struct lutario::basis::PartState">PartState</a>&lt;X, <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>&lt;L, U&gt;&gt;&gt;,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#403-407' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.new_with' class="method"><span id='new_with.v' class='invisible'><code>pub fn <a href='#method.new_with' class='fnname'>new_with</a>&lt;I&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;states: I, <br>&nbsp;&nbsp;&nbsp;&nbsp;chan_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;L, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;part_chart: <a class="struct" href="../../lutario/basis/struct.HashChart.html" title="struct lutario::basis::HashChart">HashChart</a>&lt;X, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;<br>) -&gt; Self <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;I: <a class="trait" href="https://doc.rust-lang.org/nightly/core/iter/iterator/trait.Iterator.html" title="trait core::iter::iterator::Iterator">Iterator</a>&lt;Item = <a class="struct" href="../../lutario/basis/struct.PartState.html" title="struct lutario::basis::PartState">PartState</a>&lt;X, <a class="struct" href="../../lutario/basis/struct.ChanState.html" title="struct lutario::basis::ChanState">ChanState</a>&lt;L, U&gt;&gt;&gt;,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#411-480' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Create a <code>BasisChart</code> with the given states, using the provided charts
+as a starting point.  The charts will be augmented if necessary.</p>
+</div></div><h3 id='impl-1' class='impl'><span class='in-band'><code>impl&lt;L, X, U&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-1' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#483-499' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.layout' class="method"><span id='layout.v-1' class='invisible'><code>pub fn <a href='#method.layout' class='fnname'>layout</a>(&amp;self) -&gt; &amp;<a class="struct" href="../../lutario/basis/struct.BasisLayout.html" title="struct lutario::basis::BasisLayout">BasisLayout</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#484-486' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.decode_chan' class="method"><span id='decode_chan.v' class='invisible'><code>pub fn <a href='#method.decode_chan' class='fnname'>decode_chan</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>L&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#488-490' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.decode_part' class="method"><span id='decode_part.v' class='invisible'><code>pub fn <a href='#method.decode_part' class='fnname'>decode_part</a>(&amp;self, x: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>X&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#492-494' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.decode_aux' class="method"><span id='decode_aux.v' class='invisible'><code>pub fn <a href='#method.decode_aux' class='fnname'>decode_aux</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, u: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>U&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#496-498' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-2' class='impl'><span class='in-band'><code>impl&lt;L:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a>, X, U&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-2' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#501-505' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.encode_chan' class="method"><span id='encode_chan.v' class='invisible'><code>pub fn <a href='#method.encode_chan' class='fnname'>encode_chan</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>L) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#502-504' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-3' class='impl'><span class='in-band'><code>impl&lt;L, X:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a>, U&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-3' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#507-511' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.encode_part' class="method"><span id='encode_part.v' class='invisible'><code>pub fn <a href='#method.encode_part' class='fnname'>encode_part</a>(&amp;self, x: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>X) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#508-510' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-4' class='impl'><span class='in-band'><code>impl&lt;L, X, U:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a>&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-4' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#513-519' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.encode_aux' class="method"><span id='encode_aux.v' class='invisible'><code>pub fn <a href='#method.encode_aux' class='fnname'>encode_aux</a>(&amp;self, l: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, u: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>U) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#514-518' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl&lt;L:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>, X:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>, U:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#325' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#325' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Default' class='impl'><span class='in-band'><code>impl&lt;L, X, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt;</code><a href='#impl-Default' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#340-352' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.default' class="method"><span id='default.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#341-351' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the &quot;default value&quot; for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
+</div></div><h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl&lt;L, X, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;L: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;X: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>,&nbsp;</span></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#354-370' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#359-369' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Display' class='impl'><span class='in-band'><code>impl&lt;L, X, U&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a> for <a class="struct" href="../../lutario/basis/struct.BasisChart.html" title="struct lutario::basis::BasisChart">BasisChart</a>&lt;L, X, U&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;L: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;X: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;U: <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a>,&nbsp;</span></code><a href='#impl-Display' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#372-396' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt-1' class="method"><span id='fmt.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lutario/basis.rs.html#377-395' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lutario";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error",""]],"mod":[["ffi",""]],"struct":[["Conf","Can be constructed using `Conf::default()` or directly."],["Solver","Can be constructed using `conf.make_solver()`."]]});

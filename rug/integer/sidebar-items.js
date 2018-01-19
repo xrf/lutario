@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["IsPrime","Whether a number is prime."]],"struct":[["ParseIntegerError","An error which can be returned when parsing an `Integer`."],["SmallInteger","A small integer that does not require any memory allocation."],["ValidInteger","A validated string that can always be converted to an `Integer`."]]});
