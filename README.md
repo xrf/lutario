@@ -1,4 +1,16 @@
-# `lutario` [![Build status](https://travis-ci.org/xrf/lutario.svg)](https://travis-ci.org/xrf/lutario)
+![icon](tools/icon.svg)
+
+# `lutario`
+
+[![Build status](https://travis-ci.org/xrf/lutario.svg)](https://travis-ci.org/xrf/lutario)
+
+**Quick links**: [Documentation for `master` branch](https://xrf.github.io/lutario)
+
+`lutario` is an implementation of the [in-medium similarity renormalization group (IM-SRG) method](https://arxiv.org/abs/1512.06956) and quasidegenerate perturbation theory (QDPT) for calculation of addition and removal energies of various quantums systems, including circular quantum dots, atomic nuclei, infinite nuclear matter, and homogeneous electron gas.
+
+## Building
+
+You can build this using [Cargo](https://github.com/rust-lang/cargo).  Simply download a copy of the source code, run `cargo build` and then go get a drink because it will take a couple minutes, especially if you enable optimizations via `--release`.  [Incremental compilation](https://internals.rust-lang.org/t/incremental-compilation-beta/4721) may help but it could also make the code less optimal.
 
 ## External dependencies
 
