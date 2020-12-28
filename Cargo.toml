@@ -1,6 +1,6 @@
 [package]
 name = "lutario"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Fei Yuan <yuan@nscl.msu.edu>"]
 edition = "2018"
 
