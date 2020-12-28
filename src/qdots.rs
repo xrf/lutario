@@ -224,7 +224,7 @@ pub fn make_v_op(
     h2
 }
 
-pub fn read_clh2_bin(reader: &mut io::Read) -> io::Result<FnvHashMap<Nl2Pair, f64>> {
+pub fn read_clh2_bin(reader: &mut dyn io::Read) -> io::Result<FnvHashMap<Nl2Pair, f64>> {
     use byteorder::{LittleEndian, ReadBytesExt};
     let mut map = FnvHashMap::default();
     loop {

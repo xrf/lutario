@@ -110,13 +110,11 @@ pub fn c112(
                     ) {
                         for ap in a.combine_with_10(p, jap) {
                             for iq in i.combine_with_10(q, jap) {
-                                c1.add(p, q, (
-                                    alpha
+                                c1.add(p, q, alpha
                                         * ap.jweight(2)
                                         / p.jweight(2)
                                         * a1.at(i, a)
-                                        * b2.at(ap, iq)
-                                ));
+                                        * b2.at(ap, iq));
                             }
                         }
                     }
@@ -149,13 +147,11 @@ pub fn c121(
                     ) {
                         for ip in i.combine_with_10(p, jip) {
                             for aq in a.combine_with_10(q, jip) {
-                                c1.add(p, q, (
-                                    alpha
+                                c1.add(p, q, alpha
                                         * ip.jweight(2)
                                         / p.jweight(2)
                                         * a2.at(ip, aq)
-                                        * b1.at(a, i)
-                                ));
+                                        * b1.at(a, i));
                             }
                         }
                     }
@@ -185,13 +181,11 @@ pub fn c1220(
                     for ap in a.combine_with_10(p, jij) {
                         for aq in a.combine_with_10(q, jij) {
                             for ij in ap.costates_20(&[occ::II]) {
-                                c1.add(p, q, (
-                                    -alpha / 2.0
+                                c1.add(p, q, -alpha / 2.0
                                         * ij.jweight(2)
                                         / p.jweight(2)
                                         * a2.at(ij, aq)
-                                        * b2.at(ap, ij)
-                                ));
+                                        * b2.at(ap, ij));
                             }
                         }
                     }
@@ -221,13 +215,11 @@ pub fn c1221(
                     for ip in i.combine_with_10(p, jip) {
                         for iq in i.combine_with_10(q, jip) {
                             for ab in ip.costates_20(&[occ::AA]) {
-                                c1.add(p, q, (
-                                    alpha / 2.0
+                                c1.add(p, q, alpha / 2.0
                                         * ip.jweight(2)
                                         / p.jweight(2)
                                         * a2.at(ip, ab)
-                                        * b2.at(ab, iq)
-                                ));
+                                        * b2.at(ab, iq));
                             }
                         }
                     }

@@ -10,7 +10,7 @@ pub use self::parser::Parser;
 
 /// Helper function for creating `io::Error` with
 /// `io::ErrorKind::InvalidData`.
-pub fn invalid_data<E: Into<Box<Error + Send + Sync>>>(error: E) -> io::Error {
+pub fn invalid_data<E: Into<Box<dyn Error + Send + Sync>>>(error: E) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, error)
 }
 
@@ -109,7 +109,7 @@ pub fn guess_compression(path: &Path) -> io::Result<(&Path, Option<Compression>)
 pub fn decode_compressed<'a, F: io::Read + 'a>(
     file: F,
     compression: Compression,
-) -> Box<io::Read + 'a>
+) -> Box<dyn io::Read + 'a>
 {
     match compression {
         Compression::None => Box::new(file),

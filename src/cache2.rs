@@ -18,7 +18,7 @@ pub trait Key: Hash + Eq + Send + Sync + 'static {
 #[derive(Clone)]
 struct Dropper {
     map: Weak<Mutex<CacheInner>>,
-    key: Weak<AnyHash + Send + Sync>,
+    key: Weak<dyn AnyHash + Send + Sync>,
 }
 
 impl Drop for Dropper {
@@ -106,11 +106,11 @@ struct CachedInner<V> {
 }
 
 struct CacheValue {
-    value: Box<Any + Send + Sync>,      // ~ Box<Weak<CachedInner<V>>>
+    value: Box<dyn Any + Send + Sync>,  // ~ Box<Weak<CachedInner<V>>>
     condvar: Arc<Condvar>,
 }
 
-type CacheInner = HashMap<Arc<AnyHash + Send + Sync>, CacheValue>;
+type CacheInner = HashMap<Arc<dyn AnyHash + Send + Sync>, CacheValue>;
 
 /// An associative array that weakly owns its elements and can store entries
 /// of arbitrary type.
@@ -138,13 +138,13 @@ impl Cache {
     /// Retrieve the value with the given key or, if it's not yet cached,
     /// compute the value.
     pub fn get<K: Key + Clone>(&self, key: &K) -> Cached<K::Value> {
-        let qkey = key as &(AnyHash + Send + Sync);
+        let qkey = key as &(dyn AnyHash + Send + Sync);
         let wkey = {
             let mut map = self.0.lock().unwrap();
             loop {
                 let condvar = match map.get(qkey) {
                     Some(&CacheValue { ref value, ref condvar }) => {
-                        let value: &(Any + Send) = &**value;
+                        let value: &(dyn Any + Send) = &**value;
                         let value = value.downcast_ref()
                             .expect("value has wrong type");
                         if let Some(value) = Weak::upgrade(value) {

@@ -50,7 +50,7 @@ impl<K: Ord, V> Ord for CacheEntry<K, V> {
 /// references to its entries remain valid as long as the cache is not
 /// destroyed.  Arbitrary types are allowed.
 #[derive(Debug)]
-pub struct Cache(RefCell<BTreeSet<Box<AnyOrd>>>);
+pub struct Cache(RefCell<BTreeSet<Box<dyn AnyOrd>>>);
 
 impl Default for Cache {
     fn default() -> Self {
@@ -74,9 +74,9 @@ impl Cache {
             // we don't use the entry API here
             // because we want to unlock the RefCell while
             // CacheKey::get is being executed
-            if let Some(v) = self.0.borrow_mut().get(&query as &AnyOrd) {
-                let v: &AnyOrd = &**v;
-                let r: &AnyOrd = mem::transmute(v);
+            if let Some(v) = self.0.borrow_mut().get(&query as &dyn AnyOrd) {
+                let v: &dyn AnyOrd = &**v;
+                let r: &dyn AnyOrd = mem::transmute(v);
                 let r: &CacheEntry<K, _> = r.downcast_ref_unchecked();
                 return r.value
                     .as_ref()

@@ -262,11 +262,9 @@ pub fn fock2(
         for r in p.costates_10(&occ::ALL1) {
             for s in q.costates_10(&occ::ALL1) {
                 for rs in r.combine_with_10(s, pq.j()) {
-                    f1.add(p, r, (
-                        pq.jweight(2) / p.jweight(2)
+                    f1.add(p, r, pq.jweight(2) / p.jweight(2)
                             * h2.at(pq, rs)
-                            * q1.at(q, s)
-                    ));
+                            * q1.at(q, s));
                 }
             }
         }
@@ -285,11 +283,9 @@ pub fn transform_h1(
         for q in p.costates_10(&occ::ALL1) {
             for r in p.costates_10(&occ::ALL1) {
                 for s in p.costates_10(&occ::ALL1) {
-                    r1.add(p, s, (
-                        h1.at(q, r)
+                    r1.add(p, s, h1.at(q, r)
                             * d1.at(q, p).conj()
-                            * d1.at(r, s)
-                    ));
+                            * d1.at(r, s));
                 }
             }
         }

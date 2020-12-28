@@ -676,7 +676,7 @@ impl<X, P> PartState<X, P> {
         }
     }
 
-    pub fn count_occ(xps: &mut Iterator<Item = PartState<Occ, P>>) -> i32 {
+    pub fn count_occ(xps: &mut dyn Iterator<Item = PartState<Occ, P>>) -> i32 {
         xps.map(|xp| i32::from(xp.x)).sum()
     }
 }

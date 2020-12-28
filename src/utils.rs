@@ -521,7 +521,7 @@ pub fn encode_number<T: Clone>(mut n: usize, chart: &HashChart<T>) -> Vec<T> {
 }
 
 pub fn decode_number<T: Hash + Eq>(
-    s: &mut Iterator<Item = T>,
+    s: &mut dyn Iterator<Item = T>,
     chart: &HashChart<T>,
 ) -> Result<usize, &'static str> {
     let mut n = 0;

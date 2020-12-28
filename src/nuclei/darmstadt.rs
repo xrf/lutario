@@ -99,7 +99,7 @@ impl<'a> Me2j<'a> {
 }
 
 pub fn load_me2j_j(
-    elems: &mut Iterator<Item = f64>,
+    elems: &mut dyn Iterator<Item = f64>,
     table: &[Npj],
     e12_max: i32,
     e_max: i32,
@@ -178,7 +178,7 @@ pub fn load_me2j_j(
 }
 
 pub fn load_me2j_jt(
-    elems: &mut Iterator<Item = f64>,
+    elems: &mut dyn Iterator<Item = f64>,
     table: &[Npj],
     e12_max: i32,
     e_max: i32,
@@ -373,7 +373,7 @@ impl<'a> Me2jLoader<'a> {
         use byteorder::LittleEndian;
         let file = File::open(self.path)?;
         let file = lio::decode_compressed(file, self.compression);
-        let mut elems: Box<Iterator<Item = _>> = if self.binary {
+        let mut elems: Box<dyn Iterator<Item = _>> = if self.binary {
             Box::new(lio::BinArrayParser::<f32, LittleEndian, _>::new(file)
                      .map(|x| {
                          // don't invert this or you'll change the numbers!

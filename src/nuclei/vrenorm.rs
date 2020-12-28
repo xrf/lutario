@@ -11,7 +11,7 @@ use super::super::io::{Parser, invalid_data};
 use super::super::parity::Parity;
 use super::{JNpjwKey, Npjw};
 
-pub fn load_sp_table(reader: &mut io::Read) -> io::Result<(f64, Vec<Npjw>)> {
+pub fn load_sp_table(reader: &mut dyn io::Read) -> io::Result<(f64, Vec<Npjw>)> {
     let mut p = Parser::new(reader);
     let mut line_num = 1;
 
@@ -81,7 +81,7 @@ pub fn load_sp_table(reader: &mut io::Read) -> io::Result<(f64, Vec<Npjw>)> {
 }
 
 pub fn load_vint_table(
-    reader: &mut io::Read,
+    reader: &mut dyn io::Read,
     sp_table: &[Npjw],
 ) -> io::Result<FnvHashMap<JNpjwKey, f64>>
 {
@@ -149,7 +149,7 @@ pub fn load_vint_table(
 }
 
 pub fn load_sp_table_bin(
-    reader: &mut io::Read,
+    reader: &mut dyn io::Read,
 ) -> io::Result<Vec<Npjw>>
 {
     let mut table = Vec::default();
@@ -173,7 +173,7 @@ pub fn load_sp_table_bin(
 }
 
 pub fn load_vint_table_bin(
-    reader: &mut io::Read,
+    reader: &mut dyn io::Read,
     sp_table: &[Npjw],
 ) -> io::Result<FnvHashMap<JNpjwKey, f64>>
 {

@@ -80,7 +80,7 @@ impl fmt::Display for Nlj {
 
 /// Parse from spectroscopic notation.
 impl str::FromStr for Nlj {
-    type Err = Box<Error + Send + Sync>;
+    type Err = Box<dyn Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let m = re!(r"(\d+)(\w+)(\d+)/2").captures(s).ok_or("invalid format")?;
         let n = m.get(1).unwrap().as_str().parse()?;
@@ -143,7 +143,7 @@ impl fmt::Display for Npj {
 
 /// Parse from spectroscopic notation.
 impl str::FromStr for Npj {
-    type Err = Box<Error + Send + Sync>;
+    type Err = Box<dyn Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Nlj::from_str(s).map(Npj::from)
     }
@@ -224,7 +224,7 @@ impl fmt::Display for Npjw {
 
 /// Parse from spectroscopic notation.
 impl str::FromStr for Npjw {
-    type Err = Box<Error + Send + Sync>;
+    type Err = Box<dyn Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let m = re!(r"(.+)([np])").captures(s).ok_or("expected p or n suffix")?;
         let npj: Npj = m.get(1).unwrap().as_str().parse()?;
@@ -700,7 +700,7 @@ pub struct SimpleNucleus<'a> {
 }
 
 impl<'a> SimpleNucleus<'a> {
-    pub fn to_nucleus(self) -> Result<Nucleus, Box<Error + Send + Sync>> {
+    pub fn to_nucleus(self) -> Result<Nucleus, Box<dyn Error + Send + Sync>> {
         let mut neutrons_occ = Ho3dModTrunc::from(Ho3dTrunc {
             e_max: self.e_fermi_n,
             .. Default::default()

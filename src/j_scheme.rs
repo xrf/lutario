@@ -265,7 +265,7 @@ impl BasisSchemeJ10 {
 
     pub fn jjjj_blocks<'a>(
         &'a self,
-    ) -> Box<Iterator<Item = (Half<i32>, Half<i32>, Half<i32>, Half<i32>)> + 'a> {
+    ) -> Box<dyn Iterator<Item = (Half<i32>, Half<i32>, Half<i32>, Half<i32>)> + 'a> {
         let j_set = self.j_set;
         Box::new(j_set.into_iter().map(Half).flat_map(move |jp| {
             j_set.into_iter().map(Half).flat_map(move |jq| {
@@ -1424,7 +1424,7 @@ pub fn set_zero_mop_j012<T: MulAssign + Zero + Clone>(m: &mut MopJ012<T>) {
 
 pub fn rand_mop_j012(
     scheme: &Arc<JScheme>,
-    mut rng: &mut rand::RngCore,
+    rng: &mut dyn rand::RngCore,
 ) -> MopJ012<f64> {
     use rand::Rng;
     use rand_distr::StandardNormal;
@@ -1447,7 +1447,7 @@ pub fn rand_mop_j012(
 /// file, where states are encoded as orbital indices.
 pub fn read_mop_j012_txt(
     scheme: &Arc<JScheme>,
-    reader: &mut io::BufRead,
+    reader: &mut dyn io::BufRead,
 ) -> io::Result<MopJ012<f64>>
 {
     use std::io::BufRead;
@@ -1692,8 +1692,8 @@ pub fn op200_to_op211(
                 let (lupq, lurs) = block_info.imap_200[(ijpq, iaaaa)];
                 if let Some(lupq) = lupq.into() {
                     if let Some(lurs) = lurs.into() {
-                        let mut tpq = scheme.raw_state_20(lupq, sp, sq);
-                        let mut trs = scheme.raw_state_20(lurs, sr, ss);
+                        let tpq = scheme.raw_state_20(lupq, sp, sq);
+                        let trs = scheme.raw_state_20(lurs, sr, ss);
                         ma[(ijpq, iaaaa)] = a2.at(tpq, trs);
                     }
                 }
@@ -1804,8 +1804,8 @@ pub fn op211_to_op200(
                 let (lupq, lurs) = block_info.imap_200[(ijpq, iaaaa)];
                 if let Some(lupq) = lupq.into() {
                     if let Some(lurs) = lurs.into() {
-                        let mut tpq = scheme.raw_state_20(lupq, sp, sq);
-                        let mut trs = scheme.raw_state_20(lurs, sr, ss);
+                        let tpq = scheme.raw_state_20(lupq, sp, sq);
+                        let trs = scheme.raw_state_20(lurs, sr, ss);
                         b2.add(tpq, trs, mb[(ijpq, iaaaa)]);
                     }
                 }

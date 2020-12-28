@@ -115,7 +115,7 @@ pub trait VectorDriver {
         Self::Item: for<'a> iter::Sum<&'a Self::Item>
                   + Serialize + for<'a> Deserialize<'a> + Clone
     {
-        let zero = || -> Self::Item { [].into_iter().sum() };
+        let zero = || -> Self::Item { [].iter().sum() };
         let mut sum = zero();
         self.operate_on(
             &mut sum,
