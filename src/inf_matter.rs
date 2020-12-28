@@ -122,7 +122,7 @@ impl Coulomb {
 mod tests {
     use super::super::utils::Toler;
     use super::*;
-    use vecn::Vec3I8;
+    use crate::vecn::Vec3I8;
 
     #[test]
     fn test_kinetic() {

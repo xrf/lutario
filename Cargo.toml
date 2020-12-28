@@ -2,6 +2,7 @@
 name = "lutario"
 version = "0.1.0"
 authors = ["Fei Yuan <yuan@nscl.msu.edu>"]
+edition = "2018"
 
 [dependencies]
 any_key = "0.1.1"
