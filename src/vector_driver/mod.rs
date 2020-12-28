@@ -91,8 +91,8 @@ pub trait VectorDriver {
               &mut [&mut [Self::Item]]) + Sync,
         S: Serialize + for<'a> Deserialize<'a>,
     {
-        use bincode::{Infinite, deserialize, serialize, serialize_into};
-        let mut accum_buf = serialize(accum, Infinite).unwrap();
+        use bincode::{deserialize, serialize, serialize_into};
+        let mut accum_buf = serialize(accum).unwrap();
         self.operate(
             &mut accum_buf,
             offset,
@@ -102,7 +102,7 @@ pub trait VectorDriver {
                 let mut accum = deserialize(accum_buf).unwrap();
                 let val = deserialize(val_buf).unwrap();
                 f(&mut accum, val, offset, slices, mut_slices);
-                serialize_into(&mut accum_buf, &accum, Infinite).unwrap();
+                serialize_into(&mut accum_buf, &accum).unwrap();
             },
         );
         *accum = deserialize(&accum_buf).unwrap();

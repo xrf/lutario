@@ -728,9 +728,7 @@ impl<T: Clone> Clone for Mat<T> {
 
 impl<T> Drop for Mat<T> {
     fn drop(&mut self) {
-        unsafe {
-            mem::replace(self, mem::uninitialized()).into_boxed_slice();
-        }
+        mem::replace(self, Default::default()).into_boxed_slice();
     }
 }
 

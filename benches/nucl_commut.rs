@@ -3,6 +3,7 @@
 extern crate lutario;
 extern crate netlib_src;
 extern crate rand;
+extern crate rand_xorshift;
 extern crate test;
 
 use std::env;
@@ -12,11 +13,11 @@ use lutario::j_scheme::{JAtlas, JScheme, new_mop_j012, rand_mop_j012};
 use lutario::op::VectorMut;
 use rand::SeedableRng;
 
-const RNG_SEED: [u32; 4] = [
-    0x193a6754,
-    0xa8a7d469,
-    0x97830e05,
-    0x113ba7bb,
+const RNG_SEED: [u8; 16] = [
+    0x54, 0x67, 0x3a, 0x19,
+    0x69, 0xd4, 0xa7, 0xa8,
+    0x05, 0x0e, 0x83, 0x97,
+    0xbb, 0xa7, 0x3b, 0x11,
 ];
 
 fn scheme_o16() -> Arc<JScheme> {
@@ -32,7 +33,7 @@ fn scheme_o16() -> Arc<JScheme> {
 
 #[bench]
 fn bench_hf_transform_h2(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let a = rand_mop_j012(scheme, &mut rng);
     let b = rand_mop_j012(scheme, &mut rng);
@@ -46,7 +47,7 @@ fn bench_hf_transform_h2(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_011_022(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);
@@ -62,7 +63,7 @@ fn bench_commut_o16_011_022(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_111_112_121(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);
@@ -79,7 +80,7 @@ fn bench_commut_o16_111_112_121(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_122(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);
@@ -95,7 +96,7 @@ fn bench_commut_o16_122(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_212_221(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);
@@ -111,7 +112,7 @@ fn bench_commut_o16_212_221(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_2220_2222(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);
@@ -127,7 +128,7 @@ fn bench_commut_o16_2220_2222(bencher: &mut test::Bencher) {
 
 #[bench]
 fn bench_commut_o16_2221(bencher: &mut test::Bencher) {
-    let mut rng = rand::XorShiftRng::from_seed(RNG_SEED);
+    let mut rng = rand_xorshift::XorShiftRng::from_seed(RNG_SEED);
     let scheme = &scheme_o16();
     let alpha = test::black_box(-1.0);
     let a = rand_mop_j012(scheme, &mut rng);

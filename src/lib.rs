@@ -27,6 +27,7 @@ extern crate netlib_src;
 #[macro_use]
 extern crate quick_error;
 extern crate rand;
+extern crate rand_distr;
 extern crate regex;
 extern crate serde;
 #[macro_use]

@@ -1424,20 +1424,20 @@ pub fn set_zero_mop_j012<T: MulAssign + Zero + Clone>(m: &mut MopJ012<T>) {
 
 pub fn rand_mop_j012(
     scheme: &Arc<JScheme>,
-    mut rng: &mut rand::Rng,
+    mut rng: &mut rand::RngCore,
 ) -> MopJ012<f64> {
-    use rand::Rand;
-    use rand::distributions::normal::StandardNormal;
+    use rand::Rng;
+    use rand_distr::StandardNormal;
     let mut a = new_mop_j012(scheme);
-    a.0 = StandardNormal::rand(&mut rng).0;
+    a.0 = rng.sample(StandardNormal);
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
-            a.1.set(p, q, StandardNormal::rand(&mut rng).0);
+            a.1.set(p, q, rng.sample(StandardNormal));
         }
     }
     for pq in scheme.states_20(&occ::ALL2) {
         for rs in pq.costates_20(&occ::ALL2) {
-            a.2.set(pq, rs, StandardNormal::rand(&mut rng).0);
+            a.2.set(pq, rs, rng.sample(StandardNormal));
         }
     }
     a

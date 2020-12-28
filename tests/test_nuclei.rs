@@ -3,6 +3,7 @@ extern crate fnv;
 extern crate lutario;
 extern crate netlib_src;
 extern crate rand;
+extern crate rand_xorshift;
 
 use fnv::FnvHashMap;
 use lutario::{hf, imsrg, nuclei, qdpt};
@@ -151,11 +152,11 @@ fn test_nuclei() {
 #[test]
 fn test_commut_nuclei() {
     use rand::SeedableRng;
-    let mut rng = rand::XorShiftRng::from_seed([
-        0x193a6754,
-        0xa8a7d469,
-        0x97830e05,
-        0x113ba7bb,
+    let mut rng = rand_xorshift::XorShiftRng::from_seed([
+        0x54, 0x67, 0x3a, 0x19,
+        0x69, 0xd4, 0xa7, 0xa8,
+        0x05, 0x0e, 0x83, 0x97,
+        0xbb, 0xa7, 0x3b, 0x11,
     ]);
     let toler = Toler { relerr: 1e-12, abserr: 1e-12 };
     let nucleus = nuclei::SimpleNucleus {

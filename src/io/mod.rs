@@ -111,8 +111,6 @@ pub fn decode_compressed<'a, F: io::Read + 'a>(
     compression: Compression,
 ) -> Box<io::Read + 'a>
 {
-    use flate2;
-    use xz2;
     match compression {
         Compression::None => Box::new(file),
         Compression::Gz => Box::new(flate2::read::GzDecoder::new(file)),

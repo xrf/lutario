@@ -17,7 +17,7 @@ pub trait CacheKey: Ord + 'static {
 #[derive(Clone, Copy, Debug)]
 pub struct CacheEntry<K, V> {
     pub key: K,
-    pub value: V,
+    pub value: Option<V>,
 }
 
 impl<K: PartialEq, V> PartialEq for CacheEntry<K, V> {
@@ -62,7 +62,6 @@ impl Cache {
     pub fn get<K: CacheKey>(&self, key: K) -> &K::Value {
         // unsafety:
         //
-        //   - uninitialized query.value: must forget afterward
         //   - extending the lifetimes: okay because we never delete from cache
         //   - downcast_ref_unchecked: the cache is implicitly keyed by TypeId
         //     and we trust AnyOrd to be correct (don't need to trust Ord for K)
@@ -70,23 +69,26 @@ impl Cache {
         unsafe {
             let query: CacheEntry<_, K::Value> = CacheEntry {
                 key,
-                value: mem::uninitialized(),
+                value: None,
             };
             // we don't use the entry API here
             // because we want to unlock the RefCell while
             // CacheKey::get is being executed
             if let Some(v) = self.0.borrow_mut().get(&query as &AnyOrd) {
-                mem::forget(query.value);
                 let v: &AnyOrd = &**v;
                 let r: &AnyOrd = mem::transmute(v);
                 let r: &CacheEntry<K, _> = r.downcast_ref_unchecked();
-                return &r.value;
+                return r.value
+                    .as_ref()
+                    .expect("stored CacheEntrys should never have None");
             }
-            mem::forget(query.value);
             let key = query.key;
-            let value = key.get();
+            let value = Some(key.get());
             let entry = Box::new(CacheEntry { key, value });
-            let r = mem::transmute(&entry.value);
+            let r = mem::transmute(
+                entry.value
+                    .as_ref()
+                    .expect("stored CacheEntrys should never have None"));
             self.0.borrow_mut().replace(entry);
             r
         }

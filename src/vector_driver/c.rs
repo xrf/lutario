@@ -43,7 +43,7 @@ pub mod ffi {
     }
 }
 
-use std::{mem, ptr, slice};
+use std::{ptr, slice};
 use std::os::raw;
 use conv::ValueInto;
 use libc;
@@ -90,7 +90,7 @@ impl<D: VectorDriver<Item=f64> + Sized> CVectorDriver<D> {
                              -> *mut ffi::Vector {
         abort_on_unwind(|| {
             let d = &*(d as *const D);
-            d.create_vector(mem::uninitialized()).map(|p| {
+            d.create_vector(0.0).map(|p| {
                 Box::into_raw(Box::new(p)) as *mut _
             }).unwrap_or(ptr::null_mut())
         })

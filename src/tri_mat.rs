@@ -545,9 +545,7 @@ impl<T: Clone> Clone for TriMat<T> {
 
 impl<T> Drop for TriMat<T> {
     fn drop(&mut self) {
-        unsafe {
-            mem::replace(self, mem::uninitialized()).into_boxed_slice();
-        }
+        mem::replace(self, Default::default()).into_boxed_slice();
     }
 }
 

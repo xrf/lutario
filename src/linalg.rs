@@ -3,7 +3,6 @@
 //! Most of things here are just thin wrappers over BLAS and LAPACK
 //! functionality along with some traits to enable polymorphism.
 
-use std::mem;
 use std::cmp::max;
 use std::ops::{Add, Mul, Neg, Range};
 use cblas;
@@ -91,7 +90,7 @@ impl<T: Clone + Num + Neg<Output = T>> Conj for Complex<T> {
 }
 
 pub trait NormSqr {
-    type Real: PartialOrd;
+    type Real: PartialOrd + Default;
 
     fn norm_sqr(&self) -> Self::Real;
 }
@@ -112,7 +111,7 @@ impl NormSqr for f64 {
     }
 }
 
-impl<T: Num + PartialOrd + Clone> NormSqr for Complex<T> {
+impl<T: Num + PartialOrd + Default + Clone> NormSqr for Complex<T> {
     type Real = T;
 
     fn norm_sqr(&self) -> Self::Real {
@@ -548,10 +547,10 @@ pub fn heevr<T: Heevr>(
         assert_eq!(n, a.num_cols());
         let lda = cast(a.stride());
         let ldz = cast(z.stride());
-        let mut vl = mem::uninitialized();
-        let mut vu = mem::uninitialized();
-        let mut il = mem::uninitialized();
-        let mut iu = mem::uninitialized();
+        let mut vl = Default::default();
+        let mut vu = Default::default();
+        let mut il = 0;
+        let mut iu = 0;
         let (range, all, max_m) = range.to_raw(
             cast(n),
             &mut vl,
@@ -575,7 +574,7 @@ pub fn heevr<T: Heevr>(
                 }
             }
         }
-        let mut m = mem::uninitialized();
+        let mut m = 0;
         let e = T::heevr(
             if left {
                 lapacke::Layout::ColumnMajor
@@ -624,10 +623,10 @@ pub fn heevr_n<T: Heevr>(
         let n = a.num_rows();
         assert_eq!(n, a.num_cols());
         let lda = cast(a.stride());
-        let mut vl = mem::uninitialized();
-        let mut vu = mem::uninitialized();
-        let mut il = mem::uninitialized();
-        let mut iu = mem::uninitialized();
+        let mut vl = Default::default();
+        let mut vu = Default::default();
+        let mut il = 0;
+        let mut iu = 0;
         let (range, _, _) = range.to_raw(
             cast(n),
             &mut vl,
@@ -636,7 +635,7 @@ pub fn heevr_n<T: Heevr>(
             &mut iu,
         );
         assert!(w.len() >= max(1, n));
-        let mut m = mem::uninitialized();
+        let mut m = 0;
         let e = T::heevr(
             if left {
                 lapacke::Layout::ColumnMajor
