@@ -1,8 +1,8 @@
 //! Packed block-diagonal lower-triangular matrices.
 
-use std::{mem, ptr, slice};
+use super::tri_mat::{TriMatDim, TriMatMut, TriMatRef};
 use std::marker::PhantomData;
-use super::tri_mat::{TriMatRef, TriMatMut, TriMatDim};
+use std::{mem, ptr, slice};
 
 /// ugly: there's a lot of hidden invariants here that we aren't
 /// being explicit about
@@ -48,15 +48,11 @@ impl<'a> BlockTriMatShape<'a> {
     }
 
     pub fn block_offsets(self) -> &'a [usize] {
-        unsafe {
-            slice::from_raw_parts(self.block_offsets, self.num_blocks)
-        }
+        unsafe { slice::from_raw_parts(self.block_offsets, self.num_blocks) }
     }
 
     pub fn block_dims(self) -> &'a [TriMatDim] {
-        unsafe {
-            slice::from_raw_parts(self.block_dims as _, self.num_blocks)
-        }
+        unsafe { slice::from_raw_parts(self.block_dims as _, self.num_blocks) }
     }
 
     pub unsafe fn offset_unchecked(self, l: usize) -> usize {
@@ -77,12 +73,20 @@ pub struct BlockTriMatRef<'a, T: 'a> {
 
 unsafe impl<'a, T: Sync> Send for BlockTriMatRef<'a, T> {}
 unsafe impl<'a, T: Sync> Sync for BlockTriMatRef<'a, T> {}
-impl<'a, T> Clone for BlockTriMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Clone for BlockTriMatRef<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 impl<'a, T> Copy for BlockTriMatRef<'a, T> {}
 
 impl<'a, T> BlockTriMatRef<'a, T> {
     pub unsafe fn from_raw(ptr: *const T, shape: BlockTriMatShape<'a>) -> Self {
-        Self { ptr, shape, phantom: PhantomData }
+        Self {
+            ptr,
+            shape,
+            phantom: PhantomData,
+        }
     }
 
     pub fn as_ptr(self) -> *const T {
@@ -121,7 +125,11 @@ unsafe impl<'a, T: Sync> Sync for BlockTriMatMut<'a, T> {}
 
 impl<'a, T> BlockTriMatMut<'a, T> {
     pub unsafe fn from_raw(ptr: *mut T, shape: BlockTriMatShape<'a>) -> Self {
-        Self { ptr, shape, phantom: PhantomData }
+        Self {
+            ptr,
+            shape,
+            phantom: PhantomData,
+        }
     }
 
     pub fn as_ptr(&self) -> *mut T {

@@ -2,12 +2,12 @@ extern crate clap;
 extern crate lutario;
 extern crate netlib_src;
 
-use std::mem;
-use std::collections::HashMap;
-use lutario::{hf, imsrg, nuclei, qdpt, sg_ode};
-use lutario::j_scheme::{JAtlas, new_mop_j012, op200_to_op211};
+use lutario::j_scheme::{new_mop_j012, op200_to_op211, JAtlas};
 use lutario::op::{Op, VectorMut};
 use lutario::utils::{RefAdd, Toler};
+use lutario::{hf, imsrg, nuclei, qdpt, sg_ode};
+use std::collections::HashMap;
+use std::mem;
 
 fn main() {
     let matches = clap::App::new(env!("CARGO_PKG_NAME"))
@@ -36,20 +36,26 @@ fn main() {
         e_fermi_n,
         e_fermi_p,
         orbs,
-    }.to_nucleus().unwrap();
+    }
+    .to_nucleus()
+    .unwrap();
 
     let (omega, me2) = if let Some(sp) = matches.value_of_os("input-sp") {
         let (omega, me2) = nuclei::vrenorm::VintLoader {
             path: input.as_ref(),
             sp: sp.as_ref(),
-        }.load().unwrap();
+        }
+        .load()
+        .unwrap();
         println!("input: {{path: {}, omega: {}}}", input, omega);
         (omega, me2)
     } else {
         let loader = nuclei::darmstadt::Me2jGuessLoader {
             path: input.as_ref(),
-            .. Default::default()
-        }.guess().unwrap();
+            ..Default::default()
+        }
+        .guess()
+        .unwrap();
         println!("input: {}", loader);
         loader.load(e_max).unwrap()
     };
@@ -67,15 +73,14 @@ fn main() {
             let loader = nuclei::darmstadt::Me2jGuessLoader {
                 path: input_tpp.as_ref(),
                 omega: Some(1.0),
-                .. Default::default()
-            }.guess().unwrap();
+                ..Default::default()
+            }
+            .guess()
+            .unwrap();
             println!("input_tpp: {}", loader);
             let (_, me_tpp) = loader.load(e_max).unwrap();
             let mut tpp = nuclei::make_v_op_j(&atlas, &me_tpp);
-            tpp.scale(&(2.0
-                        * nuclei::darmstadt::TPP_FACTOR
-                        * omega
-                        / mass_num as f64));
+            tpp.scale(&(2.0 * nuclei::darmstadt::TPP_FACTOR * omega / mass_num as f64));
             h2 = h2.ref_add(&tpp);
         } else {
             panic!("--a was provided but not --input-tpp?");
@@ -87,9 +92,13 @@ fn main() {
     let mut hh;
     {
         let mut hrun = hf::Conf {
-            toler: Toler { relerr: 1e-13, abserr: 1e-13 },
-            .. Default::default()
-        }.make_run(&h1, &h2);
+            toler: Toler {
+                relerr: 1e-13,
+                abserr: 1e-13,
+            },
+            ..Default::default()
+        }
+        .make_run(&h1, &h2);
         hrun.do_run().unwrap();
         println!("# transforming matrices into HF basis...");
         hh = new_mop_j012(scheme);
@@ -107,15 +116,19 @@ fn main() {
     let de_mp2 = qdpt::mp2(&hn.1, &hn.2);
     println!("mp2_correction: {}", de_mp2);
 
-    let imsrg_toler = Toler { relerr: 1e-7, abserr: 1e-7 };
+    let imsrg_toler = Toler {
+        relerr: 1e-7,
+        abserr: 1e-7,
+    };
     let mut irun = imsrg::Conf {
         toler: imsrg_toler,
         solver_conf: sg_ode::Conf {
             toler: imsrg_toler,
-            .. Default::default()
+            ..Default::default()
         },
-        .. Default::default()
-    }.make_run(&hn);
+        ..Default::default()
+    }
+    .make_run(&hn);
     mem::drop(hn);
     irun.do_run().unwrap();
     let hi = irun.hamil();

@@ -1,15 +1,15 @@
 //! VRenormalize matrix element format used in CENS MBPT.
 
-use std::io;
-use std::fs::File;
-use std::path::Path;
+use super::super::half::Half;
+use super::super::io::{invalid_data, Parser};
+use super::super::parity::Parity;
+use super::{JNpjwKey, Npjw};
 use byteorder::{LittleEndian, ReadBytesExt};
 use fnv::FnvHashMap;
 use regex::Regex;
-use super::super::half::Half;
-use super::super::io::{Parser, invalid_data};
-use super::super::parity::Parity;
-use super::{JNpjwKey, Npjw};
+use std::fs::File;
+use std::io;
+use std::path::Path;
 
 pub fn load_sp_table(reader: &mut dyn io::Read) -> io::Result<(f64, Vec<Npjw>)> {
     let mut p = Parser::new(reader);
@@ -36,7 +36,10 @@ pub fn load_sp_table(reader: &mut dyn io::Read) -> io::Result<(f64, Vec<Npjw>)> 
     let omega = re!(r"^\s*Oscillator length and energy:\s*\S+\s*(\S+)")
         .captures(&line)
         .ok_or(invalid_data("cannot parse oscillator energy line"))?
-        .get(1).unwrap().as_str().parse()
+        .get(1)
+        .unwrap()
+        .as_str()
+        .parse()
         .map_err(|_| invalid_data("cannot parse oscillator energy"))?;
 
     // locate the legend line
@@ -74,7 +77,7 @@ pub fn load_sp_table(reader: &mut dyn io::Read) -> io::Result<(f64, Vec<Npjw>)> 
         let w_nucl: i32 = captures[5].parse().map_err(invalid_data)?;
         let p = Parity::of(l);
         let j = Half(tj);
-        let w = Half(-w_nucl);      // convert nuclear → HEP convention
+        let w = Half(-w_nucl); // convert nuclear → HEP convention
         table.push(Npjw { n, p, j, w });
     }
     Ok((omega, table))
@@ -83,8 +86,7 @@ pub fn load_sp_table(reader: &mut dyn io::Read) -> io::Result<(f64, Vec<Npjw>)> 
 pub fn load_vint_table(
     reader: &mut dyn io::Read,
     sp_table: &[Npjw],
-) -> io::Result<FnvHashMap<JNpjwKey, f64>>
-{
+) -> io::Result<FnvHashMap<JNpjwKey, f64>> {
     let mut p = Parser::new(reader);
     let mut line_num = 1;
 
@@ -135,23 +137,22 @@ pub fn load_vint_table(
             * (1.0 + (i1 == i2) as i32 as f64).sqrt()
             * (1.0 + (i3 == i4) as i32 as f64).sqrt();
         let j12 = Half(tj12);
-        let (sign, _, key) = JNpjwKey { // hermitian → symmetric
+        let (sign, _, key) = JNpjwKey {
+            // hermitian → symmetric
             j12,
             // convert 1-based to 0-based indices
             npjw1: sp_table[i1 - 1],
             npjw2: sp_table[i2 - 1],
             npjw3: sp_table[i3 - 1],
             npjw4: sp_table[i4 - 1],
-        }.canonicalize();
+        }
+        .canonicalize();
         table.insert(key, sign * value);
     }
     Ok(table)
 }
 
-pub fn load_sp_table_bin(
-    reader: &mut dyn io::Read,
-) -> io::Result<Vec<Npjw>>
-{
+pub fn load_sp_table_bin(reader: &mut dyn io::Read) -> io::Result<Vec<Npjw>> {
     let mut table = Vec::default();
     loop {
         let n = match reader.read_i32::<LittleEndian>() {
@@ -175,8 +176,7 @@ pub fn load_sp_table_bin(
 pub fn load_vint_table_bin(
     reader: &mut dyn io::Read,
     sp_table: &[Npjw],
-) -> io::Result<FnvHashMap<JNpjwKey, f64>>
-{
+) -> io::Result<FnvHashMap<JNpjwKey, f64>> {
     let mut table = FnvHashMap::default();
     loop {
         let j12 = Half(match reader.read_i32::<LittleEndian>() {
@@ -197,14 +197,16 @@ pub fn load_vint_table_bin(
         let value = value
             * (1.0 + (i1 == i2) as i32 as f64).sqrt()
             * (1.0 + (i3 == i4) as i32 as f64).sqrt();
-        let (sign, _, key) = JNpjwKey { // hermitian → symmetric
+        let (sign, _, key) = JNpjwKey {
+            // hermitian → symmetric
             j12,
             // convert 1-based to 0-based indices
             npjw1: sp_table[i1 - 1],
             npjw2: sp_table[i2 - 1],
             npjw3: sp_table[i3 - 1],
             npjw4: sp_table[i4 - 1],
-        }.canonicalize();
+        }
+        .canonicalize();
         table.insert(key, sign * value);
     }
     Ok(table)

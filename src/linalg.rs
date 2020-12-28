@@ -3,13 +3,13 @@
 //! Most of things here are just thin wrappers over BLAS and LAPACK
 //! functionality along with some traits to enable polymorphism.
 
-use std::cmp::max;
-use std::ops::{Add, Mul, Neg, Range};
+use super::mat::{MatMut, MatRef};
+use super::utils::{self, cast, RangeInclusive};
 use cblas;
 use lapacke;
 use num::{Complex, Num};
-use super::mat::{MatRef, MatMut};
-use super::utils::{self, RangeInclusive, cast};
+use std::cmp::max;
+use std::ops::{Add, Mul, Neg, Range};
 
 pub use cblas::{Part, Transpose};
 
@@ -19,13 +19,13 @@ pub mod lamch {
     //! otherwise obtain using `lamch`.
 
     pub mod f32 {
-        pub use std::f32::RADIX as BASE;
-        pub use std::f32::MANTISSA_DIGITS as T;
         pub use std::f32::EPSILON as PREC;
-        pub use std::f32::MIN_POSITIVE as RMIN;
+        pub use std::f32::MANTISSA_DIGITS as T;
         pub use std::f32::MAX as RMAX;
-        pub use std::f32::MIN_EXP as EMIN;
         pub use std::f32::MAX_EXP as EMAX;
+        pub use std::f32::MIN_EXP as EMIN;
+        pub use std::f32::MIN_POSITIVE as RMIN;
+        pub use std::f32::RADIX as BASE;
 
         /// Relative machine epsilon according to the LAPACK convention.
         /// Equal to half of `std::*::EPSILON`.
@@ -43,13 +43,13 @@ pub mod lamch {
     }
 
     pub mod f64 {
-        pub use std::f64::RADIX as BASE;
-        pub use std::f64::MANTISSA_DIGITS as T;
         pub use std::f64::EPSILON as PREC;
-        pub use std::f64::MIN_POSITIVE as RMIN;
+        pub use std::f64::MANTISSA_DIGITS as T;
         pub use std::f64::MAX as RMAX;
-        pub use std::f64::MIN_EXP as EMIN;
         pub use std::f64::MAX_EXP as EMAX;
+        pub use std::f64::MIN_EXP as EMIN;
+        pub use std::f64::MIN_POSITIVE as RMIN;
+        pub use std::f64::RADIX as BASE;
 
         /// Relative machine epsilon according to the LAPACK convention.
         /// Equal to half of `std::*::EPSILON`.
@@ -133,10 +133,22 @@ impl AdjSym {
     }
 }
 
-pub const HERMITIAN: AdjSym = AdjSym { conjugate: true, negate: false };
-pub const ANTIHERMITIAN: AdjSym = AdjSym { conjugate: true, negate: true };
-pub const SYMMETRIC: AdjSym = AdjSym { conjugate: false, negate: false };
-pub const ANTISYMMETRIC: AdjSym = AdjSym { conjugate: false, negate: true };
+pub const HERMITIAN: AdjSym = AdjSym {
+    conjugate: true,
+    negate: false,
+};
+pub const ANTIHERMITIAN: AdjSym = AdjSym {
+    conjugate: true,
+    negate: true,
+};
+pub const SYMMETRIC: AdjSym = AdjSym {
+    conjugate: false,
+    negate: false,
+};
+pub const ANTISYMMETRIC: AdjSym = AdjSym {
+    conjugate: false,
+    negate: true,
+};
 
 /// Desired range of eigenvalues.
 #[derive(Clone, Debug)]
@@ -227,8 +239,9 @@ impl Gemm for f32 {
         c: &mut [Self],
         ldc: i32,
     ) {
-        cblas::sgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc)
+        cblas::sgemm(
+            layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc,
+        )
     }
 }
 
@@ -249,8 +262,9 @@ impl Gemm for f64 {
         c: &mut [Self],
         ldc: i32,
     ) {
-        cblas::dgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc)
+        cblas::dgemm(
+            layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc,
+        )
     }
 }
 
@@ -271,8 +285,9 @@ impl Gemm for Complex<f32> {
         c: &mut [Self],
         ldc: i32,
     ) {
-        cblas::cgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc)
+        cblas::cgemm(
+            layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc,
+        )
     }
 }
 
@@ -293,8 +308,9 @@ impl Gemm for Complex<f64> {
         c: &mut [Self],
         ldc: i32,
     ) {
-        cblas::zgemm(layout, transa, transb, m, n, k,
-                       alpha, a, lda, b, ldb, beta, c, ldc)
+        cblas::zgemm(
+            layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc,
+        )
     }
 }
 
@@ -383,23 +399,7 @@ impl Heevr for f32 {
         isuppz: &mut [i32],
     ) -> i32 {
         lapacke::ssyevr(
-            layout,
-            jobz,
-            range,
-            uplo,
-            n,
-            a,
-            lda,
-            vl,
-            vu,
-            il,
-            iu,
-            abstol,
-            m,
-            w,
-            z,
-            ldz,
-            isuppz,
+            layout, jobz, range, uplo, n, a, lda, vl, vu, il, iu, abstol, m, w, z, ldz, isuppz,
         )
     }
 }
@@ -425,23 +425,7 @@ impl Heevr for f64 {
         isuppz: &mut [i32],
     ) -> i32 {
         lapacke::dsyevr(
-            layout,
-            jobz,
-            range,
-            uplo,
-            n,
-            a,
-            lda,
-            vl,
-            vu,
-            il,
-            iu,
-            abstol,
-            m,
-            w,
-            z,
-            ldz,
-            isuppz,
+            layout, jobz, range, uplo, n, a, lda, vl, vu, il, iu, abstol, m, w, z, ldz, isuppz,
         )
     }
 }
@@ -467,23 +451,7 @@ impl Heevr for Complex<f32> {
         isuppz: &mut [i32],
     ) -> i32 {
         lapacke::cheevr(
-            layout,
-            jobz,
-            range,
-            uplo,
-            n,
-            a,
-            lda,
-            vl,
-            vu,
-            il,
-            iu,
-            abstol,
-            m,
-            w,
-            z,
-            ldz,
-            isuppz,
+            layout, jobz, range, uplo, n, a, lda, vl, vu, il, iu, abstol, m, w, z, ldz, isuppz,
         )
     }
 }
@@ -509,23 +477,7 @@ impl Heevr for Complex<f64> {
         isuppz: &mut [i32],
     ) -> i32 {
         lapacke::zheevr(
-            layout,
-            jobz,
-            range,
-            uplo,
-            n,
-            a,
-            lda,
-            vl,
-            vu,
-            il,
-            iu,
-            abstol,
-            m,
-            w,
-            z,
-            ldz,
-            isuppz,
+            layout, jobz, range, uplo, n, a, lda, vl, vu, il, iu, abstol, m, w, z, ldz, isuppz,
         )
     }
 }
@@ -551,13 +503,7 @@ pub fn heevr<T: Heevr>(
         let mut vu = Default::default();
         let mut il = 0;
         let mut iu = 0;
-        let (range, all, max_m) = range.to_raw(
-            cast(n),
-            &mut vl,
-            &mut vu,
-            &mut il,
-            &mut iu,
-        );
+        let (range, all, max_m) = range.to_raw(cast(n), &mut vl, &mut vu, &mut il, &mut iu);
         let max_m = max_m as usize;
         assert!(w.len() >= max(1, n));
         let (nz, mz) = utils::swap_if(left, z.dims());
@@ -627,13 +573,7 @@ pub fn heevr_n<T: Heevr>(
         let mut vu = Default::default();
         let mut il = 0;
         let mut iu = 0;
-        let (range, _, _) = range.to_raw(
-            cast(n),
-            &mut vl,
-            &mut vu,
-            &mut il,
-            &mut iu,
-        );
+        let (range, _, _) = range.to_raw(cast(n), &mut vl, &mut vu, &mut il, &mut iu);
         assert!(w.len() >= max(1, n));
         let mut m = 0;
         let e = T::heevr(
@@ -669,12 +609,13 @@ pub fn heevr_n<T: Heevr>(
 
 /// `y ← α × x + β × y`
 pub fn mat_axpby<T>(alpha: T, x: MatRef<T>, beta: T, mut y: MatMut<T>)
-    where T: Add<Output = T> + Mul<Output = T> + Clone,
+where
+    T: Add<Output = T> + Mul<Output = T> + Clone,
 {
     assert_eq!(x.shape().num_rows, y.shape().num_rows);
     assert_eq!(x.shape().num_cols, y.shape().num_cols);
-    for i in 0 .. x.shape().num_rows {
-        for j in 0 .. x.shape().num_cols {
+    for i in 0..x.shape().num_rows {
+        for j in 0..x.shape().num_cols {
             let xij = x.get(i, j).unwrap().clone();
             let yij = y.as_mut().get(i, j).unwrap();
             *yij = alpha.clone() * xij + beta.clone() * yij.clone()
@@ -684,54 +625,61 @@ pub fn mat_axpby<T>(alpha: T, x: MatRef<T>, beta: T, mut y: MatMut<T>)
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::mat::Mat;
+    use super::*;
 
     #[test]
     fn it_works() {
-        let a = Mat::from(vec![
-            vec![1.0, 2.0],
-            vec![3.0, 4.0],
-        ]);
-        let b = Mat::from(vec![
-            vec![5.0, 6.0],
-            vec![7.0, 8.0],
-        ]);
-        let c0 = Mat::from(vec![
-            vec![-1.0, -2.0],
-            vec![-3.0, -4.0],
-        ]);
+        let a = Mat::from(vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
+        let b = Mat::from(vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
+        let c0 = Mat::from(vec![vec![-1.0, -2.0], vec![-3.0, -4.0]]);
 
         let mut c = c0.clone();
-        gemm(Transpose::None, Transpose::None,
-             2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Mat::from(vec![
-            vec![35.0, 38.0],
-            vec![77.0, 88.0],
-        ]));
+        gemm(
+            Transpose::None,
+            Transpose::None,
+            2.0,
+            a.as_ref(),
+            b.as_ref(),
+            3.0,
+            c.as_mut(),
+        );
+        assert_eq!(c, Mat::from(vec![vec![35.0, 38.0], vec![77.0, 88.0],]));
 
         let mut c = c0.clone();
-        gemm(Transpose::Ordinary, Transpose::None,
-             2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Mat::from(vec![
-            vec![49.0, 54.0],
-            vec![67.0, 76.0],
-        ]));
+        gemm(
+            Transpose::Ordinary,
+            Transpose::None,
+            2.0,
+            a.as_ref(),
+            b.as_ref(),
+            3.0,
+            c.as_mut(),
+        );
+        assert_eq!(c, Mat::from(vec![vec![49.0, 54.0], vec![67.0, 76.0],]));
 
         let mut c = c0.clone();
-        gemm(Transpose::None, Transpose::Ordinary,
-             2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Mat::from(vec![
-            vec![31.0, 40.0],
-            vec![69.0, 94.0],
-        ]));
+        gemm(
+            Transpose::None,
+            Transpose::Ordinary,
+            2.0,
+            a.as_ref(),
+            b.as_ref(),
+            3.0,
+            c.as_mut(),
+        );
+        assert_eq!(c, Mat::from(vec![vec![31.0, 40.0], vec![69.0, 94.0],]));
 
         let mut c = c0.clone();
-        gemm(Transpose::Ordinary, Transpose::Ordinary,
-             2.0, a.as_ref(), b.as_ref(), 3.0, c.as_mut());
-        assert_eq!(c, Mat::from(vec![
-            vec![43.0, 56.0],
-            vec![59.0, 80.0],
-        ]));
+        gemm(
+            Transpose::Ordinary,
+            Transpose::Ordinary,
+            2.0,
+            a.as_ref(),
+            b.as_ref(),
+            3.0,
+            c.as_mut(),
+        );
+        assert_eq!(c, Mat::from(vec![vec![43.0, 56.0], vec![59.0, 80.0],]));
     }
 }

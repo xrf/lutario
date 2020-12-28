@@ -1,9 +1,9 @@
 //! Input and output utility.
-use std::{io, str};
+use byteorder::{ByteOrder, ReadBytesExt};
 use std::error::Error;
 use std::marker::PhantomData;
 use std::path::{self, Path};
-use byteorder::{ByteOrder, ReadBytesExt};
+use std::{io, str};
 
 pub mod parser;
 pub use self::parser::Parser;
@@ -15,7 +15,8 @@ pub fn invalid_data<E: Into<Box<dyn Error + Send + Sync>>>(error: E) -> io::Erro
 }
 
 pub fn fill_buf_with_retry<R>(r: &mut R) -> io::Result<&[u8]>
-    where R: io::BufRead + ?Sized,
+where
+    R: io::BufRead + ?Sized,
 {
     loop {
         match r.fill_buf() {
@@ -27,11 +28,11 @@ pub fn fill_buf_with_retry<R>(r: &mut R) -> io::Result<&[u8]>
 }
 
 /// Copy data from a source to a sink while the predicate remains true.
-pub fn copy_while<R, P, W>(r: &mut R, mut pred: P, w: &mut W)
-                           -> io::Result<usize>
-    where R: io::BufRead + ?Sized,
-          P: FnMut(u8) -> bool,
-          W: io::Write + ?Sized,
+pub fn copy_while<R, P, W>(r: &mut R, mut pred: P, w: &mut W) -> io::Result<usize>
+where
+    R: io::BufRead + ?Sized,
+    P: FnMut(u8) -> bool,
+    W: io::Write + ?Sized,
 {
     // adapted from: https://doc.rust-lang.org/src/std/io/mod.rs.html#1310-1571
     let mut read = 0;
@@ -62,16 +63,17 @@ pub fn copy_while<R, P, W>(r: &mut R, mut pred: P, w: &mut W)
 /// string as the extension.  Only works on UTF-8 strings due to limitations
 /// of the `std::path::Path` API.
 pub fn split_extension(path: &Path) -> io::Result<(&str, &str)> {
-    let path = path.to_str()
+    let path = path
+        .to_str()
         .ok_or_else(|| invalid_data("path is not UTF-8"))?;
     match path.rfind('.') {
         None => Ok((path, "")),
         Some(i) => {
-            let ext = &path[i ..];
+            let ext = &path[i..];
             if ext.chars().any(|c| path::is_separator(c)) {
                 Ok((path, ""))
             } else {
-                Ok((&path[.. i], ext))
+                Ok((&path[..i], ext))
             }
         }
     }
@@ -96,12 +98,15 @@ pub fn guess_compression(path: &Path) -> io::Result<(&Path, Option<Compression>)
     } else {
         (path, "")
     };
-    Ok((rest, match ext {
-        "" => Some(Compression::None),
-        ".gz" => Some(Compression::Gz),
-        ".xz" => Some(Compression::Xz),
-        _ => None,
-    }))
+    Ok((
+        rest,
+        match ext {
+            "" => Some(Compression::None),
+            ".gz" => Some(Compression::Gz),
+            ".xz" => Some(Compression::Xz),
+            _ => None,
+        },
+    ))
 }
 
 /// Open a compressed file and decode based on the file extension.
@@ -109,8 +114,7 @@ pub fn guess_compression(path: &Path) -> io::Result<(&Path, Option<Compression>)
 pub fn decode_compressed<'a, F: io::Read + 'a>(
     file: F,
     compression: Compression,
-) -> Box<dyn io::Read + 'a>
-{
+) -> Box<dyn io::Read + 'a> {
     match compression {
         Compression::None => Box::new(file),
         Compression::Gz => Box::new(flate2::read::GzDecoder::new(file)),
@@ -161,9 +165,10 @@ impl<R: io::Read> MapleTableParser<R> {
 
         // read a token
         self.buf.clear();
-        while let Some(c) = self.parser.match_pred(|c| {
-            !(c as char).is_whitespace() && c != b'('
-        })? {
+        while let Some(c) = self
+            .parser
+            .match_pred(|c| !(c as char).is_whitespace() && c != b'(')?
+        {
             self.buf.push(c);
         }
         if self.buf.is_empty() {
@@ -175,7 +180,7 @@ impl<R: io::Read> MapleTableParser<R> {
             str::from_utf8(&self.buf)
                 .map_err(invalid_data)?
                 .parse()
-                .map_err(invalid_data)?
+                .map_err(invalid_data)?,
         ))
     }
 }
@@ -232,9 +237,10 @@ impl<T, E, R: io::Read> BinArrayParser<T, E, R> {
 }
 
 impl<T, E, R> Iterator for BinArrayParser<T, E, R>
-    where T: ReadBinFrom,
-          E: ByteOrder,
-          R: io::Read,
+where
+    T: ReadBinFrom,
+    E: ByteOrder,
+    R: io::Read,
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {

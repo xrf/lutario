@@ -1,7 +1,7 @@
 //! The most trivial vector driver.
 
+use super::{assert_all_eq, VectorDriver};
 use std::marker::PhantomData;
-use super::{VectorDriver, assert_all_eq};
 
 #[derive(Clone, Copy, Debug)]
 pub struct BasicVectorDriver<T> {
@@ -11,15 +11,22 @@ pub struct BasicVectorDriver<T> {
 
 impl<T> BasicVectorDriver<T> {
     pub fn new(len: usize) -> Self {
-        Self { len, phantom: PhantomData }
+        Self {
+            len,
+            phantom: PhantomData,
+        }
     }
 
     /// Shortcut for creating a vector from a slice.
     pub fn create_vector_from(&self, xs: &[T]) -> Vec<T>
-        where T: Clone
+    where
+        T: Clone,
     {
-        assert_eq!(self.len(), xs.len(),
-                   "slice must have same length as BasicVectorDriver");
+        assert_eq!(
+            self.len(),
+            xs.len(),
+            "slice must have same length as BasicVectorDriver"
+        );
         xs.to_owned()
     }
 }
@@ -29,14 +36,15 @@ impl<T> VectorDriver for BasicVectorDriver<T> {
     type Vector = Vec<Self::Item>;
 
     fn create_vector_with<F>(&self, f: F) -> Option<Self::Vector>
-        where F: Fn() -> Self::Item + Sync
+    where
+        F: Fn() -> Self::Item + Sync,
     {
         let n = self.len();
         let mut v = Vec::with_capacity(n);
         // testing shows unsafe is needed for it to be optimized to memset
         unsafe {
             v.set_len(n);
-            for i in 0 .. n {
+            for i in 0..n {
                 *v.get_unchecked_mut(i) = f();
             }
         }
@@ -55,27 +63,21 @@ impl<T> VectorDriver for BasicVectorDriver<T> {
         mut_vectors: &mut [&mut Self::Vector],
         f: F,
     ) where
-        F: Fn(&mut [u8],
-              &[u8],
-              usize,
-              &[&[Self::Item]],
-              &mut [&mut [Self::Item]]) + Sync
+        F: Fn(&mut [u8], &[u8], usize, &[&[Self::Item]], &mut [&mut [Self::Item]]) + Sync,
     {
-        assert_all_eq([self.len()].iter().cloned()
-                      .chain(vectors.iter().map(|v| v.len()))
-                      .chain(mut_vectors.iter().map(|v| v.len())),
-                      "every vector must have length equal to \
-                       that of BasicVectorDriver");
-        let slices: Vec<_> = vectors.into_iter()
-            .map(|v| v.as_ref()).collect();
-        let mut mut_slices: Vec<_> = mut_vectors.into_iter()
-            .map(|v| v.as_mut()).collect();
+        assert_all_eq(
+            [self.len()]
+                .iter()
+                .cloned()
+                .chain(vectors.iter().map(|v| v.len()))
+                .chain(mut_vectors.iter().map(|v| v.len())),
+            "every vector must have length equal to \
+                       that of BasicVectorDriver",
+        );
+        let slices: Vec<_> = vectors.into_iter().map(|v| v.as_ref()).collect();
+        let mut mut_slices: Vec<_> = mut_vectors.into_iter().map(|v| v.as_mut()).collect();
         let identity = accum.to_owned();
-        f(accum,
-          &identity,
-          offset,
-          &slices,
-          &mut mut_slices);
+        f(accum, &identity, offset, &slices, &mut mut_slices);
     }
 }
 
@@ -99,7 +101,8 @@ fn test_basic_vector_driver() {
             for (i, vi) in r[0].iter_mut().enumerate() {
                 *vi = (offset + i) as _;
             }
-        });
+        },
+    );
     let sum = (d.len() * (d.len() - 1) / 2) as f64;
     assert_eq!(d.sum(&v), sum);
 

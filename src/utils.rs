@@ -3,15 +3,15 @@
 //! This is for small things that don’t belong in other modules.  As things
 //! grow, they will likely migrate into their own modules.
 
-use std::{ascii, cmp, fmt, mem, panic, ptr, process};
-use std::ops::{Add, Deref, DerefMut, Range, Sub};
-use std::collections::{BTreeMap, HashMap};
-use std::hash::{BuildHasher, Hash};
+use super::basis::HashChart;
+use super::parity;
 use conv::ValueInto;
 use num::{self, Bounded, One, ToPrimitive, Zero};
-use take_mut;
-use super::parity;
-use super::basis::HashChart; // FIXME: HashChart doesn't belong in basis
+use std::collections::{BTreeMap, HashMap};
+use std::hash::{BuildHasher, Hash};
+use std::ops::{Add, Deref, DerefMut, Range, Sub};
+use std::{ascii, cmp, fmt, mem, panic, process, ptr};
+use take_mut; // FIXME: HashChart doesn't belong in basis
 
 /// Helper struct for writing `Debug` implementations.
 pub struct DebugWith<F>(pub F);
@@ -74,11 +74,11 @@ impl<T> Offset for *mut T {
 
 /// Maximum possible `Range`, which necessarily excludes the maximum value.
 pub fn max_range<T: Bounded>() -> Range<T> {
-    Bounded::min_value() .. Bounded::max_value()
+    Bounded::min_value()..Bounded::max_value()
 }
 
 pub fn cast_range<T: ValueInto<U>, U>(r: Range<T>) -> Range<U> {
-    cast(r.start) .. cast(r.end)
+    cast(r.start)..cast(r.end)
 }
 
 /// A more sanely defined addition trait to avoid throwing the compiler into
@@ -87,7 +87,8 @@ pub trait RefAdd {
     fn ref_add(&self, rhs: &Self) -> Self;
 }
 
-impl<T> RefAdd for T where
+impl<T> RefAdd for T
+where
     for<'a, 'b> &'a T: Add<&'b T, Output = Self>,
 {
     fn ref_add(&self, rhs: &Self) -> Self {
@@ -127,7 +128,8 @@ impl<A: Add<Output = A> + Sub<Output = A> + One + Clone> RangeInclusive<A> {
 }
 
 impl<A> Iterator for RangeInclusive<A>
-    where A: Clone + PartialOrd + Zero + One + ToPrimitive
+where
+    A: Clone + PartialOrd + Zero + One + ToPrimitive,
 {
     type Item = A;
 
@@ -137,12 +139,12 @@ impl<A> Iterator for RangeInclusive<A>
             Some(cmp::Ordering::Less) => {
                 let n = self.start.clone() + One::one();
                 Some(mem::replace(&mut self.start, n))
-            },
+            }
             Some(cmp::Ordering::Equal) => {
                 let last = mem::replace(&mut self.start, One::one());
                 self.end = Zero::zero();
                 Some(last)
-            },
+            }
             _ => None,
         }
     }
@@ -150,22 +152,26 @@ impl<A> Iterator for RangeInclusive<A>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let bound = match self.start.to_i64() {
-            Some(a) => self.end.to_i64()
+            Some(a) => self
+                .end
+                .to_i64()
                 .and_then(|b| b.checked_sub(a))
                 .and_then(|b| ToPrimitive::to_usize(&b)),
             None => match self.start.to_u64() {
-                Some(a) => self.end.to_u64()
+                Some(a) => self
+                    .end
+                    .to_u64()
                     .and_then(|b| b.checked_sub(a))
                     .and_then(|b| ToPrimitive::to_usize(&b)),
-                None => None
-            }
+                None => None,
+            },
         };
         match bound {
             Some(b) => (
                 b.checked_add(One::one()).unwrap_or(b),
                 b.checked_add(One::one()),
             ),
-            None => (0, None)
+            None => (0, None),
         }
     }
 }
@@ -193,11 +199,10 @@ pub fn swap_if<T>(cond: bool, val: (T, T)) -> (T, T) {
 }
 
 pub fn with_tuple2_ref<A, B, F, R>(a: &A, b: &B, f: F) -> R
-    where F: FnOnce(&(A, B)) -> R
+where
+    F: FnOnce(&(A, B)) -> R,
 {
-    unsafe {
-        f(&mem::ManuallyDrop::new((ptr::read(a), ptr::read(b))))
-    }
+    unsafe { f(&mem::ManuallyDrop::new((ptr::read(a), ptr::read(b)))) }
 }
 
 /// Shorthand for casting numbers.  Panics if out of range.
@@ -210,7 +215,8 @@ pub fn try_cast<T: ValueInto<U>, U>(x: T) -> Option<U> {
 }
 
 pub fn take_and_get<F, T, R>(mut_ref: &mut T, closure: F) -> R
-    where F: FnOnce(T) -> (R, T),
+where
+    F: FnOnce(T) -> (R, T),
 {
     let mut ret = None;
     take_mut::take(mut_ref, |t| {
@@ -221,10 +227,7 @@ pub fn take_and_get<F, T, R>(mut_ref: &mut T, closure: F) -> R
     ret.expect("unreachable")
 }
 
-pub fn chop_slice<'a, T>(
-    slice: &mut &'a [T],
-    index: usize,
-) -> Option<&'a [T]> {
+pub fn chop_slice<'a, T>(slice: &mut &'a [T], index: usize) -> Option<&'a [T]> {
     if slice.len() >= index {
         let (chopped, rest) = slice.split_at(index);
         *slice = rest;
@@ -234,14 +237,9 @@ pub fn chop_slice<'a, T>(
     }
 }
 
-pub fn chop_slice_mut<'a, T>(
-    slice: &mut &'a mut [T],
-    index: usize,
-) -> Option<&'a mut [T]> {
+pub fn chop_slice_mut<'a, T>(slice: &mut &'a mut [T], index: usize) -> Option<&'a mut [T]> {
     if slice.len() >= index {
-        Some(take_and_get(slice, |slice| {
-            slice.split_at_mut(index)
-        }))
+        Some(take_and_get(slice, |slice| slice.split_at_mut(index)))
     } else {
         None
     }
@@ -258,7 +256,8 @@ pub fn default_hash_map<K, V, S: BuildHasher + Default>() -> HashMap<K, V, S> {
 }
 
 pub fn pretty_bytes(bytes: &[u8]) -> String {
-    bytes.iter()
+    bytes
+        .iter()
         .cloned()
         .flat_map(ascii::escape_default)
         .map(|c| c as char)
@@ -336,7 +335,11 @@ pub struct RangeSet {
 
 impl Default for RangeSet {
     fn default() -> Self {
-        Self { start: 0, step: 1, len: 0 }
+        Self {
+            start: 0,
+            step: 1,
+            len: 0,
+        }
     }
 }
 
@@ -375,9 +378,7 @@ impl RangeSet {
 
     pub fn contains(&self, i: i32) -> bool {
         let offset = i - self.start;
-        offset >= 0
-            && offset % self.step == 0
-            && offset / self.step < self.len
+        offset >= 0 && offset % self.step == 0 && offset / self.step < self.len
     }
 
     pub fn position(&self, i: i32) -> Option<usize> {
@@ -398,8 +399,7 @@ impl RangeSet {
     }
 
     pub fn floor(&self, i: i32) -> Option<i32> {
-        let pos = (self.len - 1)
-            .min(euclid_div(i - self.start, self.step));
+        let pos = (self.len - 1).min(euclid_div(i - self.start, self.step));
         if pos < 0 {
             None
         } else {
@@ -422,11 +422,7 @@ impl RangeSet {
         } else {
             let offset = i - self.start;
             let new_step = gcd(offset, self.step);
-            let (_, k1, _, k3) = parity::sort3(
-                0,
-                offset,
-                (self.len - 1) * self.step,
-            );
+            let (_, k1, _, k3) = parity::sort3(0, offset, (self.len - 1) * self.step);
             self.start += k1;
             self.step = new_step;
             self.len = (k3 - k1) / new_step + 1;
@@ -438,11 +434,7 @@ impl IntoIterator for RangeSet {
     type Item = i32;
     type IntoIter = num::iter::RangeStep<i32>;
     fn into_iter(self) -> Self::IntoIter {
-        num::range_step(
-            self.start,
-            self.start + self.len * self.step,
-            self.step,
-        )
+        num::range_step(self.start, self.start + self.len * self.step, self.step)
     }
 }
 
@@ -544,17 +536,17 @@ pub mod slice {
 }
 
 /// Prevent unwinding in foreign code (which is undefined behavior).
-pub fn abort_on_unwind<F, R>(f: F) -> R where
+pub fn abort_on_unwind<F, R>(f: F) -> R
+where
     F: FnOnce() -> R,
 {
-    panic::catch_unwind(panic::AssertUnwindSafe(f))
-        .unwrap_or_else(|_| process::abort())
+    panic::catch_unwind(panic::AssertUnwindSafe(f)).unwrap_or_else(|_| process::abort())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::hash_map;
     use super::*;
+    use std::collections::hash_map;
 
     #[test]
     fn hash_map() {
@@ -586,11 +578,16 @@ mod tests {
 
     #[test]
     fn zigzag() {
-        for i in -100 .. 101 {
+        for i in -100..101 {
             assert_eq!(i32::from(Zigzag::from(i)), i);
         }
-        for &i in &[-0x80000000, -0x7fffffff, -0x7ffffffe,
-                    0x7ffffffe, 0x7fffffff] {
+        for &i in &[
+            -0x80000000,
+            -0x7fffffff,
+            -0x7ffffffe,
+            0x7ffffffe,
+            0x7fffffff,
+        ] {
             assert_eq!(i32::from(Zigzag::from(i)), i);
         }
     }
@@ -611,10 +608,18 @@ mod tests {
     fn test_range_set() {
         use std::iter::FromIterator;
         for &s in &[
-            &[78, 27, -70, -66, 92, -90, 95, -71, -76, 72, -47, 8, 13, 37, -46, -40],
-            &[-58, 61, 62, -10, 53, -28, -35, 21, 94, 28, -84, -93, 97, -53, 81, 41],
-            &[12, -93, 52, -30, -2, 73, 83, 70, -15, 34, 69, -49, 74, 42, -50, 62],
-            &[22, 39, -20, 72, 30, -68, 26, -1, -70, 65, 47, -82, -82, -79, -60, 44],
+            &[
+                78, 27, -70, -66, 92, -90, 95, -71, -76, 72, -47, 8, 13, 37, -46, -40,
+            ],
+            &[
+                -58, 61, 62, -10, 53, -28, -35, 21, 94, 28, -84, -93, 97, -53, 81, 41,
+            ],
+            &[
+                12, -93, 52, -30, -2, 73, 83, 70, -15, 34, 69, -49, 74, 42, -50, 62,
+            ],
+            &[
+                22, 39, -20, 72, 30, -68, 26, -1, -70, 65, 47, -82, -82, -79, -60, 44,
+            ],
         ] {
             let mut past = Vec::new();
             let mut set = RangeSet::default();
@@ -624,10 +629,8 @@ mod tests {
                 past.push(x);
                 let v = Vec::from_iter(set);
                 for y in &past {
-                    assert_eq!(v.iter().cloned().min(),
-                               past.iter().cloned().min());
-                    assert_eq!(v.iter().cloned().max(),
-                               past.iter().cloned().max());
+                    assert_eq!(v.iter().cloned().min(), past.iter().cloned().min());
+                    assert_eq!(v.iter().cloned().max(), past.iter().cloned().max());
                     assert!(v.contains(&y));
                 }
             }

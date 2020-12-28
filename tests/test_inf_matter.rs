@@ -2,9 +2,9 @@
 extern crate lutario;
 extern crate netlib_src;
 
-use lutario::{hf, imsrg, inf_matter, minnesota, qdpt, plane_wave_basis, sg_ode};
-use lutario::j_scheme::{JAtlas, new_mop_j012};
+use lutario::j_scheme::{new_mop_j012, JAtlas};
 use lutario::utils::Toler;
+use lutario::{hf, imsrg, inf_matter, minnesota, plane_wave_basis, qdpt, sg_ode};
 
 #[test]
 fn test_inf_matter() {
@@ -18,36 +18,50 @@ fn test_inf_matter() {
     let h1 = inf_matter::Kinetic::neutron_mev(box_len).make_op(&atlas);
     let h2 = minnesota::MinnesotaBox::new(box_len).make_op_neutron(&atlas);
 
-    let toler = Toler { relerr: 1e-8, abserr: 1e-8 };
+    let toler = Toler {
+        relerr: 1e-8,
+        abserr: 1e-8,
+    };
 
     // test HF
     let mut hf = hf::Conf {
         toler: toler,
-        .. Default::default()
-    }.make_run(&h1, &h2);
+        ..Default::default()
+    }
+    .make_run(&h1, &h2);
     hf.do_run().unwrap();
     let mut hh = new_mop_j012(scheme);
     hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
     hf::transform_h2(&h2, &hf.dcoeff, &mut hh.2);
     let mut hn = new_mop_j012(scheme);
     hf::normord(&hh, &mut hn);
-    toler_assert_eq!(Toler { relerr: 1e-7, abserr: 1e-7 },
-                     hn.0, 144.67192879294362);
+    toler_assert_eq!(
+        Toler {
+            relerr: 1e-7,
+            abserr: 1e-7
+        },
+        hn.0,
+        144.67192879294362
+    );
 
     // test MP2
     let de_mp2 = qdpt::mp2(&hn.1, &hn.2);
     toler_assert_eq!(toler, de_mp2, -2.459104949285347);
 
     // test IMSRG
-    let imsrg_toler = Toler { relerr: 1e-6, abserr: 1e-5 };
+    let imsrg_toler = Toler {
+        relerr: 1e-6,
+        abserr: 1e-5,
+    };
     let mut irun = imsrg::Conf {
         toler: imsrg_toler,
         solver_conf: sg_ode::Conf {
             toler: imsrg_toler,
-            .. Default::default()
+            ..Default::default()
         },
-        .. Default::default()
-    }.make_run(&hn);
+        ..Default::default()
+    }
+    .make_run(&hn);
     irun.do_run().unwrap();
     println!("- imsrg: {}", irun.energy());
     toler_assert_eq!(imsrg_toler, irun.energy(), 142.14556953083158);

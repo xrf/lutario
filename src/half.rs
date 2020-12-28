@@ -1,21 +1,20 @@
 //! Half-integers for angular momentum quantities.
-use std::{cmp, fmt};
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
-use num::{One, Signed, ToPrimitive, Zero};
 use super::parity;
 use super::utils::{self, RangeInclusive};
+use num::{One, Signed, ToPrimitive, Zero};
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use std::{cmp, fmt};
 
 /// Type that logically behaves like half-integers, but what is actually
 /// stored is twice its logical value.
 ///
 /// For example, `Half(3)` represents the fraction `3/2`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
-         Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Half<T>(pub T);
 
 impl<T> fmt::Display for Half<T>
-    where T: fmt::Display + Div<Output = T> + Rem<Output = T> +
-             Zero + One + Clone
+where
+    T: fmt::Display + Div<Output = T> + Rem<Output = T> + Zero + One + Clone,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.clone().try_get() {
@@ -75,8 +74,8 @@ impl<T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One> Half<T> {
 }
 
 impl<T> Half<T>
-    where T: Clone + fmt::Debug + Div<Output = T> + Rem<Output = T> +
-             Zero + One,
+where
+    T: Clone + fmt::Debug + Div<Output = T> + Rem<Output = T> + Zero + One,
 {
     /// Equivalent to `try_get().unwrap()`.
     #[inline]
@@ -108,14 +107,8 @@ impl<T: Add<Output = T> + Sub<Output = T> + One + Ord + Clone> Half<T> {
     }
 
     #[inline]
-    pub fn tri_range_2(
-        (j1, j2): (Self, Self),
-        (j3, j4): (Self, Self),
-    ) -> RangeInclusive<Self> {
-        utils::intersect_range_inclusive(
-            Half::tri_range(j1, j2),
-            Half::tri_range(j3, j4),
-        )
+    pub fn tri_range_2((j1, j2): (Self, Self), (j3, j4): (Self, Self)) -> RangeInclusive<Self> {
+        utils::intersect_range_inclusive(Half::tri_range(j1, j2), Half::tri_range(j3, j4))
     }
 }
 
@@ -166,19 +159,23 @@ impl<T: Zero> Zero for Half<T> {
 }
 
 impl<T> Mul for Half<T>
-    where T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One
+where
+    T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One,
 {
     type Output = Self;
     #[inline]
     fn mul(self, other: Self) -> Self::Output {
-        Half(Half(self.0 * other.0).try_get().unwrap_or_else(|_| {
-            panic!("cannot multiply two half-odd integers")
-        }))
+        Half(
+            Half(self.0 * other.0)
+                .try_get()
+                .unwrap_or_else(|_| panic!("cannot multiply two half-odd integers")),
+        )
     }
 }
 
 impl<T> One for Half<T>
-    where T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One
+where
+    T: Clone + Div<Output = T> + Rem<Output = T> + Zero + One,
 {
     #[inline]
     fn one() -> Self {
@@ -197,7 +194,7 @@ impl<T: ToPrimitive> ToPrimitive for Half<T> {
     }
 }
 
-impl Half<i32> where {
+impl Half<i32> {
     /// Returns the phase `(-1)^j`.
     ///
     /// Panics if self is half-odd.

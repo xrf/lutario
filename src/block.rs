@@ -1,10 +1,10 @@
 //! Block-diagonal matrices and similar things.
-use std::ops::AddAssign;
-use num::Zero;
 use super::mat::Mat;
-use super::op::{IndexBlockMatRef, IndexBlockMatMut, Vector, VectorMut};
+use super::op::{IndexBlockMatMut, IndexBlockMatRef, Vector, VectorMut};
 use super::tri_mat::{TriMat, Trs};
 use super::utils::RefAdd;
+use num::Zero;
+use std::ops::AddAssign;
 
 /// A block of a block-diagonal matrix
 pub struct Block<M> {
@@ -63,27 +63,13 @@ impl<T: Clone> IndexBlockMatRef for Block<TriMat<T>> {
 }
 
 impl<T: AddAssign + Zero + Clone> IndexBlockMatMut for Block<Vec<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         debug_assert_eq!(u1, u2);
         self.data[u1] = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         debug_assert_eq!(u1, u2);
         self.data[u1] += value;
@@ -91,52 +77,24 @@ impl<T: AddAssign + Zero + Clone> IndexBlockMatMut for Block<Vec<T>> {
 }
 
 impl<T: AddAssign> IndexBlockMatMut for Block<Mat<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() += value;
     }
 }
 
 impl<T: AddAssign> IndexBlockMatMut for Block<TriMat<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(self.chan, l);
         *self.data.as_mut().get(u1, u2).unwrap() += value;
     }
@@ -151,30 +109,24 @@ pub struct Bd<M>(pub Vec<M>);
 
 impl<T> Bd<Mat<T>> {
     pub fn extent_mat_as_tri(&self) -> usize {
-        self.0.iter().map(|block| block.as_ref().extent_as_tri()).sum()
+        self.0
+            .iter()
+            .map(|block| block.as_ref().extent_as_tri())
+            .sum()
     }
 }
 
 impl<T: Clone> Bd<Mat<T>> {
     /// Pack the lower triangles of the matrix blocks into the given array and
     /// then return the remaining part of the array.
-    pub fn clone_mat_to_tri_slice<'a>(
-        &self,
-        mut a: &'a mut [T],
-    ) -> &'a mut [T]
-    {
+    pub fn clone_mat_to_tri_slice<'a>(&self, mut a: &'a mut [T]) -> &'a mut [T] {
         for block in &self.0 {
             a = block.as_ref().clone_to_tri_slice(move_ref!(a));
         }
         a
     }
 
-    pub fn clone_mat_from_tri_slice<'a, S: Trs<T>>(
-        &mut self,
-        trs: &S,
-        mut a: &'a [T],
-    ) -> &'a [T]
-    {
+    pub fn clone_mat_from_tri_slice<'a, S: Trs<T>>(&mut self, trs: &S, mut a: &'a [T]) -> &'a [T] {
         for block in &mut self.0 {
             a = block.as_mut().clone_from_tri_slice(trs, a);
         }
@@ -184,7 +136,12 @@ impl<T: Clone> Bd<Mat<T>> {
 
 impl<M: RefAdd> RefAdd for Bd<M> {
     fn ref_add(&self, rhs: &Self) -> Self {
-        Bd(self.0.iter().zip(&rhs.0).map(|(x, y)| x.ref_add(y)).collect())
+        Bd(self
+            .0
+            .iter()
+            .zip(&rhs.0)
+            .map(|(x, y)| x.ref_add(y))
+            .collect())
     }
 }
 
@@ -229,75 +186,33 @@ impl<T: Clone> IndexBlockMatRef for Bd<TriMat<T>> {
 }
 
 impl<T: AddAssign + Zero + Clone> IndexBlockMatMut for Bd<Vec<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(u1, u2);
         self.0[l][u1] = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         debug_assert_eq!(u1, u2);
         self.0[l][u1] += value;
     }
 }
 
 impl<T: AddAssign> IndexBlockMatMut for Bd<Mat<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.0[l].as_mut().get(u1, u2).unwrap() = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.0[l].as_mut().get(u1, u2).unwrap() += value;
     }
 }
 
 impl<T: AddAssign> IndexBlockMatMut for Bd<TriMat<T>> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.0[l].as_mut().get(u1, u2).unwrap() = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.0[l].as_mut().get(u1, u2).unwrap() += value;
     }
 }

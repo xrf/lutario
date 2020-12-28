@@ -5,13 +5,6 @@
 pub mod darmstadt;
 pub mod vrenorm;
 
-use std::{fmt, iter, str};
-use std::error::Error;
-use std::ops::{Add, Sub};
-use fnv::{FnvHashMap, FnvHashSet};
-use num::Zero;
-use regex::Regex;
-use wigner_symbols::ClebschGordan;
 use super::ang_mom::Wigner3jmCtx;
 use super::basis::{occ, ChanState, HashChart, Occ, PartState};
 use super::half::Half;
@@ -19,10 +12,16 @@ use super::j_scheme::{JAtlas, JChan, JOrbBasis, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils;
+use fnv::{FnvHashMap, FnvHashSet};
+use num::Zero;
+use regex::Regex;
+use std::error::Error;
+use std::ops::{Add, Sub};
+use std::{fmt, iter, str};
+use wigner_symbols::ClebschGordan;
 
 lazy_static! {
-    pub static ref ORB_ANG_CHART: HashChart<char> =
-        "spdfghiklmnoqrtuvwxyz".chars().collect();
+    pub static ref ORB_ANG_CHART: HashChart<char> = "spdfghiklmnoqrtuvwxyz".chars().collect();
 }
 
 /// Orbital angular momentum magnitude (l)
@@ -33,7 +32,8 @@ pub struct OrbAng(pub i32);
 impl fmt::Display for OrbAng {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s: String = utils::encode_number(self.0 as _, &ORB_ANG_CHART)
-            .into_iter().collect();
+            .into_iter()
+            .collect();
         write!(f, "{}", s)
     }
 }
@@ -42,7 +42,9 @@ impl fmt::Display for OrbAng {
 impl str::FromStr for OrbAng {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(OrbAng(utils::decode_number(&mut s.chars(), &ORB_ANG_CHART)? as _))
+        Ok(OrbAng(
+            utils::decode_number(&mut s.chars(), &ORB_ANG_CHART)? as _,
+        ))
     }
 }
 
@@ -82,7 +84,9 @@ impl fmt::Display for Nlj {
 impl str::FromStr for Nlj {
     type Err = Box<dyn Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let m = re!(r"(\d+)(\w+)(\d+)/2").captures(s).ok_or("invalid format")?;
+        let m = re!(r"(\d+)(\w+)(\d+)/2")
+            .captures(s)
+            .ok_or("invalid format")?;
         let n = m.get(1).unwrap().as_str().parse()?;
         let OrbAng(l) = m.get(2).unwrap().as_str().parse()?;
         let j = Half(m.get(3).unwrap().as_str().parse()?);
@@ -96,7 +100,7 @@ impl str::FromStr for Nlj {
 impl From<Npj> for Nlj {
     fn from(this: Npj) -> Self {
         debug_assert!(this.j.try_get().is_err());
-        let a = this.j.twice() / 2;     // intentional integer division
+        let a = this.j.twice() / 2; // intentional integer division
         Self {
             n: this.n,
             l: OrbAng(a + (a + i32::from(this.p)) % 2),
@@ -151,19 +155,31 @@ impl str::FromStr for Npj {
 
 impl From<Nlj> for Npj {
     fn from(this: Nlj) -> Self {
-        Self { n: this.n, p: Parity::of(this.l.0), j: this.j }
+        Self {
+            n: this.n,
+            p: Parity::of(this.l.0),
+            j: this.j,
+        }
     }
 }
 
 impl From<Npjw> for Npj {
     fn from(s: Npjw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j }
+        Self {
+            n: s.n,
+            p: s.p,
+            j: s.j,
+        }
     }
 }
 
 impl From<Npjmw> for Npj {
     fn from(s: Npjmw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j }
+        Self {
+            n: s.n,
+            p: s.p,
+            j: s.j,
+        }
     }
 }
 
@@ -189,7 +205,10 @@ impl Npj {
 
     pub fn to_j_chan_state(self) -> ChanState<JChan<Parity>, i32> {
         ChanState {
-            l: JChan { j: self.j, k: self.p },
+            l: JChan {
+                j: self.j,
+                k: self.p,
+            },
             u: self.n,
         }
     }
@@ -197,8 +216,7 @@ impl Npj {
 
 /// Principal quantum number, parity, total angular momentum magnitude, and
 /// isospin projection.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
-         Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Npjw {
     /// Principal quantum number (n)
     pub n: i32,
@@ -226,7 +244,9 @@ impl fmt::Display for Npjw {
 impl str::FromStr for Npjw {
     type Err = Box<dyn Error + Send + Sync>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let m = re!(r"(.+)([np])").captures(s).ok_or("expected p or n suffix")?;
+        let m = re!(r"(.+)([np])")
+            .captures(s)
+            .ok_or("expected p or n suffix")?;
         let npj: Npj = m.get(1).unwrap().as_str().parse()?;
         let w = match m.get(2).unwrap().as_str() {
             "n" => Half(-1),
@@ -239,13 +259,23 @@ impl str::FromStr for Npjw {
 
 impl From<ChanState<JChan<Pw>, i32>> for Npjw {
     fn from(s: ChanState<JChan<Pw>, i32>) -> Self {
-        Self { n: s.u, p: s.l.k.p, j: s.l.j, w: s.l.k.w }
+        Self {
+            n: s.u,
+            p: s.l.k.p,
+            j: s.l.j,
+            w: s.l.k.w,
+        }
     }
 }
 
 impl From<Npjmw> for Npjw {
     fn from(s: Npjmw) -> Self {
-        Self { n: s.n, p: s.p, j: s.j, w: s.w }
+        Self {
+            n: s.n,
+            p: s.p,
+            j: s.j,
+            w: s.w,
+        }
     }
 }
 
@@ -261,7 +291,13 @@ impl Npjw {
     }
 
     pub fn and_m(self, m: Half<i32>) -> Npjmw {
-        Npjmw { n: self.n, p: self.p, j: self.j, m, w: self.w }
+        Npjmw {
+            n: self.n,
+            p: self.p,
+            j: self.j,
+            m,
+            w: self.w,
+        }
     }
 }
 
@@ -284,7 +320,13 @@ pub struct Npjmw {
 impl From<ChanState<JChan<Pmw>, Nj>> for Npjmw {
     fn from(s: ChanState<JChan<Pmw>, Nj>) -> Self {
         debug_assert_eq!(s.l.j, Zero::zero());
-        Self { n: s.u.n, p: s.l.k.p, j: s.u.j, m: s.l.k.m, w: s.l.k.w }
+        Self {
+            n: s.u.n,
+            p: s.l.k.p,
+            j: s.u.j,
+            m: s.l.k.m,
+            w: s.l.k.w,
+        }
     }
 }
 
@@ -355,33 +397,52 @@ pub struct Pmw {
 
 impl From<Npjmw> for Pmw {
     fn from(s: Npjmw) -> Self {
-        Self { p: s.p, m: s.m, w: s.w }
+        Self {
+            p: s.p,
+            m: s.m,
+            w: s.w,
+        }
     }
 }
 
 impl From<Npjmw> for ChanState<JChan<Pmw>, Nj> {
     fn from(s: Npjmw) -> Self {
-        Self { l: Pmw::from(s).into(), u: s.into() }
+        Self {
+            l: Pmw::from(s).into(),
+            u: s.into(),
+        }
     }
 }
 
 impl Add for Pmw {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        Self { p: self.p + other.p, m: self.m + other.m, w: self.w + other.w }
+        Self {
+            p: self.p + other.p,
+            m: self.m + other.m,
+            w: self.w + other.w,
+        }
     }
 }
 
 impl Sub for Pmw {
     type Output = Self;
     fn sub(self, other: Self) -> Self::Output {
-        Self { p: self.p - other.p, m: self.m - other.m, w: self.w - other.w }
+        Self {
+            p: self.p - other.p,
+            m: self.m - other.m,
+            w: self.w - other.w,
+        }
     }
 }
 
 impl Zero for Pmw {
     fn zero() -> Self {
-        Self { p: Zero::zero(), m: Zero::zero(), w: Zero::zero() }
+        Self {
+            p: Zero::zero(),
+            m: Zero::zero(),
+            w: Zero::zero(),
+        }
     }
     fn is_zero(&self) -> bool {
         self.p.is_zero() && self.m.is_zero() && self.w.is_zero()
@@ -403,33 +464,48 @@ impl From<Npjw> for Pw {
 
 impl From<Npjw> for JChan<Pw> {
     fn from(s: Npjw) -> Self {
-        Self { j: s.j, k: s.into() }
+        Self {
+            j: s.j,
+            k: s.into(),
+        }
     }
 }
 
 impl From<Npjw> for ChanState<JChan<Pw>, i32> {
     fn from(s: Npjw) -> Self {
-        Self { l: s.into(), u: s.n }
+        Self {
+            l: s.into(),
+            u: s.n,
+        }
     }
 }
 
 impl Add for Pw {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        Self { p: self.p + other.p, w: self.w + other.w }
+        Self {
+            p: self.p + other.p,
+            w: self.w + other.w,
+        }
     }
 }
 
 impl Sub for Pw {
     type Output = Self;
     fn sub(self, other: Self) -> Self::Output {
-        Self { p: self.p - other.p, w: self.w - other.w }
+        Self {
+            p: self.p - other.p,
+            w: self.w - other.w,
+        }
     }
 }
 
 impl Zero for Pw {
     fn zero() -> Self {
-        Self { p: Zero::zero(), w: Zero::zero() }
+        Self {
+            p: Zero::zero(),
+            w: Zero::zero(),
+        }
     }
     fn is_zero(&self) -> bool {
         self.p.is_zero() && self.w.is_zero()
@@ -461,8 +537,7 @@ impl JtwNpjKey {
         } else {
             1.0
         };
-        let (adj, (npj1, npj2), (npj3, npj4)) =
-            parity::sort2((npj1, npj2), (npj3, npj4));
+        let (adj, (npj1, npj2), (npj3, npj4)) = parity::sort2((npj1, npj2), (npj3, npj4));
         (
             f12 * f34,
             adj == Parity::Odd,
@@ -490,8 +565,11 @@ pub struct JNpjwKey {
 
 impl fmt::Display for JNpjwKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "J={} {} {} {} {}",
-               self.j12, self.npjw1, self.npjw2, self.npjw3, self.npjw4)
+        write!(
+            f,
+            "J={} {} {} {} {}",
+            self.j12, self.npjw1, self.npjw2, self.npjw3, self.npjw4
+        )
     }
 }
 
@@ -509,12 +587,17 @@ impl JNpjwKey {
         } else {
             1.0
         };
-        let (adj, (npjw1, npjw2), (npjw3, npjw4)) =
-            parity::sort2((npjw1, npjw2), (npjw3, npjw4));
+        let (adj, (npjw1, npjw2), (npjw3, npjw4)) = parity::sort2((npjw1, npjw2), (npjw3, npjw4));
         (
             f12 * f34,
             adj == Parity::Odd,
-            Self { j12: self.j12, npjw1, npjw2, npjw3, npjw4 },
+            Self {
+                j12: self.j12,
+                npjw1,
+                npjw2,
+                npjw3,
+                npjw4,
+            },
         )
     }
 }
@@ -525,7 +608,11 @@ pub struct Ho3dIter(pub Nlj);
 
 impl Default for Ho3dIter {
     fn default() -> Self {
-        Ho3dIter(Nlj { n: 0, l: OrbAng(0), j: Half(1)})
+        Ho3dIter(Nlj {
+            n: 0,
+            l: OrbAng(0),
+            j: Half(1),
+        })
     }
 }
 
@@ -536,12 +623,23 @@ impl Iterator for Ho3dIter {
         let OrbAng(l) = nlj.l;
         let greater_j = Half::from(l) + Half(1);
         self.0 = if nlj.j != greater_j {
-            Nlj { j: greater_j, .. nlj }
+            Nlj {
+                j: greater_j,
+                ..nlj
+            }
         } else if nlj.n > 0 {
-            Nlj { n: nlj.n - 1, l: OrbAng(l + 2), j: nlj.j + Half(2) }
+            Nlj {
+                n: nlj.n - 1,
+                l: OrbAng(l + 2),
+                j: nlj.j + Half(2),
+            }
         } else {
             let e = nlj.shell() + 1;
-            Nlj { n: e / 2, l: OrbAng(e % 2), j: Half(1) }
+            Nlj {
+                n: e / 2,
+                l: OrbAng(e % 2),
+                j: Half(1),
+            }
         };
         Some(nlj)
     }
@@ -589,9 +687,7 @@ impl Ho3dTrunc {
     }
 
     pub fn contains(self, nlj: Nlj) -> bool {
-        nlj.shell() <= self.e_max
-            && nlj.n <= self.n_max
-            && nlj.l <= OrbAng(self.l_max)
+        nlj.shell() <= self.e_max && nlj.n <= self.n_max && nlj.l <= OrbAng(self.l_max)
     }
 
     /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
@@ -614,13 +710,17 @@ pub struct Ho3dModTrunc {
 
 impl From<Ho3dTrunc> for Ho3dModTrunc {
     fn from(trunc: Ho3dTrunc) -> Self {
-        Self { trunc, .. Default::default() }
+        Self {
+            trunc,
+            ..Default::default()
+        }
     }
 }
 
 impl Ho3dModTrunc {
     pub fn e_max(&self) -> i32 {
-        self.incl.iter()
+        self.incl
+            .iter()
             .map(|p| p.shell())
             .chain(iter::once(self.trunc.e_max))
             .max()
@@ -628,9 +728,7 @@ impl Ho3dModTrunc {
     }
 
     pub fn contains(&self, nlj: Nlj) -> bool {
-        self.trunc.contains(nlj)
-            && !self.excl.contains(&nlj)
-            || self.incl.contains(&nlj)
+        self.trunc.contains(nlj) && !self.excl.contains(&nlj) || self.incl.contains(&nlj)
     }
 
     /// Obtain a sequence of (n, π, j) quantum numbers in (e, l, j)-order.
@@ -660,7 +758,8 @@ impl Nucleons {
 
     pub fn part_states(&self) -> Vec<PartState<Occ, Npj>> {
         let mut finder = FnvHashMap::default();
-        let mut states: Vec<_> = self.states()
+        let mut states: Vec<_> = self
+            .states()
             .into_iter()
             .enumerate()
             .map(|(i, p)| {
@@ -703,11 +802,11 @@ impl<'a> SimpleNucleus<'a> {
     pub fn to_nucleus(self) -> Result<Nucleus, Box<dyn Error + Send + Sync>> {
         let mut neutrons_occ = Ho3dModTrunc::from(Ho3dTrunc {
             e_max: self.e_fermi_n,
-            .. Default::default()
+            ..Default::default()
         });
         let mut protons_occ = Ho3dModTrunc::from(Ho3dTrunc {
             e_max: self.e_fermi_p,
-            .. Default::default()
+            ..Default::default()
         });
         for orb in self.orbs.split_whitespace() {
             let is_incl = if orb.starts_with("+") {
@@ -715,8 +814,7 @@ impl<'a> SimpleNucleus<'a> {
             } else if orb.starts_with("-") {
                 false
             } else {
-                return Err(format!("must start with '+' or '-': {}", orb)
-                           .into());
+                return Err(format!("must start with '+' or '-': {}", orb).into());
             };
             let npjw: Npjw = orb.split_at(1).1.parse()?;
             let occ = if npjw.w < Half(0) {
@@ -737,10 +835,19 @@ impl<'a> SimpleNucleus<'a> {
                 occ.excl.insert(nlj);
             }
         }
-        let all = Ho3dTrunc { e_max: self.e_max, .. Default::default() };
+        let all = Ho3dTrunc {
+            e_max: self.e_max,
+            ..Default::default()
+        };
         Ok(Nucleus {
-            neutrons: Nucleons { all: all.into(), occ: neutrons_occ },
-            protons: Nucleons { all: all.into(), occ: protons_occ },
+            neutrons: Nucleons {
+                all: all.into(),
+                occ: neutrons_occ,
+            },
+            protons: Nucleons {
+                all: all.into(),
+                occ: protons_occ,
+            },
         })
     }
 }
@@ -757,31 +864,49 @@ impl Nucleus {
     }
 
     pub fn states(&self) -> Vec<Npjw> {
-        self.neutrons.states().into_iter().map(|npj| {
-            npj.and_w(Half(-1))
-        }).chain(self.protons.states().into_iter().map(|npj| {
-            npj.and_w(Half(1))
-        })).collect()
+        self.neutrons
+            .states()
+            .into_iter()
+            .map(|npj| npj.and_w(Half(-1)))
+            .chain(
+                self.protons
+                    .states()
+                    .into_iter()
+                    .map(|npj| npj.and_w(Half(1))),
+            )
+            .collect()
     }
 
     pub fn part_states(&self) -> Vec<PartState<Occ, Npjw>> {
-        self.neutrons.part_states().into_iter().map(|xp| {
-            xp.map_p(|npj| npj.and_w(Half(-1)))
-        }).chain(self.protons.part_states().into_iter().map(|xp| {
-            xp.map_p(|npj| npj.and_w(Half(1)))
-        })).collect()
+        self.neutrons
+            .part_states()
+            .into_iter()
+            .map(|xp| xp.map_p(|npj| npj.and_w(Half(-1))))
+            .chain(
+                self.protons
+                    .part_states()
+                    .into_iter()
+                    .map(|xp| xp.map_p(|npj| npj.and_w(Half(1)))),
+            )
+            .collect()
     }
 
     pub fn basis(&self) -> JOrbBasis<Pw, i32> {
-        self.part_states().into_iter().map(|xp| {
-            xp.map_p(From::from)
-        }).collect()
+        self.part_states()
+            .into_iter()
+            .map(|xp| xp.map_p(From::from))
+            .collect()
     }
 
     pub fn m_basis(&self) -> JOrbBasis<Pmw, Nj> {
-        self.part_states().into_iter().flat_map(|xp| {
-            xp.p.j.multiplet().map(move |m| xp.map_p(|p| p.and_m(m).into()))
-        }).collect()
+        self.part_states()
+            .into_iter()
+            .flat_map(|xp| {
+                xp.p.j
+                    .multiplet()
+                    .map(move |m| xp.map_p(|p| p.and_m(m).into()))
+            })
+            .collect()
     }
 }
 
@@ -810,11 +935,7 @@ pub fn kinetic_ho3d_mat_elem(a: Npj, b: Npj) -> f64 {
     }
 }
 
-pub fn make_ke_op_j(
-    atlas: &JAtlas<Pw, i32>,
-    omega: f64,
-) -> OpJ100<f64>
-{
+pub fn make_ke_op_j(atlas: &JAtlas<Pw, i32>, omega: f64) -> OpJ100<f64> {
     let scheme = atlas.scheme();
     let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
@@ -830,11 +951,7 @@ pub fn make_ke_op_j(
     h1
 }
 
-pub fn make_ke_op_m(
-    atlas: &JAtlas<Pmw, Nj>,
-    omega: f64,
-) -> OpJ100<f64>
-{
+pub fn make_ke_op_m(atlas: &JAtlas<Pmw, Nj>, omega: f64) -> OpJ100<f64> {
     let scheme = atlas.scheme();
     let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
@@ -850,11 +967,7 @@ pub fn make_ke_op_m(
     h1
 }
 
-pub fn make_ho3d_op_j(
-    atlas: &JAtlas<Pw, i32>,
-    omega: f64,
-) -> OpJ100<f64>
-{
+pub fn make_ho3d_op_j(atlas: &JAtlas<Pw, i32>, omega: f64) -> OpJ100<f64> {
     let scheme = atlas.scheme();
     let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
@@ -865,11 +978,7 @@ pub fn make_ho3d_op_j(
     h1
 }
 
-pub fn make_ho3d_op_m(
-    atlas: &JAtlas<Pmw, Nj>,
-    omega: f64,
-) -> OpJ100<f64>
-{
+pub fn make_ho3d_op_m(atlas: &JAtlas<Pmw, Nj>, omega: f64) -> OpJ100<f64> {
     let scheme = atlas.scheme();
     let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
@@ -885,8 +994,7 @@ pub fn make_ho3d_op_m(
 pub fn make_v_op_j(
     atlas: &JAtlas<Pw, i32>,
     two_body_mat_elems: &FnvHashMap<JNpjwKey, f64>,
-) -> OpJ200<f64>
-{
+) -> OpJ200<f64> {
     let scheme = atlas.scheme();
     let mut h2 = Op::new(scheme.clone());
     for pq in scheme.states_20(&occ::ALL2) {
@@ -903,13 +1011,16 @@ pub fn make_v_op_j(
                 npjw2: q,
                 npjw3: r,
                 npjw4: s,
-            }.canonicalize();
-            h2.add(pq, rs,
-                   *two_body_mat_elems.get(&key)
-                   .unwrap_or_else(|| {
-                       panic!("matrix element not found: {}", key)
-                   })
-                   * sign);
+            }
+            .canonicalize();
+            h2.add(
+                pq,
+                rs,
+                *two_body_mat_elems
+                    .get(&key)
+                    .unwrap_or_else(|| panic!("matrix element not found: {}", key))
+                    * sign,
+            );
         }
     }
     h2
@@ -920,8 +1031,7 @@ pub fn op1_j_to_m(
     j_atlas: &JAtlas<Pw, i32>,
     m_atlas: &JAtlas<Pmw, Nj>,
     a1: &OpJ100<f64>,
-) -> OpJ100<f64>
-{
+) -> OpJ100<f64> {
     let m_scheme = m_atlas.scheme();
     let unveil = |pm| {
         let npjmw = Npjmw::from(m_atlas.decode(pm).unwrap());
@@ -944,8 +1054,7 @@ pub fn op2_j_to_m(
     j_atlas: &JAtlas<Pw, i32>,
     m_atlas: &JAtlas<Pmw, Nj>,
     a2: &OpJ200<f64>,
-) -> OpJ200<f64>
-{
+) -> OpJ200<f64> {
     let m_scheme = m_atlas.scheme();
     let unveil = |pm| {
         let npjmw = Npjmw::from(m_atlas.decode(pm).unwrap());
@@ -968,34 +1077,40 @@ pub fn op2_j_to_m(
             let jr = rj.j();
             let js = sj.j();
             debug_assert_eq!(mpq, mr + ms);
-            b2.add(pqm, rsm, Half::tri_range_2((jp, jq), (jr, js)).map(|jpq| {
-                // handle forbidden states
-                let pqj = match pj.combine_with_10(qj, jpq) {
-                    None => return 0.0,
-                    Some(x) => x,
-                };
-                let rsj = match rj.combine_with_10(sj, jpq) {
-                    None => return 0.0,
-                    Some(x) => x,
-                };
-                a2.at(pqj, rsj)
-                    * w3jm_ctx.cg(ClebschGordan {
-                        tj1: jp.twice(),
-                        tj2: jq.twice(),
-                        tj12: jpq.twice(),
-                        tm1: mp.twice(),
-                        tm2: mq.twice(),
-                        tm12: mpq.twice(),
+            b2.add(
+                pqm,
+                rsm,
+                Half::tri_range_2((jp, jq), (jr, js))
+                    .map(|jpq| {
+                        // handle forbidden states
+                        let pqj = match pj.combine_with_10(qj, jpq) {
+                            None => return 0.0,
+                            Some(x) => x,
+                        };
+                        let rsj = match rj.combine_with_10(sj, jpq) {
+                            None => return 0.0,
+                            Some(x) => x,
+                        };
+                        a2.at(pqj, rsj)
+                            * w3jm_ctx.cg(ClebschGordan {
+                                tj1: jp.twice(),
+                                tj2: jq.twice(),
+                                tj12: jpq.twice(),
+                                tm1: mp.twice(),
+                                tm2: mq.twice(),
+                                tm12: mpq.twice(),
+                            })
+                            * w3jm_ctx.cg(ClebschGordan {
+                                tj1: jr.twice(),
+                                tj2: js.twice(),
+                                tj12: jpq.twice(),
+                                tm1: mr.twice(),
+                                tm2: ms.twice(),
+                                tm12: mpq.twice(),
+                            })
                     })
-                    * w3jm_ctx.cg(ClebschGordan {
-                        tj1: jr.twice(),
-                        tj2: js.twice(),
-                        tj12: jpq.twice(),
-                        tm1: mr.twice(),
-                        tm2: ms.twice(),
-                        tm12: mpq.twice(),
-                    })
-            }).sum());
+                    .sum(),
+            );
         }
     }
     b2
@@ -1003,17 +1118,18 @@ pub fn op2_j_to_m(
 
 #[cfg(test)]
 mod tests {
-    use num::range_step_inclusive;
     use super::super::half::Half;
     use super::*;
+    use num::range_step_inclusive;
 
     #[test]
     fn test_ho3d_iter() {
         let e_max = 100;
-        let nljs1: Vec<_> =
-            Ho3dIter::default().take_while(|x| x.shell() <= e_max).collect();
+        let nljs1: Vec<_> = Ho3dIter::default()
+            .take_while(|x| x.shell() <= e_max)
+            .collect();
         let mut nljs2 = Vec::default();
-        for e in 0 .. e_max + 1 {
+        for e in 0..e_max + 1 {
             for l in range_step_inclusive(e % 2, e, 2) {
                 let n = (e - l) / 2;
                 for j in Half::tri_range(l.into(), Half(1)) {
@@ -1027,6 +1143,14 @@ mod tests {
     #[test]
     fn test_npjw() {
         let x: Npjw = "1d5/2p".parse().unwrap();
-        assert_eq!(x, Npjw { n: 1, p: Parity::Even, j: Half(5), w: Half(1)});
+        assert_eq!(
+            x,
+            Npjw {
+                n: 1,
+                p: Parity::Even,
+                j: Half(5),
+                w: Half(1)
+            }
+        );
     }
 }

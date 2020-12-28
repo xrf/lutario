@@ -2,13 +2,13 @@
 //!
 //! Experimental module, not yet used for anything.
 
-use std::{cmp, fmt};
+use any_key::AnyHash;
 use std::any::Any;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, Condvar, Mutex, Weak};
-use any_key::AnyHash;
+use std::{cmp, fmt};
 
 pub trait Key: Hash + Eq + Send + Sync + 'static {
     type Value: Send + Sync + 'static;
@@ -28,9 +28,7 @@ impl Drop for Dropper {
         // awaken them
         if let Some(map) = self.map.upgrade() {
             if let Some(key) = self.key.upgrade() {
-                if let Some(CacheValue { condvar, .. })
-                    = map.lock().unwrap().remove(&key)
-                {
+                if let Some(CacheValue { condvar, .. }) = map.lock().unwrap().remove(&key) {
                     condvar.notify_all();
                 }
             }
@@ -52,9 +50,7 @@ impl<V> Clone for Cached<V> {
 
 impl<V: fmt::Debug> fmt::Debug for Cached<V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("Cached")
-            .field(&self.0.value)
-            .finish()
+        f.debug_tuple("Cached").field(&self.0.value).finish()
     }
 }
 
@@ -106,7 +102,7 @@ struct CachedInner<V> {
 }
 
 struct CacheValue {
-    value: Box<dyn Any + Send + Sync>,  // ~ Box<Weak<CachedInner<V>>>
+    value: Box<dyn Any + Send + Sync>, // ~ Box<Weak<CachedInner<V>>>
     condvar: Arc<Condvar>,
 }
 
@@ -143,10 +139,12 @@ impl Cache {
             let mut map = self.0.lock().unwrap();
             loop {
                 let condvar = match map.get(qkey) {
-                    Some(&CacheValue { ref value, ref condvar }) => {
+                    Some(&CacheValue {
+                        ref value,
+                        ref condvar,
+                    }) => {
                         let value: &(dyn Any + Send) = &**value;
-                        let value = value.downcast_ref()
-                            .expect("value has wrong type");
+                        let value = value.downcast_ref().expect("value has wrong type");
                         if let Some(value) = Weak::upgrade(value) {
                             return Cached(value);
                         }
@@ -156,14 +154,17 @@ impl Cache {
                 };
                 map = condvar.wait(map).unwrap();
             }
-            map.remove(qkey);          // make sure the key object is replaced
+            map.remove(qkey); // make sure the key object is replaced
             let key = Arc::new(key.clone());
             let wkey = Arc::downgrade(&key);
             let condvar = Arc::new(Condvar::new());
-            map.insert(key, CacheValue {
-                value: Box::new(Weak::<CachedInner<K::Value>>::new()),
-                condvar,
-            });
+            map.insert(
+                key,
+                CacheValue {
+                    value: Box::new(Weak::<CachedInner<K::Value>>::new()),
+                    condvar,
+                },
+            );
             wkey
         };
         let value = Key::get(key);
@@ -175,8 +176,10 @@ impl Cache {
             },
         });
         let mut map = self.0.lock().unwrap();
-        let &mut CacheValue { value: ref mut rval, ref condvar } =
-            map.get_mut(qkey).expect("entry vanished");
+        let &mut CacheValue {
+            value: ref mut rval,
+            ref condvar,
+        } = map.get_mut(qkey).expect("entry vanished");
         *rval = Box::new(Arc::downgrade(&value));
         condvar.notify_all();
         Cached(value)
@@ -185,9 +188,9 @@ impl Cache {
 
 #[cfg(test)]
 mod tests {
-    use std::{mem, thread};
-    use std::time::Duration;
     use super::*;
+    use std::time::Duration;
+    use std::{mem, thread};
 
     #[derive(Clone, Debug, PartialEq, Eq, Hash)]
     struct Foo(&'static str);
@@ -246,10 +249,10 @@ mod tests {
         mem::forget(foo3);
 
         let mut children = Vec::default();
-        for _ in 0 .. 16 {
+        for _ in 0..16 {
             let cache = cache.clone();
             children.push(thread::spawn(move || {
-                for _ in 0 .. 16 {
+                for _ in 0..16 {
                     assert_eq!(*cache.get(&Foo("p")), ":p");
                     let food = cache.get(&Foo("D"));
                     assert_eq!(*food, ":D");

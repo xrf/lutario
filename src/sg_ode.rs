@@ -41,38 +41,38 @@ pub mod ffi {
 
     pub use super::super::vector_driver::c::ffi::{Vector, VectorDriver};
 
-    pub type SgDerivFn = unsafe extern fn(*mut raw::c_void,
-                                          raw::c_double,
-                                          *const Vector,
-                                          *mut Vector);
+    pub type SgDerivFn =
+        unsafe extern "C" fn(*mut raw::c_void, raw::c_double, *const Vector, *mut Vector);
 
     pub enum SgOde {}
 
     #[link(name = "sgode")]
-    extern {
+    extern "C" {
         pub fn sg_ode_try_new(drv: VectorDriver) -> *mut SgOde;
 
         pub fn sg_ode_del(this: *mut SgOde);
 
-        pub fn sg_ode_de(this: *mut SgOde,
-                         f: SgDerivFn,
-                         f_ctx: *mut raw::c_void,
-                         y: *mut Vector,
-                         t: *mut raw::c_double,
-                         tout: raw::c_double,
-                         relerr: *mut raw::c_double,
-                         abserr: *mut raw::c_double,
-                         iflag: *mut raw::c_int,
-                         maxnum: raw::c_uint);
+        pub fn sg_ode_de(
+            this: *mut SgOde,
+            f: SgDerivFn,
+            f_ctx: *mut raw::c_void,
+            y: *mut Vector,
+            t: *mut raw::c_double,
+            tout: raw::c_double,
+            relerr: *mut raw::c_double,
+            abserr: *mut raw::c_double,
+            iflag: *mut raw::c_int,
+            maxnum: raw::c_uint,
+        );
     }
 }
 
+use super::utils::{abort_on_unwind, Toler};
+use super::vector_driver::c::CVectorDriver;
+use super::vector_driver::VectorDriver;
+use conv::ValueInto;
 use std::marker::PhantomData;
 use std::os::raw;
-use conv::ValueInto;
-use super::utils::{Toler, abort_on_unwind};
-use super::vector_driver::VectorDriver;
-use super::vector_driver::c::CVectorDriver;
 
 quick_error! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -114,18 +114,15 @@ impl Default for Conf {
 
 impl Conf {
     pub fn make_solver<D>(self, driver: D) -> Option<Solver<D>>
-        where D: VectorDriver<Item=f64> + Sized,
+    where
+        D: VectorDriver<Item = f64> + Sized,
     {
         let driver = Box::new(CVectorDriver::new(driver));
-        unsafe {
-            ffi::sg_ode_try_new(driver.as_raw()).as_mut()
-        }.map(|state| {
-            Solver {
-                conf: self,
-                driver: driver,
-                state,
-                iflag: if self.strict { -1 } else { 1 },
-            }
+        unsafe { ffi::sg_ode_try_new(driver.as_raw()).as_mut() }.map(|state| Solver {
+            conf: self,
+            driver: driver,
+            state,
+            iflag: if self.strict { -1 } else { 1 },
         })
     }
 }
@@ -159,16 +156,22 @@ fn parse_status(status: raw::c_int) -> Result<(), Error> {
 }
 
 impl<D> Solver<D>
-    where D: VectorDriver<Item=f64> + Sized,
+where
+    D: VectorDriver<Item = f64> + Sized,
 {
     pub fn conf(&self) -> &Conf {
         &self.conf
     }
 
-    pub fn step<F>(&mut self, f: F,
-                   target_x: f64, x: &mut f64, y: &mut D::Vector)
-                   -> Result<(), Error>
-        where F: FnMut(f64, &D::Vector, &mut D::Vector),
+    pub fn step<F>(
+        &mut self,
+        f: F,
+        target_x: f64,
+        x: &mut f64,
+        y: &mut D::Vector,
+    ) -> Result<(), Error>
+    where
+        F: FnMut(f64, &D::Vector, &mut D::Vector),
     {
         struct Ctx<D, F> {
             f: F,
@@ -176,17 +179,26 @@ impl<D> Solver<D>
         }
 
         impl<D, F> Ctx<D, F>
-            where F: FnMut(f64, &D::Vector, &mut D::Vector),
-                  D: VectorDriver<Item=f64> + Sized,
+        where
+            F: FnMut(f64, &D::Vector, &mut D::Vector),
+            D: VectorDriver<Item = f64> + Sized,
         {
             fn new(f: F) -> (Self, ffi::SgDerivFn) {
-                (Self { f, phantom: PhantomData }, Self::call)
+                (
+                    Self {
+                        f,
+                        phantom: PhantomData,
+                    },
+                    Self::call,
+                )
             }
 
-            unsafe extern fn call(ctx: *mut raw::c_void,
-                                  x: raw::c_double,
-                                  y: *const ffi::Vector,
-                                  dydx: *mut ffi::Vector) {
+            unsafe extern "C" fn call(
+                ctx: *mut raw::c_void,
+                x: raw::c_double,
+                y: *const ffi::Vector,
+                dydx: *mut ffi::Vector,
+            ) {
                 let ctx = &mut *(ctx as *mut Self);
                 let y = &*(y as *const D::Vector);
                 let dydx = &mut *(dydx as *mut D::Vector);
@@ -198,16 +210,18 @@ impl<D> Solver<D>
 
         let (mut ctx, call) = Ctx::<D, F>::new(f);
         unsafe {
-            ffi::sg_ode_de(self.state,
-                           call,
-                           &mut ctx as *mut _ as _,
-                           y as *mut _ as _,
-                           x,
-                           target_x,
-                           &mut self.conf.toler.relerr,
-                           &mut self.conf.toler.abserr,
-                           &mut self.iflag,
-                           self.conf.maxnum);
+            ffi::sg_ode_de(
+                self.state,
+                call,
+                &mut ctx as *mut _ as _,
+                y as *mut _ as _,
+                x,
+                target_x,
+                &mut self.conf.toler.relerr,
+                &mut self.conf.toler.abserr,
+                &mut self.iflag,
+                self.conf.maxnum,
+            );
             parse_status(self.iflag.abs())
         }
     }
@@ -215,14 +229,14 @@ impl<D> Solver<D>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::vector_driver::basic::BasicVectorDriver;
+    use super::*;
 
     #[test]
     fn test_simple_harmonic_oscillator() {
         use std::f64::consts::PI;
         fn f(_: f64, y: &Vec<f64>, dydx: &mut Vec<f64>) {
-            dydx[0] =  y[1];
+            dydx[0] = y[1];
             dydx[1] = -y[0];
         }
         let drv = BasicVectorDriver::new(2);
@@ -231,15 +245,19 @@ mod tests {
             let mut y = drv.create_vector_from(&[1.0, 0.0]);
             let mut solver = Conf::default().make_solver(&drv).unwrap();
             let n = 12;
-            for i in 1 .. n + 1 {
+            for i in 1..n + 1 {
                 let n = n as f64;
                 let target = 2.0 * PI / n * direction * i as f64;
                 solver.step(f, target, &mut x, &mut y).unwrap();
                 assert_eq!(x, target);
-                toler_assert_eq!(Toler {
-                    abserr: solver.conf().toler.abserr * n,
-                    relerr: 0.0,
-                }, y[0], x.cos());
+                toler_assert_eq!(
+                    Toler {
+                        abserr: solver.conf().toler.abserr * n,
+                        relerr: 0.0,
+                    },
+                    y[0],
+                    x.cos()
+                );
             }
         }
     }
@@ -255,19 +273,28 @@ mod tests {
             let mut x = 0.0;
             let mut y = drv.create_vector_from(&[1.0]);
             let mut solver = Conf {
-                toler: Toler { abserr: 1e-8, relerr: 1e-8 },
-                .. Default::default()
-            }.make_solver(&drv).unwrap();
+                toler: Toler {
+                    abserr: 1e-8,
+                    relerr: 1e-8,
+                },
+                ..Default::default()
+            }
+            .make_solver(&drv)
+            .unwrap();
             let n = 12;
-            for i in 1 .. n + 1 {
+            for i in 1..n + 1 {
                 let n = n as f64;
                 let target = 2.0 * PI / n * direction * i as f64;
                 solver.step(f, target, &mut x, &mut y).unwrap();
                 assert_eq!(x, target);
-                toler_assert_eq!(Toler {
-                    abserr: solver.conf().toler.abserr * n,
-                    relerr: 0.0,
-                }, y[0], x.sin().exp());
+                toler_assert_eq!(
+                    Toler {
+                        abserr: solver.conf().toler.abserr * n,
+                        relerr: 0.0,
+                    },
+                    y[0],
+                    x.sin().exp()
+                );
             }
         }
     }
@@ -283,9 +310,14 @@ mod tests {
         let mut x = 0.0;
         let mut y = drv.create_vector_from(&[1.0, 0.0]);
         let mut solver = Conf {
-            toler: Toler { abserr: 1e-8, relerr: 1e-8 },
-            .. Default::default()
-        }.make_solver(&drv).unwrap();
+            toler: Toler {
+                abserr: 1e-8,
+                relerr: 1e-8,
+            },
+            ..Default::default()
+        }
+        .make_solver(&drv)
+        .unwrap();
         assert_eq!(solver.step(f, 1.0, &mut x, &mut y), Err(Error::TooStiff));
     }
 }

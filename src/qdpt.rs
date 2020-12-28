@@ -9,17 +9,14 @@ use super::j_scheme::{OpJ100, OpJ200, OpJ211, StateJ10};
 /// ```text
 /// ΔE = 1/4 ∑[i j a b] J[i j]^2 abs(H[i j a b])^2 / Δ[i j a b]
 /// ```
-pub fn mp2(h1: &OpJ100<f64>, h2: &OpJ200<f64>) -> f64
-{
+pub fn mp2(h1: &OpJ100<f64>, h2: &OpJ200<f64>) -> f64 {
     let mut r = 0.0;
     let scheme = h1.scheme();
     for ij in scheme.states_20(&[occ::II]) {
         let (i, j) = ij.split_to_10_10();
         for ab in ij.costates_20(&[occ::AA]) {
             let (a, b) = ab.split_to_10_10();
-            r +=
-                ij.jweight(2)
-                * h2.at(ij, ab).abs().powi(2)
+            r += ij.jweight(2) * h2.at(ij, ab).abs().powi(2)
                 / (h1.at(i, i) + h1.at(j, j) - h1.at(a, a) - h1.at(b, b));
         }
     }
@@ -39,7 +36,8 @@ pub fn qdpt_term_a<F>(
     r_occ: Occ,
     st_occ: [Occ; 2],
     denom: F,
-) -> f64 where
+) -> f64
+where
     F: Fn(StateJ10, StateJ10, StateJ10) -> f64,
 {
     assert_eq!(p.lu().l, q.lu().l);
@@ -57,10 +55,7 @@ pub fn qdpt_term_a<F>(
             };
             for st in rp.costates_20(&[st_occ]) {
                 let (s, t) = st.split_to_10_10();
-                result += 1.0 / 2.0
-                    * rp.jweight(2)
-                    / p.jweight(2)
-                    * h2.at(rp, st) * h2.at(st, rq)
+                result += 1.0 / 2.0 * rp.jweight(2) / p.jweight(2) * h2.at(rp, st) * h2.at(st, rq)
                     / denom(r, s, t);
             }
         }
@@ -83,7 +78,8 @@ pub fn qdpt_term_b<F>(
     st_occ: [Occ; 2],
     uv_occ: [Occ; 2],
     denom: F,
-) -> f64 where
+) -> f64
+where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
     assert_eq!(p.lu().l, q.lu().l);
@@ -103,9 +99,7 @@ pub fn qdpt_term_b<F>(
                 let (s, t) = st.split_to_10_10();
                 for uv in rp.costates_20(&[uv_occ]) {
                     let (u, v) = uv.split_to_10_10();
-                    result += 1.0 / 4.0
-                        * rp.jweight(2)
-                        / p.jweight(2)
+                    result += 1.0 / 4.0 * rp.jweight(2) / p.jweight(2)
                         * h2.at(rp, st)
                         * h2.at(st, uv)
                         * h2.at(uv, rq)
@@ -133,7 +127,8 @@ pub fn qdpt_term_c<F>(
     t_occ: Occ,
     uv_occ: [Occ; 2],
     denom: F,
-) -> f64 where
+) -> f64
+where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
     assert_eq!(p.lu().l, q.lu().l);
@@ -162,9 +157,7 @@ pub fn qdpt_term_c<F>(
                         };
                         for uv in rt.costates_20(&[uv_occ]) {
                             let (u, v) = uv.split_to_10_10();
-                            result += 1.0 / 2.0
-                                * rp.jweight(2)
-                                * rt.jweight(2)
+                            result += 1.0 / 2.0 * rp.jweight(2) * rt.jweight(2)
                                 / p.jweight(2)
                                 / r.jweight(2)
                                 * h2.at(rp, sq)
@@ -195,7 +188,8 @@ pub fn qdpt_term_d<F>(
     st_occ: [Occ; 2],
     uv_occ: [Occ; 2],
     denom: F,
-) -> f64 where
+) -> f64
+where
     F: Fn(StateJ10, StateJ10, StateJ10, StateJ10, StateJ10) -> f64,
 {
     assert_eq!(p.lu().l, q.lu().l);
@@ -215,9 +209,7 @@ pub fn qdpt_term_d<F>(
                 let (s, t) = st.split_to_10_10();
                 for uv in rp.costates_21(&[uv_occ]) {
                     let (u, v) = uv.split_to_10_10();
-                    result +=
-                        rp.jweight(2)
-                        / p.jweight(2)
+                    result += rp.jweight(2) / p.jweight(2)
                         * h2.at(st, rp)
                         * h2.at(uv, st)
                         * h2.at(rq, uv)
@@ -244,8 +236,7 @@ pub fn qdpt_term(
     h2p: Option<&OpJ211<f64>>,
     p: StateJ10,
     q: StateJ10,
-) -> f64
-{
+) -> f64 {
     assert_eq!(p.lu().l, q.lu().l);
     let hd = |p: StateJ10| h1.at(p, p);
     let get_h2p = || h2p.expect("Pandya transformed matrix needed for this term");
@@ -267,164 +258,168 @@ pub fn qdpt_term(
                 }
             }
             result
-        },
+        }
         2 => h1.at(p, q),
-        3 => qdpt_term_a(
-            h1, h2, p, q,
-            occ::I, occ::AA,
-            |i, a, b| {
-                hd(i) + hd(q) - hd(a) - hd(b)
-            },
-        ),
-        4 => -qdpt_term_a(
-            h1, h2, p, q,
-            occ::A, occ::II,
-            |a, i, j| {
-                hd(i) + hd(j) - hd(a) - hd(p)
-            },
-        ),
-        5 => qdpt_term_b(
-            h1, h2, p, q,
-            occ::I, occ::AA, occ::AA,
-            |i, a, b, c, d| {
-                (hd(i) + hd(q) - hd(a) - hd(b))
-                    * (hd(i) + hd(q) - hd(c) - hd(d))
-            },
-        ),
-        6 => -qdpt_term_b(
-            h1, h2, p, q,
-            occ::A, occ::AA, occ::II,
-            |a, b, c, i, j| {
-                (hd(i) + hd(j) - hd(a) - hd(p))
-                    * (hd(i) + hd(j) - hd(b) - hd(c))
-            },
-        ),
-        7 => -qdpt_term_b(
-            h1, h2, p, q,
-            occ::A, occ::II, occ::AA,
-            |c, i, j, a, b| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(i) + hd(j) - hd(c) - hd(p))
-            },
-        ),
-        8 => -qdpt_term_b(
-            h1, h2, p, q,
-            occ::A, occ::II, occ::II,
-            |a, k, l, i, j| {
-                (hd(i) + hd(j) - hd(a) - hd(p))
-                    * (hd(k) + hd(l) - hd(a) - hd(p))
-            },
-        ),
-        9 => qdpt_term_b(
-            h1, h2, p, q,
-            occ::I, occ::AA, occ::II,
-            |i, a, b, j, k| {
-                (hd(i) + hd(q) - hd(a) - hd(b))
-                    * (hd(j) + hd(k) - hd(a) - hd(b))
-            },
-        ),
-        10 => qdpt_term_b(
-            h1, h2, p, q,
-            occ::I, occ::II, occ::AA,
-            |k, i, j, a, b| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(k) + hd(q) - hd(a) - hd(b))
-            },
-        ),
+        3 => qdpt_term_a(h1, h2, p, q, occ::I, occ::AA, |i, a, b| {
+            hd(i) + hd(q) - hd(a) - hd(b)
+        }),
+        4 => -qdpt_term_a(h1, h2, p, q, occ::A, occ::II, |a, i, j| {
+            hd(i) + hd(j) - hd(a) - hd(p)
+        }),
+        5 => qdpt_term_b(h1, h2, p, q, occ::I, occ::AA, occ::AA, |i, a, b, c, d| {
+            (hd(i) + hd(q) - hd(a) - hd(b)) * (hd(i) + hd(q) - hd(c) - hd(d))
+        }),
+        6 => -qdpt_term_b(h1, h2, p, q, occ::A, occ::AA, occ::II, |a, b, c, i, j| {
+            (hd(i) + hd(j) - hd(a) - hd(p)) * (hd(i) + hd(j) - hd(b) - hd(c))
+        }),
+        7 => -qdpt_term_b(h1, h2, p, q, occ::A, occ::II, occ::AA, |c, i, j, a, b| {
+            (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(i) + hd(j) - hd(c) - hd(p))
+        }),
+        8 => -qdpt_term_b(h1, h2, p, q, occ::A, occ::II, occ::II, |a, k, l, i, j| {
+            (hd(i) + hd(j) - hd(a) - hd(p)) * (hd(k) + hd(l) - hd(a) - hd(p))
+        }),
+        9 => qdpt_term_b(h1, h2, p, q, occ::I, occ::AA, occ::II, |i, a, b, j, k| {
+            (hd(i) + hd(q) - hd(a) - hd(b)) * (hd(j) + hd(k) - hd(a) - hd(b))
+        }),
+        10 => qdpt_term_b(h1, h2, p, q, occ::I, occ::II, occ::AA, |k, i, j, a, b| {
+            (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(k) + hd(q) - hd(a) - hd(b))
+        }),
         11 => -qdpt_term_c(
-            h1, h2, p, q,
-            occ::I, occ::I, occ::I, occ::AA,
+            h1,
+            h2,
+            p,
+            q,
+            occ::I,
+            occ::I,
+            occ::I,
+            occ::AA,
             |k, j, i, b, a| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(i) + hd(k) - hd(a) - hd(b))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(i) + hd(k) - hd(a) - hd(b))
             },
         ),
         12 => qdpt_term_c(
-            h1, h2, p, q,
-            occ::A, occ::A, occ::A, occ::II,
+            h1,
+            h2,
+            p,
+            q,
+            occ::A,
+            occ::A,
+            occ::A,
+            occ::II,
             |a, c, b, i, j| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(i) + hd(j) - hd(a) - hd(c))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(i) + hd(j) - hd(a) - hd(c))
             },
         ),
         13 => qdpt_term_c(
-            h1, h2, p, q,
-            occ::I, occ::A, occ::I, occ::AA,
-            |i, a, j, b, c| {
-                (hd(i) - hd(a))
-                    * (hd(i) + hd(j) - hd(b) - hd(c))
-            },
+            h1,
+            h2,
+            p,
+            q,
+            occ::I,
+            occ::A,
+            occ::I,
+            occ::AA,
+            |i, a, j, b, c| (hd(i) - hd(a)) * (hd(i) + hd(j) - hd(b) - hd(c)),
         ),
         14 => qdpt_term_c(
-            h1, h2, p, q,
-            occ::A, occ::I, occ::I, occ::AA,
+            h1,
+            h2,
+            p,
+            q,
+            occ::A,
+            occ::I,
+            occ::I,
+            occ::AA,
             |c, j, i, b, a| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(j) + hd(q) - hd(c) - hd(p))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(j) + hd(q) - hd(c) - hd(p))
             },
         ),
         15 => -qdpt_term_c(
-            h1, h2, p, q,
-            occ::I, occ::A, occ::A, occ::II,
-            |i, a, b, j, k| {
-                (hd(i) - hd(a))
-                    * (hd(j) + hd(k) - hd(a) - hd(b))
-            },
+            h1,
+            h2,
+            p,
+            q,
+            occ::I,
+            occ::A,
+            occ::A,
+            occ::II,
+            |i, a, b, j, k| (hd(i) - hd(a)) * (hd(j) + hd(k) - hd(a) - hd(b)),
         ),
         16 => -qdpt_term_c(
-            h1, h2, p, q,
-            occ::A, occ::I, occ::A, occ::II,
+            h1,
+            h2,
+            p,
+            q,
+            occ::A,
+            occ::I,
+            occ::A,
+            occ::II,
             |b, k, a, j, i| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(k) + hd(q) - hd(b) - hd(p))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(k) + hd(q) - hd(b) - hd(p))
             },
         ),
         17 => qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::A, occ::IA, occ::AI,
-            |c, i, a, b, j| {
-                (hd(i) + hd(q) - hd(a) - hd(c))
-                    * (hd(i) + hd(j) - hd(a) - hd(b))
-            },
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::A,
+            occ::IA,
+            occ::AI,
+            |c, i, a, b, j| (hd(i) + hd(q) - hd(a) - hd(c)) * (hd(i) + hd(j) - hd(a) - hd(b)),
         ),
         18 => qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::A, occ::AI, occ::IA,
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::A,
+            occ::AI,
+            occ::IA,
             |c, b, j, i, a| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(i) + hd(q) - hd(a) - hd(c))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(i) + hd(q) - hd(a) - hd(c))
             },
         ),
         19 => qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::A, occ::IA, occ::IA,
-            |c, i, a, j, b| {
-                (hd(i) + hd(q) - hd(a) - hd(c))
-                    * (hd(j) + hd(q) - hd(b) - hd(c))
-            },
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::A,
+            occ::IA,
+            occ::IA,
+            |c, i, a, j, b| (hd(i) + hd(q) - hd(a) - hd(c)) * (hd(j) + hd(q) - hd(b) - hd(c)),
         ),
         20 => -qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::I, occ::AI, occ::AI,
-            |k, b, j, a, i| {
-                (hd(i) + hd(k) - hd(a) - hd(p))
-                    * (hd(j) + hd(k) - hd(b) - hd(p))
-            },
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::I,
+            occ::AI,
+            occ::AI,
+            |k, b, j, a, i| (hd(i) + hd(k) - hd(a) - hd(p)) * (hd(j) + hd(k) - hd(b) - hd(p)),
         ),
         21 => -qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::I, occ::IA, occ::AI,
-            |k, j, b, a, i| {
-                (hd(i) + hd(k) - hd(a) - hd(p))
-                    * (hd(i) + hd(j) - hd(a) - hd(b))
-            },
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::I,
+            occ::IA,
+            occ::AI,
+            |k, j, b, a, i| (hd(i) + hd(k) - hd(a) - hd(p)) * (hd(i) + hd(j) - hd(a) - hd(b)),
         ),
         22 => -qdpt_term_d(
-            h1, get_h2p(), p, q,
-            occ::I, occ::AI, occ::IA,
+            h1,
+            get_h2p(),
+            p,
+            q,
+            occ::I,
+            occ::AI,
+            occ::IA,
             |k, a, i, j, b| {
-                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p))
-                    * (hd(i) + hd(k) - hd(a) - hd(p))
+                (hd(i) + hd(j) + hd(q) - hd(a) - hd(b) - hd(p)) * (hd(i) + hd(k) - hd(a) - hd(p))
             },
         ),
         _ => panic!("term = {} is invalid", term),
@@ -432,14 +427,8 @@ pub fn qdpt_term(
 }
 
 /// Sum of all terms at second order.
-pub fn qdpt2_terms(
-    h1: &OpJ100<f64>,
-    h2: &OpJ200<f64>,
-    p: StateJ10,
-    q: StateJ10,
-) -> f64
-{
-    (3 .. 5).map(|term| qdpt_term(term, h1, h2, None, p, q)).sum()
+pub fn qdpt2_terms(h1: &OpJ100<f64>, h2: &OpJ200<f64>, p: StateJ10, q: StateJ10) -> f64 {
+    (3..5).map(|term| qdpt_term(term, h1, h2, None, p, q)).sum()
 }
 
 /// Sum of all terms at third order.
@@ -449,7 +438,8 @@ pub fn qdpt3_terms(
     h2p: &OpJ211<f64>,
     p: StateJ10,
     q: StateJ10,
-) -> f64
-{
-    (5 .. 23).map(|term| qdpt_term(term, h1, h2, Some(h2p), p, q)).sum()
+) -> f64 {
+    (5..23)
+        .map(|term| qdpt_term(term, h1, h2, Some(h2p), p, q))
+        .sum()
 }

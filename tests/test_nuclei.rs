@@ -6,14 +6,18 @@ extern crate rand;
 extern crate rand_xorshift;
 
 use fnv::FnvHashMap;
-use lutario::{hf, imsrg, nuclei, qdpt};
 use lutario::basis::occ;
-use lutario::j_scheme::{JAtlas, MopJ012, check_eq_mop_j012, new_mop_j012,
-                        op200_to_op211, rand_mop_j012};
+use lutario::j_scheme::{
+    check_eq_mop_j012, new_mop_j012, op200_to_op211, rand_mop_j012, JAtlas, MopJ012,
+};
 use lutario::op::Op;
 use lutario::utils::Toler;
+use lutario::{hf, imsrg, nuclei, qdpt};
 
-const TOLER: Toler = Toler { relerr: 1e-13, abserr: 1e-13 };
+const TOLER: Toler = Toler {
+    relerr: 1e-13,
+    abserr: 1e-13,
+};
 
 #[derive(Clone, Debug)]
 pub struct Results {
@@ -52,8 +56,9 @@ fn calc_j(
 
     let mut hf = hf::Conf {
         toler: TOLER,
-        .. Default::default()
-    }.make_run(&h1, &h2);
+        ..Default::default()
+    }
+    .make_run(&h1, &h2);
     hf.do_run().unwrap();
     let mut hh = new_mop_j012(scheme);
     hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
@@ -102,8 +107,9 @@ fn calc_m(
 
     let mut hf = hf::Conf {
         toler: TOLER,
-        .. Default::default()
-    }.make_run(&h1, &h2);
+        ..Default::default()
+    }
+    .make_run(&h1, &h2);
     hf.do_run().unwrap();
     let mut hh = new_mop_j012(scheme);
     hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
@@ -127,17 +133,19 @@ fn test_nuclei() {
         e_fermi_n: 1,
         e_fermi_p: 1,
         orbs: "",
-    }.to_nucleus().unwrap();
+    }
+    .to_nucleus()
+    .unwrap();
     let (_, me2) = nuclei::vrenorm::VintLoader {
         path: "data/cens-mbpt/vintnn3lohw24.dat".as_ref(),
         sp: "data/cens-mbpt/spox16.dat".as_ref(),
-    }.load().unwrap();
+    }
+    .load()
+    .unwrap();
     let j_results = calc_j(&nucleus, omega, &me2);
     let m_results = calc_m(&nucleus, omega, &me2);
     for npjw in nucleus.states() {
-        if !j_results.de_dqdpt2.contains_key(&npjw)
-            && !m_results.de_dqdpt2.contains_key(&npjw)
-        {
+        if !j_results.de_dqdpt2.contains_key(&npjw) && !m_results.de_dqdpt2.contains_key(&npjw) {
             continue;
         }
         let xj = *j_results.de_dqdpt2.get(&npjw).unwrap();
@@ -153,28 +161,33 @@ fn test_nuclei() {
 fn test_commut_nuclei() {
     use rand::SeedableRng;
     let mut rng = rand_xorshift::XorShiftRng::from_seed([
-        0x54, 0x67, 0x3a, 0x19,
-        0x69, 0xd4, 0xa7, 0xa8,
-        0x05, 0x0e, 0x83, 0x97,
-        0xbb, 0xa7, 0x3b, 0x11,
+        0x54, 0x67, 0x3a, 0x19, 0x69, 0xd4, 0xa7, 0xa8, 0x05, 0x0e, 0x83, 0x97, 0xbb, 0xa7, 0x3b,
+        0x11,
     ]);
-    let toler = Toler { relerr: 1e-12, abserr: 1e-12 };
+    let toler = Toler {
+        relerr: 1e-12,
+        abserr: 1e-12,
+    };
     let nucleus = nuclei::SimpleNucleus {
         e_max: 2,
         e_fermi_n: 1,
         e_fermi_p: 1,
         orbs: "",
-    }.to_nucleus().unwrap();
+    }
+    .to_nucleus()
+    .unwrap();
     let mut w6j_ctx = Default::default();
     let j_atlas = JAtlas::new(&nucleus.basis());
     let m_atlas = JAtlas::new(&nucleus.m_basis());
     let j_scheme = j_atlas.scheme();
     let m_scheme = m_atlas.scheme();
-    let mop_j_to_m = |cj: &MopJ012<f64>| (
-        cj.0,
-        nuclei::op1_j_to_m(&j_atlas, &m_atlas, &cj.1),
-        nuclei::op2_j_to_m(&j_atlas, &m_atlas, &cj.2),
-    );
+    let mop_j_to_m = |cj: &MopJ012<f64>| {
+        (
+            cj.0,
+            nuclei::op1_j_to_m(&j_atlas, &m_atlas, &cj.1),
+            nuclei::op2_j_to_m(&j_atlas, &m_atlas, &cj.2),
+        )
+    };
     let aj = rand_mop_j012(j_scheme, &mut rng);
     let bj = rand_mop_j012(j_scheme, &mut rng);
 

@@ -1,13 +1,13 @@
 //! Hartree–Fock method and normal ordering
 
-use std::{f64, mem};
-use std::ops::{Add, Mul};
 use super::basis::occ;
 use super::j_scheme::{DiagOpJ10, MopJ012, OpBlockJ200, OpJ100, OpJ200};
 use super::linalg::{self, Conj, EigenvalueRange, Part, Transpose};
 use super::mat::Mat;
 use super::op::{Op, VectorMut};
 use super::utils::Toler;
+use std::ops::{Add, Mul};
+use std::{f64, mem};
 
 /// Configuration for a Hartree–Fock run
 #[derive(Clone, Copy, Debug)]
@@ -30,11 +30,7 @@ impl Default for Conf {
 }
 
 impl Conf {
-    pub fn make_run<'a>(
-        self,
-        h1: &'a OpJ100<f64>,
-        h2: &'a OpJ200<f64>,
-    ) -> Run<'a> {
+    pub fn make_run<'a>(self, h1: &'a OpJ100<f64>, h2: &'a OpJ200<f64>) -> Run<'a> {
         let scheme = h1.scheme();
         let mut dcoeff = Op::new(scheme.clone());
         for p in scheme.states_10(&occ::ALL1) {
@@ -56,12 +52,7 @@ impl Conf {
         }
     }
 
-    pub fn adjust_mix_factor(
-        &self,
-        de: f64,
-        de_new: f64,
-        mix_factor: &mut f64,
-    ) {
+    pub fn adjust_mix_factor(&self, de: f64, de_new: f64, mix_factor: &mut f64) {
         if de == 0.0 {
             return;
         }
@@ -124,22 +115,15 @@ impl<'a> Run<'a> {
             self.conf.heevr_abstol,
             &mut self.energies.data.0,
             &mut self.dcoeff.data.0,
-        ).unwrap();
+        )
+        .unwrap();
 
         // test convergence using energy sum and adjust mixing
-        let old_energy_sum = mem::replace(
-            &mut self.energy_sum,
-            weighted_sum(&self.energies),
-        );
-        let old_energy_change = mem::replace(
-            &mut self.energy_change,
-            self.energy_sum - old_energy_sum,
-        );
-        self.conf.adjust_mix_factor(
-            old_energy_change,
-            self.energy_change,
-            &mut self.mix_factor,
-        );
+        let old_energy_sum = mem::replace(&mut self.energy_sum, weighted_sum(&self.energies));
+        let old_energy_change =
+            mem::replace(&mut self.energy_change, self.energy_sum - old_energy_sum);
+        self.conf
+            .adjust_mix_factor(old_energy_change, self.energy_change, &mut self.mix_factor);
         if self.conf.toler.is_eq(self.energy_sum, old_energy_sum) {
             Ok(())
         } else {
@@ -150,13 +134,15 @@ impl<'a> Run<'a> {
     /// Iterates until the convergence criterion has been met.
     pub fn do_run(&mut self) -> Result<(), ()> {
         println!("hf:");
-        for i in 0 .. 1024 {
+        for i in 0..1024 {
             if self.step().is_ok() {
                 println!("hf_converged: true");
                 return Ok(());
             }
-            println!("- {{iter: {}, energy_sum: {}, mix_factor: {}}}",
-                     i, self.energy_sum, self.mix_factor);
+            println!(
+                "- {{iter: {}, energy_sum: {}, mix_factor: {}}}",
+                i, self.energy_sum, self.mix_factor
+            );
         }
         println!("hf_converged: false");
         Err(())
@@ -164,22 +150,13 @@ impl<'a> Run<'a> {
 }
 
 /// `y ← α x + β y`
-pub fn block_mat_axpby<T>(
-    alpha: T,
-    x: &[Mat<T>],
-    beta: T,
-    y: &mut [Mat<T>],
-) where
+pub fn block_mat_axpby<T>(alpha: T, x: &[Mat<T>], beta: T, y: &mut [Mat<T>])
+where
     T: Add<Output = T> + Mul<Output = T> + Clone,
 {
     assert_eq!(x.len(), y.len());
-    for l in 0 .. x.len() {
-        linalg::mat_axpby(
-            alpha.clone(),
-            x[l].as_ref(),
-            beta.clone(),
-            y[l].as_mut(),
-        );
+    for l in 0..x.len() {
+        linalg::mat_axpby(alpha.clone(), x[l].as_ref(), beta.clone(), y[l].as_mut());
     }
 }
 
@@ -191,13 +168,14 @@ pub fn block_heevr<T: linalg::Heevr>(
     abstol: T::Real,
     w: &mut [Vec<T::Real>],
     z: &mut [Mat<T>],
-) -> Result<(), i32> where
+) -> Result<(), i32>
+where
     T::Real: Clone,
 {
     assert_eq!(a.len(), w.len());
     assert_eq!(w.len(), z.len());
     let mut isuppz = Vec::new();
-    for l in 0 .. a.len() {
+    for l in 0..a.len() {
         // make sure matrix `a` is not modified!
         let mut a_l = a[l].clone();
         linalg::heevr(
@@ -233,11 +211,7 @@ pub fn weighted_sum(e1: &DiagOpJ10<f64>) -> f64 {
 /// ```text
 /// Q[v x] = ∑[i] D[x i] D†[i v]
 /// ```
-pub fn qcoeff(
-    d1: &OpJ100<f64>,
-    q1: &mut OpJ100<f64>,
-)
-{
+pub fn qcoeff(d1: &OpJ100<f64>, q1: &mut OpJ100<f64>) {
     let scheme = d1.scheme();
     q1.set_zero();
     for p in scheme.states_10(&occ::ALL1) {
@@ -250,21 +224,18 @@ pub fn qcoeff(
 }
 
 /// Compute the Fock operator.
-pub fn fock2(
-    h2: &OpJ200<f64>,
-    q1: &OpJ100<f64>,
-    f1: &mut OpJ100<f64>,
-)
-{
+pub fn fock2(h2: &OpJ200<f64>, q1: &OpJ100<f64>, f1: &mut OpJ100<f64>) {
     let scheme = h2.scheme();
     for pq in scheme.states_20(&occ::ALL2) {
         let (p, q) = pq.split_to_10_10();
         for r in p.costates_10(&occ::ALL1) {
             for s in q.costates_10(&occ::ALL1) {
                 for rs in r.combine_with_10(s, pq.j()) {
-                    f1.add(p, r, pq.jweight(2) / p.jweight(2)
-                            * h2.at(pq, rs)
-                            * q1.at(q, s));
+                    f1.add(
+                        p,
+                        r,
+                        pq.jweight(2) / p.jweight(2) * h2.at(pq, rs) * q1.at(q, s),
+                    );
                 }
             }
         }
@@ -272,20 +243,13 @@ pub fn fock2(
 }
 
 /// Perform the HF transformation on a one-body operator.
-pub fn transform_h1(
-    h1: &OpJ100<f64>,
-    d1: &OpJ100<f64>,
-    r1: &mut OpJ100<f64>,
-)
-{
+pub fn transform_h1(h1: &OpJ100<f64>, d1: &OpJ100<f64>, r1: &mut OpJ100<f64>) {
     let scheme = h1.scheme();
     for p in scheme.states_10(&occ::ALL1) {
         for q in p.costates_10(&occ::ALL1) {
             for r in p.costates_10(&occ::ALL1) {
                 for s in p.costates_10(&occ::ALL1) {
-                    r1.add(p, s, h1.at(q, r)
-                            * d1.at(q, p).conj()
-                            * d1.at(r, s));
+                    r1.add(p, s, h1.at(q, r) * d1.at(q, p).conj() * d1.at(r, s));
                 }
             }
         }
@@ -293,14 +257,9 @@ pub fn transform_h1(
 }
 
 /// Perform the HF transformation on a two-body operator.
-pub fn transform_h2(
-    h2: &OpJ200<f64>,
-    d1: &OpJ100<f64>,
-    r2: &mut OpJ200<f64>,
-)
-{
+pub fn transform_h2(h2: &OpJ200<f64>, d1: &OpJ100<f64>, r2: &mut OpJ200<f64>) {
     let scheme = h2.scheme();
-    for l in 0 .. scheme.basis_20.num_chans() {
+    for l in 0..scheme.basis_20.num_chans() {
         let mut og: OpBlockJ200<f64> = Op::new_block(scheme.clone(), l);
         let mut ohg: OpBlockJ200<f64> = Op::new_block(scheme.clone(), l);
         for pq in scheme.costates_20(l, &occ::ALL2) {
@@ -344,11 +303,7 @@ pub fn transform_h2(
 ///     + 1/2 ∑[i j] Jij^2 V[i j i j]
 ///     + 1/6 ∑[i j k] Jijk^2 W[i j k i j k]    (NYI)
 /// ```
-pub fn hf_energy(
-    h1: &OpJ100<f64>,
-    h2: &OpJ200<f64>,
-) -> f64
-{
+pub fn hf_energy(h1: &OpJ100<f64>, h2: &OpJ200<f64>) -> f64 {
     let scheme = h1.scheme();
     let mut r = 0.0;
     for i in scheme.states_10(&[occ::I]) {
@@ -378,11 +333,7 @@ pub fn hf_energy(
 ///     V[p q r s]
 ///     + ∑[i] (Jpqi / Jpq)² W[p q i r s i]       (NYI)
 ///
-pub fn normord(
-    h: &MopJ012<f64>,
-    r: &mut MopJ012<f64>,
-)
-{
+pub fn normord(h: &MopJ012<f64>, r: &mut MopJ012<f64>) {
     let scheme = h.1.scheme();
     r.0 = h.0 + hf_energy(&h.1, &h.2);
     r.1.clone_from(&h.1);

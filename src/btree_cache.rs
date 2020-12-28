@@ -1,9 +1,9 @@
 //! Insert-only B-tree map
 
-use std::mem;
+use stable_deref_trait::StableDeref;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use stable_deref_trait::StableDeref;
+use std::mem;
 
 /// Works like a `BTreeMap`, but elements can never be removed.  Therefore,
 /// stable references (i.e. `StableDeref`) to its elements remain valid as
@@ -19,7 +19,8 @@ impl<K: Ord, V> Default for BTreeCache<K, V> {
 
 impl<K: Ord, V: StableDeref> BTreeCache<K, V> {
     pub fn get_or_insert_with<F>(&self, key: K, f: F) -> &V::Target
-        where F: FnOnce(&K) -> V
+    where
+        F: FnOnce(&K) -> V,
     {
         // we don't use the entry API here
         // because we want to unlock the RefCell while

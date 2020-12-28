@@ -6,29 +6,31 @@ extern crate rand;
 extern crate rand_xorshift;
 extern crate test;
 
+use lutario::j_scheme::{new_mop_j012, rand_mop_j012, JAtlas, JScheme};
+use lutario::op::VectorMut;
+use lutario::{hf, imsrg, nuclei};
+use rand::SeedableRng;
 use std::env;
 use std::sync::Arc;
-use lutario::{hf, imsrg, nuclei};
-use lutario::j_scheme::{JAtlas, JScheme, new_mop_j012, rand_mop_j012};
-use lutario::op::VectorMut;
-use rand::SeedableRng;
 
 const RNG_SEED: [u8; 16] = [
-    0x54, 0x67, 0x3a, 0x19,
-    0x69, 0xd4, 0xa7, 0xa8,
-    0x05, 0x0e, 0x83, 0x97,
-    0xbb, 0xa7, 0x3b, 0x11,
+    0x54, 0x67, 0x3a, 0x19, 0x69, 0xd4, 0xa7, 0xa8, 0x05, 0x0e, 0x83, 0x97, 0xbb, 0xa7, 0x3b, 0x11,
 ];
 
 fn scheme_o16() -> Arc<JScheme> {
-    JAtlas::new(&nuclei::SimpleNucleus {
-        e_max: env::var("LT_EMAX")
-            .map(|s| s.parse().unwrap())
-            .unwrap_or(4),
-        e_fermi_n: 1,
-        e_fermi_p: 1,
-        orbs: "",
-    }.to_nucleus().unwrap().basis()).scheme().clone()
+    JAtlas::new(
+        &nuclei::SimpleNucleus {
+            e_max: env::var("LT_EMAX").map(|s| s.parse().unwrap()).unwrap_or(4),
+            e_fermi_n: 1,
+            e_fermi_p: 1,
+            orbs: "",
+        }
+        .to_nucleus()
+        .unwrap()
+        .basis(),
+    )
+    .scheme()
+    .clone()
 }
 
 #[bench]

@@ -1,9 +1,8 @@
 //! Parity data type.
-use std::ops::{Add, Rem, Sub};
 use num::{One, Zero};
+use std::ops::{Add, Rem, Sub};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
-         Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Parity {
     Even,
     Odd,

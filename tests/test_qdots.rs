@@ -2,15 +2,16 @@
 extern crate lutario;
 extern crate netlib_src;
 
-use std::io::{self, BufReader};
-use std::fs::File;
-use lutario::{hf, imsrg, qdots, qdpt, sg_ode};
 use lutario::basis::OrbIx;
-use lutario::j_scheme::{JAtlas, new_mop_j012, read_mop_j012_txt,
-                        check_eq_op_j100, check_eq_op_j200, check_eq_mop_j012,
-                        op200_to_op211};
+use lutario::j_scheme::{
+    check_eq_mop_j012, check_eq_op_j100, check_eq_op_j200, new_mop_j012, op200_to_op211,
+    read_mop_j012_txt, JAtlas,
+};
 use lutario::op::Op;
 use lutario::utils::Toler;
+use lutario::{hf, imsrg, qdots, qdpt, sg_ode};
+use std::fs::File;
+use std::io::{self, BufReader};
 
 fn open(path: &str) -> io::Result<BufReader<File>> {
     Ok(BufReader::new(File::open(path)?))
@@ -30,10 +31,13 @@ impl<'a> QdotTest<'a> {
     fn run(self) {
         use std::io::BufRead;
 
-        let toler = Toler { relerr: 1e-8, abserr: 1e-8 };
-        let v_elems = qdots::read_clh2_bin(
-            &mut File::open("data/clh2-openfci/shells6.dat").unwrap(),
-        ).unwrap();
+        let toler = Toler {
+            relerr: 1e-8,
+            abserr: 1e-8,
+        };
+        let v_elems =
+            qdots::read_clh2_bin(&mut File::open("data/clh2-openfci/shells6.dat").unwrap())
+                .unwrap();
         let atlas = JAtlas::new(&self.system.basis());
         let scheme = atlas.scheme();
         let h1 = qdots::make_ho2d_op(&atlas, self.omega);
@@ -42,8 +46,9 @@ impl<'a> QdotTest<'a> {
         // test HF
         let mut hf = hf::Conf {
             toler: toler,
-            .. Default::default()
-        }.make_run(&h1, &h2);
+            ..Default::default()
+        }
+        .make_run(&h1, &h2);
         hf.do_run().unwrap();
         let mut hh = new_mop_j012(scheme);
         hf::transform_h1(&h1, &hf.dcoeff, &mut hh.1);
@@ -71,11 +76,8 @@ impl<'a> QdotTest<'a> {
                 let orbital = OrbIx(fields[0].parse().unwrap());
                 let term = fields[1].parse().unwrap();
                 let energy = fields[2].parse().unwrap();
-                let p = scheme.state_10(
-                    scheme.basis_10.encode(
-                        scheme.basis_10.orb_from_ix(orbital),
-                    ),
-                );
+                let p =
+                    scheme.state_10(scheme.basis_10.encode(scheme.basis_10.orb_from_ix(orbital)));
                 let de = qdpt::qdpt_term(term, &hn.1, &hn.2, Some(&hn2p), p, p);
                 toler_assert_eq!(toler, energy, de);
             }
@@ -83,15 +85,19 @@ impl<'a> QdotTest<'a> {
 
         // test IMSRG
         if let Some(e_imsrg) = self.e_imsrg {
-            let imsrg_toler = Toler { relerr: 1e-6, abserr: 1e-5 };
+            let imsrg_toler = Toler {
+                relerr: 1e-6,
+                abserr: 1e-5,
+            };
             let mut irun = imsrg::Conf {
                 toler: imsrg_toler,
                 solver_conf: sg_ode::Conf {
                     toler: imsrg_toler,
-                    .. Default::default()
+                    ..Default::default()
                 },
-                .. Default::default()
-            }.make_run(&hn);
+                ..Default::default()
+            }
+            .make_run(&hn);
             irun.do_run().unwrap();
             toler_assert_eq!(imsrg_toler, irun.energy(), e_imsrg);
         }
@@ -110,7 +116,8 @@ fn test_qdots_3_2_1() {
         de_mp2: -0.15975791887897517,
         e_imsrg: Some(21.412110),
         qdpt_file: Some("data/clh2-openfci/qdpt_3_2_1.txt"),
-    }.run()
+    }
+    .run()
 }
 
 #[test]
@@ -126,7 +133,8 @@ fn test_qdots_4_2_d28() {
         de_mp2: -0.23476770967641344,
         e_imsrg: Some(7.839145241377399),
         qdpt_file: Some("data/clh2-openfci/qdpt_4_2_d28.txt"),
-    }.run()
+    }
+    .run()
 }
 
 // this test is sensitive to the asymmetric nature of HF coefficient matrix;
@@ -147,22 +155,27 @@ const QDOT_TEST_5_3_1: QdotTest = QdotTest {
 fn test_qdots_5_3_1_hf_only() {
     QdotTest {
         e_imsrg: None,
-        .. QDOT_TEST_5_3_1
-    }.run()
+        ..QDOT_TEST_5_3_1
+    }
+    .run()
 }
 
 #[test]
 fn slowtest_qdots_5_3_1_full() {
     QdotTest {
         qdpt_file: None,
-        .. QDOT_TEST_5_3_1
-    }.run()
+        ..QDOT_TEST_5_3_1
+    }
+    .run()
 }
 
 // Test the commutator in the quantum dots basis using random matrix elements.
 #[test]
 fn test_commut_qdots() {
-    let toler = Toler { relerr: 1e-14, abserr: 1e-14 };
+    let toler = Toler {
+        relerr: 1e-14,
+        abserr: 1e-14,
+    };
     let system = qdots::Qdot {
         num_shells: 3,
         num_filled: 2,

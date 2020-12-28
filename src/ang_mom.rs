@@ -1,10 +1,10 @@
 //! Angular momentum coupling.
-use std::ops::{Add, Mul, Sub};
+use super::half::Half;
 use fnv::FnvHashMap;
 use num::FromPrimitive;
-use wigner_symbols::{ClebschGordan, Wigner3jm, Wigner6j};
+use std::ops::{Add, Mul, Sub};
 use wigner_symbols::regge::{CanonicalRegge3jm, CanonicalRegge6j, Regge3jm};
-use super::half::Half;
+use wigner_symbols::{ClebschGordan, Wigner3jm, Wigner6j};
 
 /// Reflection about the 22.5° axis.
 ///
@@ -13,15 +13,12 @@ use super::half::Half;
 /// ⎣√½ −√½⎦
 /// ```
 #[inline]
-pub fn reflect_16th<T>(x: T, y: T) -> (T, T) where
-    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
-     + Mul<Output = T> + Clone,
+pub fn reflect_16th<T>(x: T, y: T) -> (T, T)
+where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Clone,
 {
     let sqrt_2 = T::from_f64(0.5f64.sqrt()).unwrap();
-    (
-        sqrt_2.clone() * (x.clone() + y.clone()),
-        sqrt_2 * (x - y),
-    )
+    (sqrt_2.clone() * (x.clone() + y.clone()), sqrt_2 * (x - y))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -70,14 +67,19 @@ pub struct Coupled2HalfSpins<T> {
     pub p11: T,
 }
 
-impl<T> From<Uncoupled2HalfSpins<T>> for Coupled2HalfSpins<T> where
-    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
-     + Mul<Output = T> + Clone,
+impl<T> From<Uncoupled2HalfSpins<T>> for Coupled2HalfSpins<T>
+where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Clone,
 {
     #[inline]
     fn from(x: Uncoupled2HalfSpins<T>) -> Self {
         let (z10, z00) = reflect_16th(x.pm, x.mp);
-        Self { z00, m11: x.mm, z10, p11: x.pp }
+        Self {
+            z00,
+            m11: x.mm,
+            z10,
+            p11: x.pp,
+        }
     }
 }
 
@@ -93,14 +95,19 @@ pub struct Uncoupled2HalfSpins<T> {
     pub pp: T,
 }
 
-impl<T> From<Coupled2HalfSpins<T>> for Uncoupled2HalfSpins<T> where
-    T: FromPrimitive + Add<Output = T> + Sub<Output = T>
-     + Mul<Output = T> + Clone,
+impl<T> From<Coupled2HalfSpins<T>> for Uncoupled2HalfSpins<T>
+where
+    T: FromPrimitive + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Clone,
 {
     #[inline]
     fn from(x: Coupled2HalfSpins<T>) -> Self {
         let (pm, mp) = reflect_16th(x.z10, x.z00);
-        Self { mm: x.m11, mp, pm, pp: x.p11 }
+        Self {
+            mm: x.m11,
+            mp,
+            pm,
+            pp: x.p11,
+        }
     }
 }
 
@@ -116,9 +123,11 @@ impl Wigner3jmCtx {
 
     pub fn get(&mut self, w3jm: Wigner3jm) -> f64 {
         let (regge, phase) = Regge3jm::from(w3jm).canonicalize();
-        phase as f64 * *self.0.entry(regge).or_insert_with(|| {
-            f64::from(phase * w3jm.value())
-        })
+        phase as f64
+            * *self
+                .0
+                .entry(regge)
+                .or_insert_with(|| f64::from(phase * w3jm.value()))
     }
 }
 
@@ -128,7 +137,10 @@ pub struct Wigner6jCtx(pub FnvHashMap<CanonicalRegge6j, f64>);
 impl Wigner6jCtx {
     pub fn get(&mut self, w6j: Wigner6j) -> f64 {
         let regge = CanonicalRegge6j::from(w6j);
-        *self.0.entry(regge).or_insert_with(|| f64::from(w6j.value()))
+        *self
+            .0
+            .entry(regge)
+            .or_insert_with(|| f64::from(w6j.value()))
     }
 }
 
@@ -139,7 +151,10 @@ mod tests {
 
     #[test]
     fn test_clebsch_gordan() {
-        const TOLER: Toler = Toler { relerr: 1e-15, abserr: 1e-15 };
+        const TOLER: Toler = Toler {
+            relerr: 1e-15,
+            abserr: 1e-15,
+        };
         let cg = ClebschGordan {
             tj1: 3,
             tj2: 1,

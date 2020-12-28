@@ -1,12 +1,12 @@
 //! Infinite matter, both electronic and nuclear
 
-use std::f64::consts::PI;
 use super::basis::occ;
 use super::half::Half;
 use super::j_scheme::{JAtlas, OpJ100};
 use super::op::Op;
 use super::phys_consts::{HBAR_C_MEVFM, M_NEUTRON_MEVPC2, M_PROTON_MEVPC2};
 use super::plane_wave_basis::{HarmSpin, HarmSpinIso};
+use std::f64::consts::PI;
 
 /// Kinetic energy of two species of particles, distinguished by isospin.
 #[derive(Clone, Copy, Debug)]
@@ -64,18 +64,16 @@ impl Kinetic {
     /// For electrons in atomic units, set mass to 1, in which case `box_len`
     /// would be in Bohr radii and energy would be in hartrees.
     pub fn natural(mass: f64, box_len: f64) -> Self {
-        Self { coeff: unit_wavenumber(box_len).powi(2) / (2.0 * mass) }
+        Self {
+            coeff: unit_wavenumber(box_len).powi(2) / (2.0 * mass),
+        }
     }
 
     pub fn diag_op1_elem(&self, l: HarmSpin) -> f64 {
         self.coeff * (l.n.norm_sq() as f64)
     }
 
-    pub fn make_op(
-        &self,
-        atlas: &JAtlas<HarmSpin, ()>,
-    ) -> OpJ100<f64>
-    {
+    pub fn make_op(&self, atlas: &JAtlas<HarmSpin, ()>) -> OpJ100<f64> {
         let scheme = atlas.scheme();
         let mut h1 = Op::new(scheme.clone());
         for p in scheme.states_10(&occ::ALL1) {
@@ -98,8 +96,9 @@ impl Coulomb {
     /// For electrons in atomic units, set mass to 1, in which case `box_len`
     /// would be in Bohr radii and energy would be in hartrees.
     pub fn natural(charge: f64, box_len: f64) -> Self {
-        Self { coeff: 4.0 * PI * charge.powi(2) /
-                      (box_len.powi(3) * unit_wavenumber(box_len).powi(2)) }
+        Self {
+            coeff: 4.0 * PI * charge.powi(2) / (box_len.powi(3) * unit_wavenumber(box_len).powi(2)),
+        }
     }
 
     pub fn op2_prod_elem(&self, l: [HarmSpin; 4]) -> f64 {
@@ -109,14 +108,13 @@ impl Coulomb {
         }
         let n_sq = (l[0] - l[2]).n.norm_sq();
         if n_sq == 0 {
-            return 0.0;                 // Ewald interaction
+            return 0.0; // Ewald interaction
         }
         self.coeff / (n_sq as f64)
     }
 
     pub fn op2_elem(&self, l: [HarmSpin; 4]) -> f64 {
-        self.op2_prod_elem([l[0], l[1], l[2], l[3]])
-            - self.op2_prod_elem([l[0], l[1], l[3], l[2]])
+        self.op2_prod_elem([l[0], l[1], l[2], l[3]]) - self.op2_prod_elem([l[0], l[1], l[3], l[2]])
     }
 }
 
@@ -139,12 +137,22 @@ mod tests {
             s: Half(1),
             t: Half(-1),
         };
-        toler_assert_eq!(Toler { relerr: 1e-8, abserr: 0.0 },
-                         nucleon_kinetic.diag_op1_elem(proton_orbital),
-                         819.16970);
-        toler_assert_eq!(Toler { relerr: 1e-8, abserr: 0.0 },
-                         nucleon_kinetic.diag_op1_elem(neutron_orbital),
-                         818.04210);
+        toler_assert_eq!(
+            Toler {
+                relerr: 1e-8,
+                abserr: 0.0
+            },
+            nucleon_kinetic.diag_op1_elem(proton_orbital),
+            819.16970
+        );
+        toler_assert_eq!(
+            Toler {
+                relerr: 1e-8,
+                abserr: 0.0
+            },
+            nucleon_kinetic.diag_op1_elem(neutron_orbital),
+            818.04210
+        );
     }
 
     #[test]
@@ -166,8 +174,13 @@ mod tests {
             n: Vec3I8::new(-1, 2, 0),
             s: Half(1),
         };
-        toler_assert_eq!(Toler { relerr: 1e-16, abserr: 0.0 },
-                         coulomb.op2_elem([l1, l2, l3, l4]),
-                         -coulomb.op2_elem([l2, l1, l3, l4]));
+        toler_assert_eq!(
+            Toler {
+                relerr: 1e-16,
+                abserr: 0.0
+            },
+            coulomb.op2_elem([l1, l2, l3, l4]),
+            -coulomb.op2_elem([l2, l1, l3, l4])
+        );
     }
 }

@@ -1,14 +1,14 @@
 //! Quantum dots.
-use std::{fmt, io};
-use std::ops::{Add, Sub};
-use fnv::FnvHashMap;
-use num::{Zero, range_step_inclusive};
 use super::basis::{occ, ChanState, PartState};
 use super::half::Half;
 use super::j_scheme::{JAtlas, JChan, JOrbBasis, OpJ100, OpJ200};
 use super::op::Op;
 use super::parity::{self, Parity};
 use super::utils::cast;
+use fnv::FnvHashMap;
+use num::{range_step_inclusive, Zero};
+use std::ops::{Add, Sub};
+use std::{fmt, io};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Ls {
@@ -19,20 +19,29 @@ pub struct Ls {
 impl Add for Ls {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        Self { l: self.l + other.l, s: self.s + other.s }
+        Self {
+            l: self.l + other.l,
+            s: self.s + other.s,
+        }
     }
 }
 
 impl Sub for Ls {
     type Output = Self;
     fn sub(self, other: Self) -> Self::Output {
-        Self { l: self.l - other.l, s: self.s - other.s }
+        Self {
+            l: self.l - other.l,
+            s: self.s - other.s,
+        }
     }
 }
 
 impl Zero for Ls {
     fn zero() -> Self {
-        Self { l: Zero::zero(), s: Zero::zero() }
+        Self {
+            l: Zero::zero(),
+            s: Zero::zero(),
+        }
     }
     fn is_zero(&self) -> bool {
         self.l.is_zero() && self.s.is_zero()
@@ -64,7 +73,11 @@ impl fmt::Display for Nls {
 
 impl From<ChanState<JChan<Ls>, i32>> for Nls {
     fn from(this: ChanState<JChan<Ls>, i32>) -> Self {
-        Self { n: this.u, l: this.l.k.l, s: this.l.k.s }
+        Self {
+            n: this.u,
+            l: this.l.k.l,
+            s: this.l.k.s,
+        }
     }
 }
 
@@ -99,7 +112,7 @@ pub struct Qdot {
 impl Qdot {
     pub fn states(self) -> Vec<Nls> {
         let mut orbitals = Vec::default();
-        for k in 0 .. self.num_shells {
+        for k in 0..self.num_shells {
             for l in range_step_inclusive(-k, k, 2) {
                 let n = (k - l.abs()) / 2;
                 for s in Half(1).multiplet() {
@@ -111,12 +124,13 @@ impl Qdot {
     }
 
     pub fn basis(self) -> JOrbBasis<Ls, i32> {
-        self.states().into_iter().map(|nls| {
-            PartState {
+        self.states()
+            .into_iter()
+            .map(|nls| PartState {
                 x: (nls.shell() >= self.num_filled).into(),
                 p: nls.into(),
-            }
-        }).collect()
+            })
+            .collect()
     }
 }
 
@@ -134,31 +148,42 @@ pub struct Nl2Pair {
 
 impl Nl2Pair {
     pub fn canonicalize(self) -> (bool, Self) {
-        let Self { n1, l1, n2, l2, n3, l3, n4, l4 } = self;
+        let Self {
+            n1,
+            l1,
+            n2,
+            l2,
+            n3,
+            l3,
+            n4,
+            l4,
+        } = self;
         let (f12, (n1, l1), (n2, l2)) = parity::sort2((n1, l1), (n2, l2));
         let (f34, (n3, l3), (n4, l4)) = parity::sort2((n3, l3), (n4, l4));
         let (adj, (n1, l1, n2, l2), (n3, l3, n4, l4)) =
             parity::sort2((n1, l1, n2, l2), (n3, l3, n4, l4));
-        let (n3, l3, n4, l4) = if
-            (n1, l1) != (n2, l2)
-            && f12 + f34 == Parity::Odd
-        {
+        let (n3, l3, n4, l4) = if (n1, l1) != (n2, l2) && f12 + f34 == Parity::Odd {
             (n4, l4, n3, l3)
         } else {
             (n3, l3, n4, l4)
         };
         (
             adj == Parity::Odd,
-            Self { n1, l1, n2, l2, n3, l3, n4, l4 },
+            Self {
+                n1,
+                l1,
+                n2,
+                l2,
+                n3,
+                l3,
+                n4,
+                l4,
+            },
         )
     }
 }
 
-pub fn make_ho2d_op(
-    atlas: &JAtlas<Ls, i32>,
-    omega: f64,
-) -> OpJ100<f64>
-{
+pub fn make_ho2d_op(atlas: &JAtlas<Ls, i32>, omega: f64) -> OpJ100<f64> {
     let scheme = atlas.scheme();
     let mut h1 = Op::new(scheme.clone());
     for p in scheme.states_10(&occ::ALL1) {
@@ -172,8 +197,7 @@ pub fn make_v_op(
     atlas: &JAtlas<Ls, i32>,
     table: &FnvHashMap<Nl2Pair, f64>,
     omega: f64,
-) -> OpJ200<f64>
-{
+) -> OpJ200<f64> {
     let sqrt_omega = omega.sqrt();
     let scheme = atlas.scheme();
     let mut h2 = Op::new(scheme.clone());
@@ -196,11 +220,11 @@ pub fn make_v_op(
                     l3: cast(r.l),
                     n4: cast(s.n),
                     l4: cast(s.l),
-                }.canonicalize();
-                z += *table.get(&key)
-                    .unwrap_or_else(|| {
-                        panic!("matrix element not found: {:?}", key)
-                    });
+                }
+                .canonicalize();
+                z += *table
+                    .get(&key)
+                    .unwrap_or_else(|| panic!("matrix element not found: {:?}", key));
             }
             if p.s == s.s && q.s == r.s {
                 let (_, key) = Nl2Pair {
@@ -212,11 +236,11 @@ pub fn make_v_op(
                     l3: cast(s.l),
                     n4: cast(r.n),
                     l4: cast(r.l),
-                }.canonicalize();
-                z -= *table.get(&key)
-                    .unwrap_or_else(|| {
-                        panic!("matrix element not found: {:?}", key)
-                    });
+                }
+                .canonicalize();
+                z -= *table
+                    .get(&key)
+                    .unwrap_or_else(|| panic!("matrix element not found: {:?}", key));
             }
             h2.add(pq, rs, sqrt_omega * z);
         }
@@ -241,8 +265,17 @@ pub fn read_clh2_bin(reader: &mut dyn io::Read) -> io::Result<FnvHashMap<Nl2Pair
         let n4 = reader.read_u8()?;
         let l4 = reader.read_i8()?;
         let x = reader.read_f64::<LittleEndian>()?;
-        let (_, key) =
-            Nl2Pair { n1, l1, n2, l2, n3, l3, n4, l4 }.canonicalize();
+        let (_, key) = Nl2Pair {
+            n1,
+            l1,
+            n2,
+            l2,
+            n3,
+            l3,
+            n4,
+            l4,
+        }
+        .canonicalize();
         map.insert(key, x);
     }
     Ok(map)

@@ -1,9 +1,9 @@
 //! Utility for parsing byte strings.
 
-use std::{io, mem};
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
+use std::{io, mem};
 
 /// [internal] A fixed-size string buffer
 #[derive(Clone, Debug, Default)]
@@ -15,7 +15,7 @@ pub struct Buffer {
 impl Deref for Buffer {
     type Target = [u8];
     fn deref(&self) -> &Self::Target {
-        &self.buf[.. self.len]
+        &self.buf[..self.len]
     }
 }
 
@@ -36,7 +36,7 @@ impl Buffer {
     }
 
     pub fn read_from<R: io::Read>(&mut self, mut r: R) -> io::Result<()> {
-        self.len += r.read(&mut self.buf[self.len ..])?;
+        self.len += r.read(&mut self.buf[self.len..])?;
         Ok(())
     }
 }
@@ -60,9 +60,7 @@ pub struct SharedChain(Option<SharedChainInner>);
 
 impl Drop for SharedChain {
     fn drop(&mut self) {
-        if let Some(SharedChainInner { chain, alloc }) =
-            mem::replace(&mut self.0, None)
-        {
+        if let Some(SharedChainInner { chain, alloc }) = mem::replace(&mut self.0, None) {
             alloc.recycle(chain);
         }
     }
@@ -74,9 +72,9 @@ impl SharedChain {
     }
 
     pub fn replace_buf(&self, buf: Buffer) -> Option<Buffer> {
-        self.0.as_ref().map(|chain| {
-            mem::replace(&mut chain.chain.borrow_mut().buf, buf)
-        })
+        self.0
+            .as_ref()
+            .map(|chain| mem::replace(&mut chain.chain.borrow_mut().buf, buf))
     }
 
     pub fn get_or_allocate_next(&self) -> Option<SharedChain> {
@@ -136,8 +134,7 @@ impl Alloc {
         });
         if let Some(cap) = cap {
             let mut alloc = self.0.borrow_mut();
-            assert_eq!(alloc.buf_cap, cap,
-                       "recycled chain is missing buffer");
+            assert_eq!(alloc.buf_cap, cap, "recycled chain is missing buffer");
             alloc.reserve = Some(chain);
         }
     }
@@ -202,7 +199,9 @@ impl<R> Parser<R> {
 
     /// Restore the parser state.
     pub fn restore(&mut self, state: State) {
-        let new_buf = state.chain.replace_buf(Default::default())
+        let new_buf = state
+            .chain
+            .replace_buf(Default::default())
             .expect("invalid State");
         self.index = state.index;
         let old_chain = mem::replace(&mut self.chain, state.chain);
@@ -231,12 +230,12 @@ impl<R: io::Read> Parser<R> {
     }
 
     pub fn get(&mut self) -> io::Result<Option<u8>> {
-        if let Some(&c) = self.buf[self.index ..].first() {
+        if let Some(&c) = self.buf[self.index..].first() {
             self.index += 1;
             Ok(Some(c))
         } else {
             self.refill()?;
-            if let Some(&c) = self.buf[self.index ..].first() {
+            if let Some(&c) = self.buf[self.index..].first() {
                 self.index += 1;
                 Ok(Some(c))
             } else {
@@ -246,7 +245,8 @@ impl<R: io::Read> Parser<R> {
     }
 
     pub fn match_pred<F>(&mut self, pred: F) -> io::Result<Option<u8>>
-        where F: FnOnce(u8) -> bool
+    where
+        F: FnOnce(u8) -> bool,
     {
         let state = self.save();
         match self.get()? {
@@ -279,17 +279,17 @@ impl<R: io::Read> Parser<R> {
 
     pub fn munch_space<'a>(&mut self) -> io::Result<bool> {
         let mut munched = false;
-        while self.match_pred(|c| {
-            (c as char).is_whitespace() && c != b'\n' && c != b'\r'
-        })?.is_some() {
+        while self
+            .match_pred(|c| (c as char).is_whitespace() && c != b'\n' && c != b'\r')?
+            .is_some()
+        {
             munched = true;
         }
         Ok(munched)
     }
 
     /// Get the next non-whitespace token.  This may return an empty string.
-    pub fn get_token<'a>(&mut self, s: &'a mut String)
-                         -> io::Result<&'a mut String> {
+    pub fn get_token<'a>(&mut self, s: &'a mut String) -> io::Result<&'a mut String> {
         s.clear();
         while let Some(c) = self.match_pred(|c| !(c as char).is_whitespace())? {
             s.push(c as _);
@@ -299,8 +299,7 @@ impl<R: io::Read> Parser<R> {
 
     /// Get the next line, including the line terminator.  Returns the empty
     /// string at EOF.
-    pub fn get_line<'a>(&mut self, line: &'a mut String)
-                        -> io::Result<&'a mut String> {
+    pub fn get_line<'a>(&mut self, line: &'a mut String) -> io::Result<&'a mut String> {
         line.clear();
         while let Some(c) = self.match_pred(|c| c != b'\n')? {
             line.push(c as _);
@@ -311,8 +310,11 @@ impl<R: io::Read> Parser<R> {
         Ok(line)
     }
 
-    pub fn next_line<'a>(&mut self, line: &'a mut String, index: &mut usize)
-                        -> io::Result<&'a mut String> {
+    pub fn next_line<'a>(
+        &mut self,
+        line: &'a mut String,
+        index: &mut usize,
+    ) -> io::Result<&'a mut String> {
         let line = self.get_line(line)?;
         if !line.is_empty() {
             *index += 1;

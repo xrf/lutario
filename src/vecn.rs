@@ -1,6 +1,6 @@
 //! A tiny module for tiny fixed-length vectors.
-use std::ops::{Add, Index, IndexMut, Mul, Sub};
 use super::utils::cast;
+use std::ops::{Add, Index, IndexMut, Mul, Sub};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Vec3<T: Copy>(pub [T; 3]);
@@ -11,8 +11,9 @@ impl<T: Copy> Vec3<T> {
     }
 
     pub fn map<F, U>(self, mut f: F) -> Vec3<U>
-        where F: FnMut(T) -> U,
-              U: Copy
+    where
+        F: FnMut(T) -> U,
+        U: Copy,
     {
         let y0 = f(self[0]);
         let y1 = f(self[1]);
@@ -34,11 +35,9 @@ impl<T: Copy> IndexMut<usize> for Vec3<T> {
     }
 }
 
-impl<T: Copy + Add<Output=T> + Mul<Output=T>> Vec3<T> {
+impl<T: Copy + Add<Output = T> + Mul<Output = T>> Vec3<T> {
     pub fn dot(self, other: Self) -> T {
-        self[0] * other[0] +
-        self[1] * other[1] +
-        self[2] * other[2]
+        self[0] * other[0] + self[1] * other[1] + self[2] * other[2]
     }
 
     pub fn norm_sq(self) -> T {
@@ -46,25 +45,17 @@ impl<T: Copy + Add<Output=T> + Mul<Output=T>> Vec3<T> {
     }
 }
 
-impl<T: Copy + Add<Output=T>> Add for Vec3<T> {
+impl<T: Copy + Add<Output = T>> Add for Vec3<T> {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        Vec3::new(
-            self[0] + other[0],
-            self[1] + other[1],
-            self[2] + other[2],
-        )
+        Vec3::new(self[0] + other[0], self[1] + other[1], self[2] + other[2])
     }
 }
 
-impl<T: Copy + Sub<Output=T>> Sub for Vec3<T> {
+impl<T: Copy + Sub<Output = T>> Sub for Vec3<T> {
     type Output = Self;
     fn sub(self, other: Self) -> Self::Output {
-        Vec3::new(
-            self[0] - other[0],
-            self[1] - other[1],
-            self[2] - other[2],
-        )
+        Vec3::new(self[0] - other[0], self[1] - other[1], self[2] - other[2])
     }
 }
 

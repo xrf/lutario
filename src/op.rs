@@ -3,13 +3,13 @@
 //! This module defines the `Op` abstraction, which exists mainly for
 //! convenience.  It is a thin wrapper over block matrices.
 
-use std::{f64, iter};
-use std::ops::{AddAssign, Mul, MulAssign};
-use num::{FromPrimitive, Zero};
 use super::basis::BasisLayout;
 use super::block::{Bd, Block};
 use super::mat::Mat;
 use super::utils::RefAdd;
+use num::{FromPrimitive, Zero};
+use std::ops::{AddAssign, Mul, MulAssign};
+use std::{f64, iter};
 
 pub trait ChartedBasis {
     type Scheme;
@@ -19,11 +19,7 @@ pub trait ChartedBasis {
 pub trait ReifyState {
     type Basis;
     type Scheme;
-    fn reify_state(
-        self,
-        scheme: &Self::Scheme,
-        basis: &Self::Basis,
-    ) -> ReifiedState;
+    fn reify_state(self, scheme: &Self::Scheme, basis: &Self::Basis) -> ReifiedState;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -69,30 +65,13 @@ impl<T: MulAssign + Zero + Clone> VectorMut for Vec<T> {
 }
 
 pub trait IndexBlockMatRef: Vector {
-    fn at_block_mat(
-        &self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-    ) -> Self::Elem;
+    fn at_block_mat(&self, l: usize, u1: usize, u2: usize) -> Self::Elem;
 }
 
 pub trait IndexBlockMatMut: Vector {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    );
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem);
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    );
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -121,7 +100,8 @@ impl<S: Clone, L: Clone, R: Clone, D: RefAdd> RefAdd for Op<S, L, R, D> {
     }
 }
 
-impl<S, L, R, T> Op<S, L, R, Bd<Mat<T>>> where
+impl<S, L, R, T> Op<S, L, R, Bd<Mat<T>>>
+where
     L: ChartedBasis<Scheme = S> + Default,
     R: ChartedBasis<Scheme = S> + Default,
     T: Default + Clone,
@@ -133,19 +113,27 @@ impl<S, L, R, T> Op<S, L, R, Bd<Mat<T>>> where
             let left_layout = left_basis.layout(&scheme);
             let right_layout = right_basis.layout(&scheme);
             assert_eq!(left_layout.num_chans(), right_layout.num_chans());
-            Bd((0 .. left_layout.num_chans()).map(|l| {
-                Mat::replicate(
-                    left_layout.num_auxs(l) as _,
-                    right_layout.num_auxs(l) as _,
-                    Default::default(),
-                )
-            }).collect())
+            Bd((0..left_layout.num_chans())
+                .map(|l| {
+                    Mat::replicate(
+                        left_layout.num_auxs(l) as _,
+                        right_layout.num_auxs(l) as _,
+                        Default::default(),
+                    )
+                })
+                .collect())
         };
-        Self { scheme, left_basis, right_basis, data }
+        Self {
+            scheme,
+            left_basis,
+            right_basis,
+            data,
+        }
     }
 }
 
-impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
+impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>>
+where
     L: ChartedBasis<Scheme = S> + Default,
     R: ChartedBasis<Scheme = S> + Default,
     T: Default + Clone,
@@ -166,11 +154,17 @@ impl<S, L, R, T> Op<S, L, R, Block<Mat<T>>> where
                 ),
             }
         };
-        Self { scheme, left_basis, right_basis, data }
+        Self {
+            scheme,
+            left_basis,
+            right_basis,
+            data,
+        }
     }
 }
 
-impl<S, B, T> Op<S, B, B, Bd<Vec<T>>> where
+impl<S, B, T> Op<S, B, B, Bd<Vec<T>>>
+where
     B: ChartedBasis<Scheme = S> + Default,
     T: Default + Clone,
 {
@@ -180,28 +174,36 @@ impl<S, B, T> Op<S, B, B, Bd<Vec<T>>> where
         let right_basis = B::default();
         let data = {
             let layout = left_basis.layout(&scheme);
-            Bd((0 .. layout.num_chans()).map(|l| {
-                vec![Default::default(); layout.num_auxs(l) as _]
-            }).collect())
+            Bd((0..layout.num_chans())
+                .map(|l| vec![Default::default(); layout.num_auxs(l) as _])
+                .collect())
         };
-        Self { scheme, left_basis, right_basis, data }
+        Self {
+            scheme,
+            left_basis,
+            right_basis,
+            data,
+        }
     }
 }
 
-impl<S, B, T> Op<S, B, B, Bd<Vec<T>>> where
-    T: Clone + iter::Sum<T>
+impl<S, B, T> Op<S, B, B, Bd<Vec<T>>>
+where
+    T: Clone + iter::Sum<T>,
 {
     pub fn sum_vec(&self) -> T {
         self.data.0.iter().map(|x| x.iter().cloned().sum()).sum()
     }
 }
 
-impl<S, L, R, D> Op<S, L, R, D> where
+impl<S, L, R, D> Op<S, L, R, D>
+where
     D: IndexBlockMatRef,
     D::Elem: FromPrimitive + Mul<Output = D::Elem> + Zero + Clone,
 {
     #[inline]
-    pub fn at<I, J>(&self, i: I, j: J) -> D::Elem where
+    pub fn at<I, J>(&self, i: I, j: J) -> D::Elem
+    where
         I: ReifyState<Scheme = S, Basis = L>,
         J: ReifyState<Scheme = S, Basis = R>,
     {
@@ -216,12 +218,14 @@ impl<S, L, R, D> Op<S, L, R, D> where
     }
 }
 
-impl<S, L, R, D> Op<S, L, R, D> where
+impl<S, L, R, D> Op<S, L, R, D>
+where
     D: IndexBlockMatMut,
     D::Elem: FromPrimitive + Mul<Output = D::Elem>,
 {
     #[inline]
-    pub fn set<I, J>(&mut self, i: I, j: J, value: D::Elem) where
+    pub fn set<I, J>(&mut self, i: I, j: J, value: D::Elem)
+    where
         I: ReifyState<Scheme = S, Basis = L>,
         J: ReifyState<Scheme = S, Basis = R>,
     {
@@ -239,12 +243,14 @@ impl<S, L, R, D> Op<S, L, R, D> where
     }
 }
 
-impl<S, L, R, D> Op<S, L, R, D> where
+impl<S, L, R, D> Op<S, L, R, D>
+where
     D: IndexBlockMatMut,
     D::Elem: FromPrimitive + AddAssign + Mul<Output = D::Elem>,
 {
     #[inline]
-    pub fn add<I, J>(&mut self, i: I, j: J, value: D::Elem) where
+    pub fn add<I, J>(&mut self, i: I, j: J, value: D::Elem)
+    where
         I: ReifyState<Scheme = S, Basis = L>,
         J: ReifyState<Scheme = S, Basis = R>,
     {

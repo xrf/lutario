@@ -1,12 +1,12 @@
 //! Row-major, lower-triangular matrices (`i ≥ j`).
 
-use std::{fmt, mem, slice};
-use std::marker::PhantomData;
-use std::ops::{AddAssign, Deref, Index, IndexMut, Mul, MulAssign, Range};
-use num::{FromPrimitive, Zero};
 use super::mat::MatRef;
 use super::op::{Vector, VectorMut};
-use super::utils::{self, Offset, try_cast};
+use super::utils::{self, try_cast, Offset};
+use num::{FromPrimitive, Zero};
+use std::marker::PhantomData;
+use std::ops::{AddAssign, Deref, Index, IndexMut, Mul, MulAssign, Range};
+use std::{fmt, mem, slice};
 
 /// Dimensions of a non-strict lower triangular matrix, equal to the number of
 /// rows or columns.
@@ -25,13 +25,9 @@ impl TriMatDim {
     pub fn is_valid(dim: usize) -> bool {
         // make sure (dim + 1) * dim / 2 doesn't overflow
         || -> Result<isize, ()> {
-            try_cast(
-                dim
-                    .checked_add(1).ok_or(())?
-                    .checked_mul(dim).ok_or(())?
-                    / 2
-            ).ok_or(())
-        }().is_ok()
+            try_cast(dim.checked_add(1).ok_or(())?.checked_mul(dim).ok_or(())? / 2).ok_or(())
+        }()
+        .is_ok()
     }
 
     pub unsafe fn from_raw(dim: usize) -> Self {
@@ -58,8 +54,7 @@ impl TriMatDim {
         i * (i + 1) / 2 + j
     }
 
-    pub unsafe fn offset_unchecked<P: Offset>(self, ptr: P,
-                                              i: usize, j: usize) -> P {
+    pub unsafe fn offset_unchecked<P: Offset>(self, ptr: P, i: usize, j: usize) -> P {
         ptr.offset(Self::raw_index(i, j) as _)
     }
 
@@ -96,13 +91,9 @@ impl StrictTriMatDim {
     pub fn is_valid(dim: usize) -> bool {
         // make sure (dim - 1) * dim / 2 doesn't overflow
         || -> Result<isize, ()> {
-            try_cast(
-                dim
-                    .checked_sub(1).ok_or(())?
-                    .checked_mul(dim).ok_or(())?
-                    / 2
-            ).ok_or(())
-        }().is_ok()
+            try_cast(dim.checked_sub(1).ok_or(())?.checked_mul(dim).ok_or(())? / 2).ok_or(())
+        }()
+        .is_ok()
     }
 
     pub unsafe fn from_raw(dim: usize) -> Self {
@@ -144,7 +135,11 @@ pub struct TriMatRef<'a, T: 'a> {
 unsafe impl<'a, T: Sync> Send for TriMatRef<'a, T> {}
 unsafe impl<'a, T: Sync> Sync for TriMatRef<'a, T> {}
 
-impl<'a, T> Clone for TriMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Clone for TriMatRef<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 impl<'a, T> Copy for TriMatRef<'a, T> {}
 
 impl<'a, T: fmt::Debug> fmt::Debug for TriMatRef<'a, T> {
@@ -169,8 +164,8 @@ impl<'a, 'b, T: PartialEq<U>, U> PartialEq<TriMatRef<'b, U>> for TriMatRef<'a, T
         if self.shape() != rhs.shape() {
             return false;
         }
-        for i in 0 .. *self.shape() {
-            for j in 0 .. i + 1 {
+        for i in 0..*self.shape() {
+            for j in 0..i + 1 {
                 if (*self).index(i, j) != (*rhs).index(i, j) {
                     return false;
                 }
@@ -202,14 +197,17 @@ impl<'a, T> TriMatRef<'a, T> {
     /// short, `None` is returned.
     pub fn new(slice: &mut &'a [T], shape: TriMatDim) -> Option<Self> {
         unsafe {
-            utils::chop_slice(slice, shape.extent()).map(|slice| {
-                Self::from_raw(slice.as_ptr(), shape)
-            })
+            utils::chop_slice(slice, shape.extent())
+                .map(|slice| Self::from_raw(slice.as_ptr(), shape))
         }
     }
 
     pub unsafe fn from_raw(ptr: *const T, shape: TriMatDim) -> Self {
-        Self { phantom: PhantomData, ptr, shape }
+        Self {
+            phantom: PhantomData,
+            ptr,
+            shape,
+        }
     }
 
     pub fn shape(self) -> TriMatDim {
@@ -222,9 +220,8 @@ impl<'a, T> TriMatRef<'a, T> {
 
     pub fn index(self, i: usize, j: usize) -> &'a T {
         let shape = *self.shape();
-        self.get(i, j).unwrap_or_else(|| {
-            panic!("({}, {}) is not within ({}, {})", i, j, shape, shape)
-        })
+        self.get(i, j)
+            .unwrap_or_else(|| panic!("({}, {}) is not within ({}, {})", i, j, shape, shape))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a T> {
@@ -247,7 +244,10 @@ impl<'a, T> TriMatRef<'a, T> {
 
     pub fn rows(self) -> TriMatRows<'a, T> {
         let num_rows = *self.shape();
-        TriMatRows { mat: self, range: 0 .. num_rows }
+        TriMatRows {
+            mat: self,
+            range: 0..num_rows,
+        }
     }
 
     pub fn row(self, i: usize) -> Option<&'a [T]> {
@@ -266,9 +266,7 @@ impl<'a, T> TriMatRef<'a, T> {
     }
 
     pub fn to_slice(self) -> &'a [T] {
-        unsafe {
-            slice::from_raw_parts(self.ptr, self.shape().extent())
-        }
+        unsafe { slice::from_raw_parts(self.ptr, self.shape().extent()) }
     }
 }
 
@@ -294,7 +292,8 @@ impl<'a, T> Default for TriMatMut<'a, T> {
 }
 
 impl<'a, 'b, T, U> PartialEq<TriMatMut<'b, U>> for TriMatMut<'a, T>
-    where T: PartialEq<U>
+where
+    T: PartialEq<U>,
 {
     fn eq(&self, rhs: &TriMatMut<'b, U>) -> bool {
         self.as_ref().eq(&rhs.as_ref())
@@ -341,14 +340,17 @@ impl<'a, T> TriMatMut<'a, T> {
     /// short, `None` is returned.
     pub fn new(slice: &mut &'a mut [T], shape: TriMatDim) -> Option<Self> {
         unsafe {
-            utils::chop_slice_mut(slice, shape.extent()).map(|slice| {
-                Self::from_raw(slice.as_mut_ptr(), shape)
-            })
+            utils::chop_slice_mut(slice, shape.extent())
+                .map(|slice| Self::from_raw(slice.as_mut_ptr(), shape))
         }
     }
 
     pub unsafe fn from_raw(ptr: *mut T, shape: TriMatDim) -> Self {
-        Self { phantom: PhantomData, ptr, shape }
+        Self {
+            phantom: PhantomData,
+            ptr,
+            shape,
+        }
     }
 
     pub fn shape(&self) -> TriMatDim {
@@ -356,21 +358,15 @@ impl<'a, T> TriMatMut<'a, T> {
     }
 
     pub fn into_ref(self) -> TriMatRef<'a, T> {
-        unsafe {
-            TriMatRef::from_raw(self.ptr, self.shape)
-        }
+        unsafe { TriMatRef::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_ref(&self) -> TriMatRef<T> {
-        unsafe {
-            TriMatRef::from_raw(self.ptr, self.shape)
-        }
+        unsafe { TriMatRef::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_mut(&mut self) -> TriMatMut<T> {
-        unsafe {
-            TriMatMut::from_raw(self.ptr, self.shape)
-        }
+        unsafe { TriMatMut::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -379,9 +375,8 @@ impl<'a, T> TriMatMut<'a, T> {
 
     pub fn index(self, i: usize, j: usize) -> &'a mut T {
         let shape = *self.shape();
-        self.get(i, j).unwrap_or_else(|| {
-            panic!("({}, {}) is not within ({}, {})", i, j, shape, shape)
-        })
+        self.get(i, j)
+            .unwrap_or_else(|| panic!("({}, {}) is not within ({}, {})", i, j, shape, shape))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a mut T> {
@@ -404,7 +399,10 @@ impl<'a, T> TriMatMut<'a, T> {
 
     pub fn rows(self) -> TriMatRowsMut<'a, T> {
         let num_rows = *self.shape();
-        TriMatRowsMut { mat: self, range: 0 .. num_rows }
+        TriMatRowsMut {
+            mat: self,
+            range: 0..num_rows,
+        }
     }
 
     pub fn row(self, i: usize) -> Option<&'a mut [T]> {
@@ -423,9 +421,7 @@ impl<'a, T> TriMatMut<'a, T> {
     }
 
     pub fn to_slice(self) -> &'a mut [T] {
-        unsafe {
-            slice::from_raw_parts_mut(self.ptr, self.shape().extent())
-        }
+        unsafe { slice::from_raw_parts_mut(self.ptr, self.shape().extent()) }
     }
 }
 
@@ -453,9 +449,7 @@ impl<'a, T> Iterator for TriMatRows<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mat = self.mat;
-        self.range.next().map(|i| unsafe {
-            mat.row_unchecked(i)
-        })
+        self.range.next().map(|i| unsafe { mat.row_unchecked(i) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -466,9 +460,9 @@ impl<'a, T> Iterator for TriMatRows<'a, T> {
 impl<'a, T> DoubleEndedIterator for TriMatRows<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mat = self.mat;
-        self.range.next_back().map(|i| unsafe {
-            mat.row_unchecked(i)
-        })
+        self.range
+            .next_back()
+            .map(|i| unsafe { mat.row_unchecked(i) })
     }
 }
 
@@ -489,9 +483,9 @@ impl<'a, T> Iterator for TriMatRowsMut<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mat = &mut self.mat;
-        self.range.next().map(|i| unsafe {
-            mem::transmute(mat.as_mut().row_unchecked(i))
-        })
+        self.range
+            .next()
+            .map(|i| unsafe { mem::transmute(mat.as_mut().row_unchecked(i)) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -502,9 +496,9 @@ impl<'a, T> Iterator for TriMatRowsMut<'a, T> {
 impl<'a, T> DoubleEndedIterator for TriMatRowsMut<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mat = &mut self.mat;
-        self.range.next_back().map(|i| unsafe {
-            mem::transmute(mat.as_mut().row_unchecked(i))
-        })
+        self.range
+            .next_back()
+            .map(|i| unsafe { mem::transmute(mat.as_mut().row_unchecked(i)) })
     }
 }
 
@@ -566,9 +560,7 @@ impl<T: Eq> Eq for TriMat<T> {}
 impl<T: Clone> TriMat<T> {
     pub fn replicate(dim: usize, value: T) -> Self {
         let dim = TriMatDim::new(dim).unwrap();
-        unsafe {
-            Self::from_vec_unchecked(vec![value; dim.extent()], dim)
-        }
+        unsafe { Self::from_vec_unchecked(vec![value; dim.extent()], dim) }
     }
 }
 
@@ -586,9 +578,7 @@ impl<T> TriMat<T> {
         assert!(vec.len() >= n);
         vec.truncate(n);
         vec.shrink_to_fit();
-        unsafe {
-            Self::from_vec_unchecked(vec, shape)
-        }
+        unsafe { Self::from_vec_unchecked(vec, shape) }
     }
 
     pub unsafe fn from_vec_unchecked(mut vec: Vec<T>, shape: TriMatDim) -> Self {
@@ -605,7 +595,7 @@ impl<T> TriMat<T> {
         Self {
             phantom: PhantomData,
             ptr,
-            shape
+            shape,
         }
     }
 
@@ -673,9 +663,9 @@ pub trait Trs<T> {
 }
 
 pub mod trs {
-    use std::ops::Neg;
     use super::super::linalg::Conj;
     use super::Trs;
+    use std::ops::Neg;
 
     /// Marks an Hermitian matrix.
     #[derive(Clone, Copy, Debug, Default)]
@@ -744,28 +734,14 @@ impl<S, T: MulAssign + Zero + Clone> VectorMut for TrsMat<S, T> {
 
 impl<S: Trs<T>, T: Clone> TrsMat<S, T> {
     pub fn get(&self, i: usize, j: usize) -> Result<T, (usize, usize)> {
-        let (i2, j2) = if i >= j {
-            (i, j)
-        } else {
-            (j, i)
-        };
+        let (i2, j2) = if i >= j { (i, j) } else { (j, i) };
         let value = self.mat.as_ref().get(i2, j2).ok_or((i, j))?.clone();
-        Ok(if i >= j {
-            value
-        } else {
-            self.trs.trs(value)
-        })
+        Ok(if i >= j { value } else { self.trs.trs(value) })
     }
 }
 
 impl<S: Trs<T>, T> TrsMat<S, T> {
-    pub fn set(
-        &mut self,
-        i: usize,
-        j: usize,
-        mut value: T,
-    ) -> Result<(), (usize, usize)>
-    {
+    pub fn set(&mut self, i: usize, j: usize, mut value: T) -> Result<(), (usize, usize)> {
         let (i2, j2) = if i >= j {
             (i, j)
         } else {
@@ -778,13 +754,7 @@ impl<S: Trs<T>, T> TrsMat<S, T> {
 }
 
 impl<S: Trs<T>, T: AddAssign + Mul<Output = T> + FromPrimitive> TrsMat<S, T> {
-    pub fn add(
-        &mut self,
-        i: usize,
-        j: usize,
-        mut value: T,
-    ) -> Result<(), (usize, usize)>
-    {
+    pub fn add(&mut self, i: usize, j: usize, mut value: T) -> Result<(), (usize, usize)> {
         let (i2, j2) = if i >= j {
             (i, j)
         } else {
@@ -797,7 +767,8 @@ impl<S: Trs<T>, T: AddAssign + Mul<Output = T> + FromPrimitive> TrsMat<S, T> {
     }
 }
 
-impl<S, T> TrsMat<S, T> where
+impl<S, T> TrsMat<S, T>
+where
     S: Trs<T>,
     T: AddAssign + Mul<Output = T> + MulAssign + FromPrimitive + Zero + Clone,
 {
@@ -806,8 +777,8 @@ impl<S, T> TrsMat<S, T> where
         assert_eq!(n, source.shape().num_rows);
         assert_eq!(n, source.shape().num_cols);
         self.set_zero();
-        for i in 0 .. source.shape().num_rows {
-            for j in 0 .. source.shape().num_cols {
+        for i in 0..source.shape().num_rows {
+            for j in 0..source.shape().num_cols {
                 self.add(i, j, source.get(i, j).unwrap().clone()).unwrap();
             }
         }

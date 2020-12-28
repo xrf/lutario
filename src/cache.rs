@@ -2,11 +2,11 @@
 //!
 //! Experimental module, not yet used for anything.
 
-use std::{cmp, mem};
+use any_key::AnyOrd;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
-use any_key::AnyOrd;
+use std::{cmp, mem};
 
 pub trait CacheKey: Ord + 'static {
     type Value: 'static;
@@ -67,10 +67,7 @@ impl Cache {
         //     and we trust AnyOrd to be correct (don't need to trust Ord for K)
         //
         unsafe {
-            let query: CacheEntry<_, K::Value> = CacheEntry {
-                key,
-                value: None,
-            };
+            let query: CacheEntry<_, K::Value> = CacheEntry { key, value: None };
             // we don't use the entry API here
             // because we want to unlock the RefCell while
             // CacheKey::get is being executed
@@ -78,7 +75,8 @@ impl Cache {
                 let v: &dyn AnyOrd = &**v;
                 let r: &dyn AnyOrd = mem::transmute(v);
                 let r: &CacheEntry<K, _> = r.downcast_ref_unchecked();
-                return r.value
+                return r
+                    .value
                     .as_ref()
                     .expect("stored CacheEntrys should never have None");
             }
@@ -86,9 +84,11 @@ impl Cache {
             let value = Some(key.get());
             let entry = Box::new(CacheEntry { key, value });
             let r = mem::transmute(
-                entry.value
+                entry
+                    .value
                     .as_ref()
-                    .expect("stored CacheEntrys should never have None"));
+                    .expect("stored CacheEntrys should never have None"),
+            );
             self.0.borrow_mut().replace(entry);
             r
         }

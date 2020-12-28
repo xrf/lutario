@@ -7,13 +7,13 @@
 //! ```
 //!
 //! where `L` is the box length and `k` is the angular wave number.
-use std::ops::{Add, Sub};
 use super::basis::{ChanState, Occ, PartState};
 use super::half::Half;
 use super::isqrt::isqrt_i64 as isqrt;
 use super::j_scheme::JChan;
 use super::utils::cast;
 use super::vecn::Vec3I8;
+use std::ops::{Add, Sub};
 
 /// Test if this integer can be expressed as a sum of three squares using
 /// Legendre’s three-square theorem.
@@ -58,14 +58,14 @@ impl HarmTable {
         } else if nsqmax == 0 {
             0
         } else {
-            isqrt(nsqmax - 1) + 1       // ⌈√nsqmax⌉
+            isqrt(nsqmax - 1) + 1 // ⌈√nsqmax⌉
         };
         // it's not very sparse, so just store it as a Vec
         // (density is 5/6 due to Legendre's three-square theorem)
         let mut nsq_table = Vec::new(); // nsq -> Vec<n>
-        for nx in -nmax .. nmax + 1 {
-            for ny in -nmax .. nmax + 1 {
-                for nz in -nmax .. nmax + 1 {
+        for nx in -nmax..nmax + 1 {
+            for ny in -nmax..nmax + 1 {
+                for nz in -nmax..nmax + 1 {
                     let n = Vec3I8::new(nx, ny, nz);
                     let nsq = n.norm_sq();
                     if nsq <= nsqmax {
@@ -99,23 +99,36 @@ impl HarmTable {
     }
 
     pub fn num_states_to(&self, num_filled: u32) -> u32 {
-        let n: usize = self.table[.. num_filled as usize].iter()
-            .map(|shell| shell.len()).sum();
+        let n: usize = self.table[..num_filled as usize]
+            .iter()
+            .map(|shell| shell.len())
+            .sum();
         n as _
     }
 
     pub fn parted_ns_orbs(
         self,
         num_filled: u32,
-    ) -> Vec<PartState<Occ, ChanState<JChan<HarmSpin>, ()>>>
-    {
-        self.table.into_iter().enumerate().flat_map(|(i, shell)| {
-            let x = (i >= num_filled as usize).into();
-            shell.into_iter().flat_map(move |n| vec![
-                PartState { x, p: HarmSpin { n, s: Half(-1) }.into() },
-                PartState { x, p: HarmSpin { n, s: Half(1) }.into() },
-            ])
-        }).collect()
+    ) -> Vec<PartState<Occ, ChanState<JChan<HarmSpin>, ()>>> {
+        self.table
+            .into_iter()
+            .enumerate()
+            .flat_map(|(i, shell)| {
+                let x = (i >= num_filled as usize).into();
+                shell.into_iter().flat_map(move |n| {
+                    vec![
+                        PartState {
+                            x,
+                            p: HarmSpin { n, s: Half(-1) }.into(),
+                        },
+                        PartState {
+                            x,
+                            p: HarmSpin { n, s: Half(1) }.into(),
+                        },
+                    ]
+                })
+            })
+            .collect()
     }
 }
 
@@ -128,7 +141,10 @@ impl From<ChanState<JChan<HarmSpin>, ()>> for HarmSpin {
 impl From<HarmSpin> for ChanState<JChan<HarmSpin>, ()> {
     fn from(this: HarmSpin) -> Self {
         ChanState {
-            l: JChan { j: Half(0), k: this },
+            l: JChan {
+                j: Half(0),
+                k: this,
+            },
             u: Default::default(),
         }
     }

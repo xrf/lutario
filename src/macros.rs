@@ -1,11 +1,10 @@
 /// Force a mutable reference to be moved instead of reborrowed.
 #[macro_export]
 macro_rules! move_ref {
-    ($e:expr) => {
-        {
-            let x = $e; x
-        }
-    }
+    ($e:expr) => {{
+        let x = $e;
+        x
+    }};
 }
 
 /// Check whether two `f64` numbers are equal within the given
@@ -27,10 +26,14 @@ macro_rules! toler_assert_eq {
         let toler = &$toler;
         let left = $left;
         let right = $right;
-        assert!(toler.is_eq(left, right),
-                "{} does not equal to {} within {:?}",
-                left, right, toler)
-    }
+        assert!(
+            toler.is_eq(left, right),
+            "{} does not equal to {} within {:?}",
+            left,
+            right,
+            toler
+        )
+    };
 }
 
 /// Declare a regular expression (`Regex`) cached via `lazy_static!`.
@@ -51,14 +54,12 @@ macro_rules! toler_assert_eq {
 /// ```
 #[macro_export]
 macro_rules! re {
-    ($e:expr) => {
-        {
-            lazy_static! {
-                static ref REGEX: Regex = Regex::new($e).unwrap();
-            }
-            &REGEX
+    ($e:expr) => {{
+        lazy_static! {
+            static ref REGEX: Regex = Regex::new($e).unwrap();
         }
-    }
+        &REGEX
+    }};
 }
 
 //////////////////////////////////////////////////////////////////////////////

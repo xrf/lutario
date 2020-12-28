@@ -20,17 +20,18 @@
 pub mod basic;
 pub mod c;
 
-use std::{fmt, iter};
-use std::ops::Deref;
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
+use std::{fmt, iter};
 
 pub fn assert_all_eq<I: IntoIterator>(xs: I, msg: &str) -> Option<I::Item>
-    where I::Item: fmt::Debug + Eq
+where
+    I::Item: fmt::Debug + Eq,
 {
     let mut xs = xs.into_iter();
     let x0 = match xs.next() {
         None => return None,
-        Some(x0) => x0
+        Some(x0) => x0,
     };
     for x in xs {
         assert_eq!(x, x0, "{}", msg);
@@ -45,7 +46,8 @@ pub trait VectorDriver {
     fn len(&self) -> usize;
 
     fn create_vector_with<F>(&self, f: F) -> Option<Self::Vector>
-        where F: Fn() -> Self::Item + Sync;
+    where
+        F: Fn() -> Self::Item + Sync;
 
     /// Performs an applicative operation on multiple vectors.
     ///
@@ -63,14 +65,11 @@ pub trait VectorDriver {
         mut_vectors: &mut [&mut Self::Vector],
         f: F,
     ) where
-        F: Fn(&mut [u8],
-              &[u8],
-              usize,
-              &[&[Self::Item]],
-              &mut [&mut [Self::Item]]) + Sync;
+        F: Fn(&mut [u8], &[u8], usize, &[&[Self::Item]], &mut [&mut [Self::Item]]) + Sync;
 
     fn create_vector(&self, value: Self::Item) -> Option<Self::Vector>
-        where Self::Item: Clone + Sync
+    where
+        Self::Item: Clone + Sync,
     {
         self.create_vector_with(|| value.clone())
     }
@@ -84,11 +83,7 @@ pub trait VectorDriver {
         mut_vectors: &mut [&mut Self::Vector],
         f: F,
     ) where
-        F: Fn(&mut S,
-              S,
-              usize,
-              &[&[Self::Item]],
-              &mut [&mut [Self::Item]]) + Sync,
+        F: Fn(&mut S, S, usize, &[&[Self::Item]], &mut [&mut [Self::Item]]) + Sync,
         S: Serialize + for<'a> Deserialize<'a>,
     {
         use bincode::{deserialize, serialize, serialize_into};
@@ -111,9 +106,9 @@ pub trait VectorDriver {
     /// Sum all elements of the vector.
     ///
     /// This is a demonstration of the flexibility of vector driver.
-    fn sum(&self, v: &Self::Vector) -> Self::Item where
-        Self::Item: for<'a> iter::Sum<&'a Self::Item>
-                  + Serialize + for<'a> Deserialize<'a> + Clone
+    fn sum(&self, v: &Self::Vector) -> Self::Item
+    where
+        Self::Item: for<'a> iter::Sum<&'a Self::Item> + Serialize + for<'a> Deserialize<'a> + Clone,
     {
         let zero = || -> Self::Item { [].iter().sum() };
         let mut sum = zero();
@@ -125,13 +120,16 @@ pub trait VectorDriver {
             |accum: &mut Self::Item, val, _, a: &[&_], _: &mut [&mut _]| {
                 *accum = iter::once(&*accum)
                     .chain(iter::once(&val))
-                    .chain(a[0]).sum();
-            });
+                    .chain(a[0])
+                    .sum();
+            },
+        );
         sum
     }
 }
 
-impl<T> VectorDriver for T where
+impl<T> VectorDriver for T
+where
     T: Deref,
     T::Target: VectorDriver,
 {
@@ -143,22 +141,21 @@ impl<T> VectorDriver for T where
     }
 
     fn create_vector_with<F>(&self, f: F) -> Option<Self::Vector>
-        where F: Fn() -> Self::Item + Sync
+    where
+        F: Fn() -> Self::Item + Sync,
     {
         (**self).create_vector_with(f)
     }
 
-    fn operate<F>(&self,
-                  accum: &mut [u8],
-                  offset: usize,
-                  vectors: &[&Self::Vector],
-                  mut_vectors: &mut [&mut Self::Vector],
-                  f: F)
-        where F: Fn(&mut [u8],
-                    &[u8],
-                    usize,
-                    &[&[Self::Item]],
-                    &mut [&mut [Self::Item]]) + Sync
+    fn operate<F>(
+        &self,
+        accum: &mut [u8],
+        offset: usize,
+        vectors: &[&Self::Vector],
+        mut_vectors: &mut [&mut Self::Vector],
+        f: F,
+    ) where
+        F: Fn(&mut [u8], &[u8], usize, &[&[Self::Item]], &mut [&mut [Self::Item]]) + Sync,
     {
         (**self).operate(accum, offset, vectors, mut_vectors, f)
     }

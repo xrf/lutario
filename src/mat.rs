@@ -1,13 +1,13 @@
 //! BLAS-compatible matrix data types.
 
-use std::{fmt, mem, ptr, slice};
+use super::op::{Vector, VectorMut};
+use super::tri_mat::{TriMatDim, Trs, TrsMat};
+use super::utils::{self, try_cast, Offset, RefAdd};
+use num::Zero;
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::ops::{Deref, Index, IndexMut, MulAssign, Range};
-use num::Zero;
-use super::op::{Vector, VectorMut};
-use super::tri_mat::{TriMatDim, Trs, TrsMat};
-use super::utils::{self, RefAdd, Offset, try_cast};
+use std::{fmt, mem, ptr, slice};
 
 /// The indexing convention is row-major.
 ///
@@ -37,7 +37,7 @@ impl MatShape {
         Self {
             stride: num_cols,
             num_rows,
-            num_cols
+            num_cols,
         }
     }
 
@@ -83,8 +83,7 @@ impl ValidMatShape {
         i * self.stride + j
     }
 
-    pub unsafe fn offset_unchecked<P: Offset>(&self, ptr: P,
-                                              i: usize, j: usize) -> P {
+    pub unsafe fn offset_unchecked<P: Offset>(&self, ptr: P, i: usize, j: usize) -> P {
         ptr.offset(self.raw_index(i, j) as _)
     }
 
@@ -92,19 +91,19 @@ impl ValidMatShape {
         self.num_cols
     }
 
-    pub fn slice(
-        &self,
-        is: Range<usize>,
-        js: Range<usize>,
-    ) -> ((usize, usize), Self) {
+    pub fn slice(&self, is: Range<usize>, js: Range<usize>) -> ((usize, usize), Self) {
         let i = min(is.start, self.num_rows);
         let j = min(js.start, self.num_cols);
         let shape = MatShape {
             num_rows: min(is.end, self.num_rows).saturating_sub(i),
             num_cols: min(js.end, self.num_cols).saturating_sub(j),
-            .. **self
+            ..**self
         };
-        let i = if i == self.num_rows { i.saturating_sub(1) } else { i };
+        let i = if i == self.num_rows {
+            i.saturating_sub(1)
+        } else {
+            i
+        };
         ((i, j), unsafe { shape.assert_valid() })
     }
 }
@@ -118,7 +117,11 @@ pub struct MatRef<'a, T: 'a> {
 unsafe impl<'a, T: Sync> Send for MatRef<'a, T> {}
 unsafe impl<'a, T: Sync> Sync for MatRef<'a, T> {}
 
-impl<'a, T> Clone for MatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Clone for MatRef<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 impl<'a, T> Copy for MatRef<'a, T> {}
 
 impl<'a, T: fmt::Debug> fmt::Debug for MatRef<'a, T> {
@@ -169,13 +172,16 @@ impl<'a, T> MatRef<'a, T> {
     /// while the second part is stored back in `slice`.  If the slice is too
     /// short, `None` is returned.
     pub fn new(slice: &mut &'a [T], shape: ValidMatShape) -> Option<Self> {
-        utils::chop_slice(slice, shape.extent()).map(|slice| {
-            unsafe { Self::from_raw(slice.as_ptr(), shape) }
-        })
+        utils::chop_slice(slice, shape.extent())
+            .map(|slice| unsafe { Self::from_raw(slice.as_ptr(), shape) })
     }
 
     pub unsafe fn from_raw(ptr: *const T, shape: ValidMatShape) -> Self {
-        Self { phantom: PhantomData, ptr, shape }
+        Self {
+            phantom: PhantomData,
+            ptr,
+            shape,
+        }
     }
 
     pub fn shape(self) -> ValidMatShape {
@@ -209,9 +215,8 @@ impl<'a, T> MatRef<'a, T> {
     pub fn index(self, i: usize, j: usize) -> &'a T {
         let num_rows = self.num_rows();
         let num_cols = self.num_cols();
-        self.get(i, j).unwrap_or_else(|| {
-            panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols)
-        })
+        self.get(i, j)
+            .unwrap_or_else(|| panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a T> {
@@ -234,7 +239,10 @@ impl<'a, T> MatRef<'a, T> {
 
     pub fn rows(self) -> MatRows<'a, T> {
         let num_rows = self.num_rows();
-        MatRows { mat: self, range: 0 .. num_rows }
+        MatRows {
+            mat: self,
+            range: 0..num_rows,
+        }
     }
 
     pub fn row(self, i: usize) -> Option<&'a [T]> {
@@ -274,15 +282,17 @@ impl<'a, T> MatRef<'a, T> {
                     self.ptr,
                     MatShape {
                         num_rows: i,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
                 Self::from_raw(
                     ptr as _,
                     MatShape {
                         num_rows: self.num_rows() - i,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
             )
         }
@@ -297,15 +307,17 @@ impl<'a, T> MatRef<'a, T> {
                     self.ptr,
                     MatShape {
                         num_cols: j,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
                 Self::from_raw(
                     ptr as _,
                     MatShape {
                         num_cols: self.num_cols() - j,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
             )
         }
@@ -324,8 +336,8 @@ impl<'m, T: Clone> MatRef<'m, T> {
     pub fn clone_to_tri_slice<'a>(self, mut a: &'a mut [T]) -> &'a mut [T] {
         let n = self.shape().num_rows;
         assert_eq!(n, self.shape().num_cols);
-        for i in 0 .. n {
-            let row = &self.row(i).unwrap()[.. i + 1];
+        for i in 0..n {
+            let row = &self.row(i).unwrap()[..i + 1];
             let (a_chunk, a_rest) = move_ref!(a).split_at_mut(row.len());
             a_chunk.clone_from_slice(row);
             a = a_rest;
@@ -389,14 +401,17 @@ impl<'a, T> MatMut<'a, T> {
     /// short, `None` is returned.
     pub fn new(slice: &mut &'a mut [T], shape: ValidMatShape) -> Option<Self> {
         unsafe {
-            utils::chop_slice_mut(slice, shape.extent()).map(|slice| {
-                Self::from_raw(slice.as_mut_ptr(), shape)
-            })
+            utils::chop_slice_mut(slice, shape.extent())
+                .map(|slice| Self::from_raw(slice.as_mut_ptr(), shape))
         }
     }
 
     pub unsafe fn from_raw(ptr: *mut T, shape: ValidMatShape) -> Self {
-        Self { phantom: PhantomData, ptr, shape }
+        Self {
+            phantom: PhantomData,
+            ptr,
+            shape,
+        }
     }
 
     pub fn shape(&self) -> ValidMatShape {
@@ -420,21 +435,15 @@ impl<'a, T> MatMut<'a, T> {
     }
 
     pub fn into_ref(self) -> MatRef<'a, T> {
-        unsafe {
-            MatRef::from_raw(self.ptr, self.shape)
-        }
+        unsafe { MatRef::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_ref(&self) -> MatRef<T> {
-        unsafe {
-            MatRef::from_raw(self.ptr, self.shape)
-        }
+        unsafe { MatRef::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_mut(&mut self) -> MatMut<T> {
-        unsafe {
-            MatMut::from_raw(self.ptr, self.shape)
-        }
+        unsafe { MatMut::from_raw(self.ptr, self.shape) }
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -444,9 +453,8 @@ impl<'a, T> MatMut<'a, T> {
     pub fn index(self, i: usize, j: usize) -> &'a mut T {
         let num_rows = self.num_rows();
         let num_cols = self.num_cols();
-        self.get(i, j).unwrap_or_else(|| {
-            panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols)
-        })
+        self.get(i, j)
+            .unwrap_or_else(|| panic!("({}, {}) is not within ({}, {})", i, j, num_rows, num_cols))
     }
 
     pub fn get(self, i: usize, j: usize) -> Option<&'a mut T> {
@@ -469,7 +477,10 @@ impl<'a, T> MatMut<'a, T> {
 
     pub fn rows(self) -> MatRowsMut<'a, T> {
         let num_rows = self.num_rows();
-        MatRowsMut { mat: self, range: 0 .. num_rows }
+        MatRowsMut {
+            mat: self,
+            range: 0..num_rows,
+        }
     }
 
     pub fn row(self, i: usize) -> Option<&'a mut [T]> {
@@ -509,15 +520,17 @@ impl<'a, T> MatMut<'a, T> {
                     self.ptr,
                     MatShape {
                         num_rows: i,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
                 Self::from_raw(
                     ptr as _,
                     MatShape {
                         num_rows: self.num_rows() - i,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
             )
         }
@@ -532,15 +545,17 @@ impl<'a, T> MatMut<'a, T> {
                     self.ptr,
                     MatShape {
                         num_cols: j,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
                 Self::from_raw(
                     ptr as _,
                     MatShape {
                         num_cols: self.num_cols() - j,
-                        .. *self.shape()
-                    }.assert_valid(),
+                        ..*self.shape()
+                    }
+                    .assert_valid(),
                 ),
             )
         }
@@ -549,8 +564,8 @@ impl<'a, T> MatMut<'a, T> {
 
 impl<'m, T: Clone> MatMut<'m, T> {
     pub fn fill(&mut self, value: &T) {
-        for i in 0 .. self.num_rows() {
-            for j in 0 .. self.num_cols() {
+        for i in 0..self.num_rows() {
+            for j in 0..self.num_cols() {
                 self[(i, j)] = value.clone();
             }
         }
@@ -564,19 +579,14 @@ impl<'m, T: Clone> MatMut<'m, T> {
         }
     }
 
-    pub fn clone_from_tri_slice<'a, S: Trs<T>>(
-        &mut self,
-        trs: &S,
-        mut a: &'a [T],
-    ) -> &'a [T]
-    {
+    pub fn clone_from_tri_slice<'a, S: Trs<T>>(&mut self, trs: &S, mut a: &'a [T]) -> &'a [T] {
         let n = self.shape().num_rows;
         assert_eq!(n, self.shape().num_cols);
-        for i in 0 .. n {
+        for i in 0..n {
             let (a_chunk, a_rest) = a.split_at(i + 1);
             a = a_rest;
-            self.as_mut().row(i).unwrap()[.. i + 1].clone_from_slice(a_chunk);
-            for j in 0 .. i {
+            self.as_mut().row(i).unwrap()[..i + 1].clone_from_slice(a_chunk);
+            for j in 0..i {
                 self[(j, i)] = trs.trs(a_chunk[j].clone());
             }
         }
@@ -585,14 +595,15 @@ impl<'m, T: Clone> MatMut<'m, T> {
 }
 
 impl<'a, T: Clone> MatMut<'a, T> {
-    pub fn clone_from_trs_mat<S>(&mut self, source: &TrsMat<S, T>) where
+    pub fn clone_from_trs_mat<S>(&mut self, source: &TrsMat<S, T>)
+    where
         S: Trs<T>,
     {
         let n = *source.mat.as_ref().shape();
         assert_eq!(n, self.shape().num_rows);
         assert_eq!(n, self.shape().num_cols);
-        for i in 0 .. self.shape().num_rows {
-            for j in 0 .. self.shape().num_cols {
+        for i in 0..self.shape().num_rows {
+            for j in 0..self.shape().num_cols {
                 *self.as_mut().get(i, j).unwrap() = source.get(i, j).unwrap();
             }
         }
@@ -631,9 +642,7 @@ impl<'a, T> Iterator for MatRows<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mat = self.mat;
-        self.range.next().map(|i| unsafe {
-            mat.row_unchecked(i)
-        })
+        self.range.next().map(|i| unsafe { mat.row_unchecked(i) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -644,9 +653,9 @@ impl<'a, T> Iterator for MatRows<'a, T> {
 impl<'a, T> DoubleEndedIterator for MatRows<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mat = self.mat;
-        self.range.next_back().map(|i| unsafe {
-            mat.row_unchecked(i)
-        })
+        self.range
+            .next_back()
+            .map(|i| unsafe { mat.row_unchecked(i) })
     }
 }
 
@@ -667,9 +676,9 @@ impl<'a, T> Iterator for MatRowsMut<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mat = &mut self.mat;
-        self.range.next().map(|i| unsafe {
-            mem::transmute(mat.as_mut().row_unchecked(i))
-        })
+        self.range
+            .next()
+            .map(|i| unsafe { mem::transmute(mat.as_mut().row_unchecked(i)) })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -680,9 +689,9 @@ impl<'a, T> Iterator for MatRowsMut<'a, T> {
 impl<'a, T> DoubleEndedIterator for MatRowsMut<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mat = &mut self.mat;
-        self.range.next_back().map(|i| unsafe {
-            mem::transmute(mat.as_mut().row_unchecked(i))
-        })
+        self.range
+            .next_back()
+            .map(|i| unsafe { mem::transmute(mat.as_mut().row_unchecked(i)) })
     }
 }
 
@@ -769,22 +778,14 @@ impl<T> From<Vec<Vec<T>>> for Mat<T> {
             data.extend(row.drain(..));
         }
         data.shrink_to_fit();
-        unsafe {
-            Self::from_vec_unchecked(data, ni, nj)
-        }
+        unsafe { Self::from_vec_unchecked(data, ni, nj) }
     }
 }
 
 impl<T: Clone> Mat<T> {
     pub fn replicate(num_rows: usize, num_cols: usize, value: T) -> Self {
         MatShape::packed(num_rows, num_cols).validate().unwrap();
-        unsafe {
-            Self::from_vec_unchecked(
-                vec![value; num_rows * num_cols],
-                num_rows,
-                num_cols,
-            )
-        }
+        unsafe { Self::from_vec_unchecked(vec![value; num_rows * num_cols], num_rows, num_cols) }
     }
 }
 
@@ -802,16 +803,10 @@ impl<T> Mat<T> {
         assert!(vec.len() >= n);
         vec.truncate(n);
         vec.shrink_to_fit();
-        unsafe {
-            Self::from_vec_unchecked(vec, num_rows, num_cols)
-        }
+        unsafe { Self::from_vec_unchecked(vec, num_rows, num_cols) }
     }
 
-    pub unsafe fn from_vec_unchecked(
-        mut vec: Vec<T>,
-        num_rows: usize,
-        num_cols: usize,
-    ) -> Self {
+    pub unsafe fn from_vec_unchecked(mut vec: Vec<T>, num_rows: usize, num_cols: usize) -> Self {
         // in order to reconstruct the vector correctly during Drop,
         // we need to ensure capacity == num_rows * num_cols
         debug_assert_eq!(vec.capacity(), num_rows * num_cols);
@@ -832,7 +827,8 @@ impl<T> Mat<T> {
 
     pub fn shape(&self) -> ValidMatShape {
         MatShape::packed(self.num_rows, self.num_cols)
-            .validate().expect("!?")
+            .validate()
+            .expect("!?")
     }
 
     pub fn extent(&self) -> usize {
@@ -878,10 +874,12 @@ impl<T> Mat<T> {
             let mut data = Vec::with_capacity(n);
             data.set_len(n);
             let mut m = Self::from_vec_unchecked(data, nj, ni);
-            for i in 0 .. ni {
-                for j in 0 .. nj {
-                    ptr::write(m.as_mut().get_unchecked(j, i),
-                               ptr::read(self.as_ref().get_unchecked(i, j)));
+            for i in 0..ni {
+                for j in 0..nj {
+                    ptr::write(
+                        m.as_mut().get_unchecked(j, i),
+                        ptr::read(self.as_ref().get_unchecked(i, j)),
+                    );
                 }
             }
             // forget the data

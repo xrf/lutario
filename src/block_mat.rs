@@ -1,12 +1,12 @@
 //! Packed block-diagonal matrices.
 
-use std::{mem, ptr, slice};
+use super::linalg::{self, EigenvalueRange, Gemm, Heevr, Part, Transpose};
+use super::mat::{MatMut, MatRef, MatShape, ValidMatShape};
+use super::op::{IndexBlockMatMut, IndexBlockMatRef, Vector};
+use super::utils;
 use std::marker::PhantomData;
 use std::ops::AddAssign;
-use super::linalg::{self, EigenvalueRange, Gemm, Heevr, Part, Transpose};
-use super::mat::{MatRef, MatMut, MatShape, ValidMatShape};
-use super::op::{IndexBlockMatRef, IndexBlockMatMut, Vector};
-use super::utils;
+use std::{mem, ptr, slice};
 
 /// A block-diagonal matrix with unspecified lifetime and unspecified type.
 #[derive(Clone, Copy, Debug)]
@@ -83,7 +83,8 @@ impl RawBlockMatRef {
             stride: *self.block_strides().get_unchecked(l),
             num_rows: *self.block_num_rows().get_unchecked(l),
             num_cols: *self.block_num_cols().get_unchecked(l),
-        }.assert_valid()
+        }
+        .assert_valid()
     }
 
     pub unsafe fn offset_at(self, l: usize) -> usize {
@@ -99,7 +100,11 @@ pub struct BlockMatRef<'a, T: 'a> {
 
 unsafe impl<'a, T: Sync> Send for BlockMatRef<'a, T> {}
 unsafe impl<'a, T: Sync> Sync for BlockMatRef<'a, T> {}
-impl<'a, T> Clone for BlockMatRef<'a, T> { fn clone(&self) -> Self { *self } }
+impl<'a, T> Clone for BlockMatRef<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 impl<'a, T> Copy for BlockMatRef<'a, T> {}
 
 pub fn block_mat_extent(
@@ -115,13 +120,16 @@ pub fn block_mat_extent(
 
     // check for overlaps
     let mut i = 0;
-    for l in 0 .. num_blocks {
+    for l in 0..num_blocks {
         let shape = MatShape {
             stride: block_strides[l],
             num_rows: block_num_rows[l],
             num_cols: block_num_cols[l],
-        }.validate().unwrap();
-        let new_i = block_offsets[l].checked_add(shape.extent())
+        }
+        .validate()
+        .unwrap();
+        let new_i = block_offsets[l]
+            .checked_add(shape.extent())
             .expect("arithmetic overflow");
         assert!(new_i >= i);
         i = new_i;
@@ -138,25 +146,34 @@ impl<'a, T> BlockMatRef<'a, T> {
         block_num_rows: &'a [usize],
         block_num_cols: &'a [usize],
     ) -> Self {
-        let mine = utils::chop_slice(slice, block_mat_extent(
-            num_blocks,
-            block_offsets,
-            block_strides,
-            block_num_rows,
-            block_num_cols,
-        )).expect("slice too short");
-        unsafe { Self::from_raw(RawBlockMatRef::new(
-            mine.as_ptr() as _,
-            num_blocks,
-            block_offsets.as_ptr(),
-            block_strides.as_ptr(),
-            block_num_rows.as_ptr(),
-            block_num_cols.as_ptr(),
-        )) }
+        let mine = utils::chop_slice(
+            slice,
+            block_mat_extent(
+                num_blocks,
+                block_offsets,
+                block_strides,
+                block_num_rows,
+                block_num_cols,
+            ),
+        )
+        .expect("slice too short");
+        unsafe {
+            Self::from_raw(RawBlockMatRef::new(
+                mine.as_ptr() as _,
+                num_blocks,
+                block_offsets.as_ptr(),
+                block_strides.as_ptr(),
+                block_num_rows.as_ptr(),
+                block_num_cols.as_ptr(),
+            ))
+        }
     }
 
     pub unsafe fn from_raw(raw: RawBlockMatRef) -> Self {
-        Self { raw, phantom: PhantomData }
+        Self {
+            raw,
+            phantom: PhantomData,
+        }
     }
 
     pub fn as_ptr(self) -> *const T {
@@ -196,8 +213,10 @@ impl<'a, T> BlockMatRef<'a, T> {
     }
 
     pub unsafe fn get_unchecked(self, l: usize) -> MatRef<'a, T> {
-        MatRef::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
-                      self.raw.shape_at(l))
+        MatRef::from_raw(
+            self.as_ptr().offset(self.raw.offset_at(l) as _),
+            self.raw.shape_at(l),
+        )
     }
 
     pub unsafe fn slice(
@@ -220,7 +239,7 @@ impl<'a, T> BlockMatRef<'a, T> {
 impl<'a, T> Vector for BlockMatRef<'a, T> {
     type Elem = T;
     fn len(&self) -> usize {
-        (0 .. self.num_blocks())
+        (0..self.num_blocks())
             .map(|l| Vector::len(&self.get(l).unwrap()))
             .sum()
     }
@@ -243,7 +262,10 @@ unsafe impl<'a, T: Sync> Sync for BlockMatMut<'a, T> {}
 
 impl<'a, T> BlockMatMut<'a, T> {
     pub unsafe fn from_raw(raw: RawBlockMatRef) -> Self {
-        Self { raw, phantom: PhantomData }
+        Self {
+            raw,
+            phantom: PhantomData,
+        }
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -271,15 +293,17 @@ impl<'a, T> BlockMatMut<'a, T> {
     }
 
     pub unsafe fn get_unchecked(self, l: usize) -> MatMut<'a, T> {
-        MatMut::from_raw(self.as_ptr().offset(self.raw.offset_at(l) as _),
-                         self.raw.shape_at(l))
+        MatMut::from_raw(
+            self.as_ptr().offset(self.raw.offset_at(l) as _),
+            self.raw.shape_at(l),
+        )
     }
 }
 
 impl<'a, T> Vector for BlockMatMut<'a, T> {
     type Elem = T;
     fn len(&self) -> usize {
-        (0 .. self.as_ref().num_blocks())
+        (0..self.as_ref().num_blocks())
             .map(|l| Vector::len(&self.as_ref().get(l).unwrap()))
             .sum()
     }
@@ -292,25 +316,11 @@ impl<'a, T: Clone> IndexBlockMatRef for BlockMatMut<'a, T> {
 }
 
 impl<'a, T: AddAssign> IndexBlockMatMut for BlockMatMut<'a, T> {
-    fn set_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn set_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.as_mut().get(l).unwrap().get(u1, u2).unwrap() = value;
     }
 
-    fn add_block_mat(
-        &mut self,
-        l: usize,
-        u1: usize,
-        u2: usize,
-        value: Self::Elem,
-    )
-    {
+    fn add_block_mat(&mut self, l: usize, u1: usize, u2: usize, value: Self::Elem) {
         *self.as_mut().get(l).unwrap().get(u1, u2).unwrap() += value;
     }
 }
@@ -327,15 +337,18 @@ pub fn block_gemm<T: Gemm>(
     let num_blocks = a.num_blocks();
     assert_eq!(num_blocks, b.num_blocks());
     assert_eq!(num_blocks, c.as_ref().num_blocks());
-    for l in 0 .. num_blocks {
-        unsafe { linalg::gemm(
-            transa,
-            transb,
-            alpha,
-            a.get_unchecked(l), b.get_unchecked(l),
-            beta,
-            c.as_mut().get_unchecked(l),
-        ) }
+    for l in 0..num_blocks {
+        unsafe {
+            linalg::gemm(
+                transa,
+                transb,
+                alpha,
+                a.get_unchecked(l),
+                b.get_unchecked(l),
+                beta,
+                c.as_mut().get_unchecked(l),
+            )
+        }
     }
 }
 
@@ -348,13 +361,14 @@ pub fn block_heevr<T: Heevr>(
     mut z: BlockMatMut<T>,
     mut isuppz: Option<BlockMatMut<i32>>,
     m: &mut [usize],
-) -> Result<(), i32> where
+) -> Result<(), i32>
+where
     T::Real: Clone,
 {
     // not implemented: range: EigenvalueRange<T::Real>,
     // because selecting eigenvalues by index makes no sense here!
     let mut isuppz_buf = Vec::new();
-    for l in 0 .. a.as_ref().num_blocks() {
+    for l in 0..a.as_ref().num_blocks() {
         m[l] = linalg::heevr(
             left,
             EigenvalueRange::All,
@@ -365,9 +379,7 @@ pub fn block_heevr<T: Heevr>(
             z.as_mut().get(l).unwrap(),
             match isuppz {
                 None => Err(&mut isuppz_buf),
-                Some(ref mut isuppz) => {
-                    Ok(isuppz.as_mut().get(l).unwrap().row(0).unwrap())
-                }
+                Some(ref mut isuppz) => Ok(isuppz.as_mut().get(l).unwrap().row(0).unwrap()),
             },
         )?;
     }

@@ -37,14 +37,14 @@
 //! contexts (e.g. `l` can mean orbital angular momentum, and `p` can mean
 //! parity).
 //!
-use std::{fmt, iter, mem, vec};
+use super::cache2::Cache;
+use super::mat::{MatRef, MatShape};
+use super::utils;
+use fnv::FnvHashMap;
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
-use fnv::FnvHashMap;
-use super::mat::{MatRef, MatShape};
-use super::cache2::Cache;
-use super::utils;
+use std::{fmt, iter, mem, vec};
 
 pub type State2<T> = (T, T);
 
@@ -106,11 +106,15 @@ pub trait IntoUsize {
 }
 
 impl IntoUsize for u32 {
-    fn into_usize(self) -> usize { self as _ }
+    fn into_usize(self) -> usize {
+        self as _
+    }
 }
 
 impl IntoUsize for usize {
-    fn into_usize(self) -> usize { self }
+    fn into_usize(self) -> usize {
+        self
+    }
 }
 
 pub trait FromUsize {
@@ -118,11 +122,15 @@ pub trait FromUsize {
 }
 
 impl FromUsize for u32 {
-    fn from_usize(i: usize) -> Self { utils::cast(i) }
+    fn from_usize(i: usize) -> Self {
+        utils::cast(i)
+    }
 }
 
 impl FromUsize for usize {
-    fn from_usize(i: usize) -> Self { i }
+    fn from_usize(i: usize) -> Self {
+        i
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -157,7 +165,8 @@ impl<T: fmt::Debug, I> fmt::Debug for HashChart<T, I> {
     }
 }
 
-impl<T, I> iter::FromIterator<T> for HashChart<T, I> where
+impl<T, I> iter::FromIterator<T> for HashChart<T, I>
+where
     T: Hash + Eq + Clone,
     I: FromUsize + Clone,
 {
@@ -180,8 +189,9 @@ impl<T, I> IntoIterator for HashChart<T, I> {
 
 impl<T: Hash + Eq, I> HashChart<T, I> {
     pub fn encode<Q>(&self, q: &Q) -> Option<&I>
-        where Q: Hash + Eq,
-              T: Borrow<Q>,
+    where
+        Q: Hash + Eq,
+        T: Borrow<Q>,
     {
         self.encoder.get(q)
     }
@@ -203,7 +213,8 @@ impl<T: Hash + Eq, I: FromUsize> HashChart<T, I> {
     /// Reorder the elements in the HashChart via some total ordering,
     /// changing the association between elements and indices.  The callback
     /// receives the permutation that maps from old indices to new.
-    pub fn reorder_by_key<K, F, G>(&mut self, key: F, mut permut: G) where
+    pub fn reorder_by_key<K, F, G>(&mut self, key: F, mut permut: G)
+    where
         K: Ord,
         F: FnMut(&T) -> K,
         G: FnMut(&I, &I),
@@ -223,12 +234,16 @@ impl<T: Hash + Eq + Clone, I: FromUsize + Clone> HashChart<T, I> {
         let mut inserted = false;
         let query = t.clone();
         let decoder = &mut self.decoder;
-        let index = self.encoder.entry(query).or_insert_with(|| {
-            inserted = true;
-            let index = decoder.len();
-            decoder.push(t);
-            I::from_usize(index)
-        }).clone();
+        let index = self
+            .encoder
+            .entry(query)
+            .or_insert_with(|| {
+                inserted = true;
+                let index = decoder.len();
+                decoder.push(t);
+                I::from_usize(index)
+            })
+            .clone();
         HashChartInsertResult { inserted, index }
     }
 }
@@ -307,11 +322,11 @@ impl BasisLayout {
     pub fn part_offsets(&self) -> MatRef<u32> {
         MatRef::new(
             &mut (&self.part_offsets as _),
-            MatShape::packed(
-                self.num_chans() as _,
-                (self.num_parts - 1) as _,
-            ).validate().unwrap(),
-        ).unwrap()
+            MatShape::packed(self.num_chans() as _, (self.num_parts - 1) as _)
+                .validate()
+                .unwrap(),
+        )
+        .unwrap()
     }
 }
 
@@ -352,17 +367,19 @@ impl<L, X, U> Default for BasisChart<L, X, U> {
 }
 
 impl<L, X, U> fmt::Debug for BasisChart<L, X, U>
-    where L: fmt::Debug,
-          X: fmt::Debug,
-          U: fmt::Debug,
+where
+    L: fmt::Debug,
+    X: fmt::Debug,
+    U: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("BasisChart")
             .field("chan_chart", &self.chan_chart)
             .field("part_chart", &self.part_chart)
-            .field("aux_encoder", &utils::DebugWith(|f: &mut fmt::Formatter| {
-                f.write_str("n/a")
-            }))
+            .field(
+                "aux_encoder",
+                &utils::DebugWith(|f: &mut fmt::Formatter| f.write_str("n/a")),
+            )
             .field("aux_decoder", &self.aux_decoder)
             .field("layout", &self.layout)
             .finish()
@@ -370,21 +387,22 @@ impl<L, X, U> fmt::Debug for BasisChart<L, X, U>
 }
 
 impl<L, X, U> fmt::Display for BasisChart<L, X, U>
-    where L: fmt::Display,
-          X: fmt::Display,
-          U: fmt::Display,
+where
+    L: fmt::Display,
+    X: fmt::Display,
+    U: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for il in 0 .. self.layout.num_chans() {
+        for il in 0..self.layout.num_chans() {
             let l = self.decode_chan(il).unwrap();
             let ol = self.layout.chan_offset(il);
             writeln!(f, "[{}] {} (offset={})", il, l, ol)?;
-            for ix in 0 .. self.layout.num_parts {
+            for ix in 0..self.layout.num_parts {
                 let x = self.decode_part(ix).unwrap();
                 writeln!(f, "  [{}] {}", ix, x)?;
                 let u_start = self.layout.part_offset(il, ix);
                 let u_end = self.layout.part_offset(il, ix + 1);
-                for iu in u_start .. u_end {
+                for iu in u_start..u_end {
                     let u = self.decode_aux(il, iu).unwrap();
                     writeln!(f, "    [{}] {}", iu, u)?;
                 }
@@ -396,11 +414,13 @@ impl<L, X, U> fmt::Display for BasisChart<L, X, U>
 }
 
 impl<L, X, U> BasisChart<L, X, U>
-    where L: Hash + Eq + Clone,
-          X: Hash + Eq + Clone,
-          U: Hash + Eq + Clone,
+where
+    L: Hash + Eq + Clone,
+    X: Hash + Eq + Clone,
+    U: Hash + Eq + Clone,
 {
-    pub fn new<I>(states: I) -> Self where
+    pub fn new<I>(states: I) -> Self
+    where
         I: Iterator<Item = PartState<X, ChanState<L, U>>>,
     {
         Self::new_with(states, Default::default(), Default::default())
@@ -412,12 +432,17 @@ impl<L, X, U> BasisChart<L, X, U>
         states: I,
         mut chan_chart: HashChart<L, u32>,
         mut part_chart: HashChart<X, u32>,
-    ) -> Self where
+    ) -> Self
+    where
         I: Iterator<Item = PartState<X, ChanState<L, U>>>,
     {
         let mut state_chart = HashChart::default(); // this one is temporary
         let mut lxps = Vec::default();
-        for PartState { x, p: ChanState { l, u } } in states {
+        for PartState {
+            x,
+            p: ChanState { l, u },
+        } in states
+        {
             let l = chan_chart.insert(l).index;
             let x = part_chart.insert(x).index;
             let inserted_lu = state_chart.insert((l, u));
@@ -435,9 +460,9 @@ impl<L, X, U> BasisChart<L, X, U>
         let mut aux_decoder = Vec::default();
         let mut lxps = lxps.iter();
         let mut orb_ix_table = Vec::default();
-        for l in 0 .. num_chans {
+        for l in 0..num_chans {
             let mut u = 0;
-            for x in 0 .. num_parts {
+            for x in 0..num_parts {
                 loop {
                     let mut lxps_i = lxps.clone();
                     match lxps_i.next() {
@@ -494,7 +519,8 @@ impl<L, X, U> BasisChart<L, X, U> {
     }
 
     pub fn decode_aux(&self, l: u32, u: u32) -> Option<&U> {
-        self.aux_decoder.get((self.layout.chan_offset(l) + u) as usize)
+        self.aux_decoder
+            .get((self.layout.chan_offset(l) + u) as usize)
     }
 }
 
@@ -512,9 +538,7 @@ impl<L, X: Hash + Eq, U> BasisChart<L, X, U> {
 
 impl<L, X, U: Hash + Eq> BasisChart<L, X, U> {
     pub fn encode_aux(&self, l: u32, u: &U) -> Option<u32> {
-        utils::with_tuple2_ref(&l, u, |lu| {
-            self.aux_encoder.get(lu).cloned()
-        })
+        utils::with_tuple2_ref(&l, u, |lu| self.aux_encoder.get(lu).cloned())
     }
 }
 
@@ -531,9 +555,8 @@ impl<'a> MatLayout<'a> {
         let mut block_offsets = vec![0];
         let mut i = 0;
         assert_eq!(left.num_chans(), right.num_chans());
-        for l in 0 .. left.num_chans() {
-            i += (left.chan_dim(l) as usize)
-                * (right.chan_dim(l) as usize);
+        for l in 0..left.num_chans() {
+            i += (left.chan_dim(l) as usize) * (right.chan_dim(l) as usize);
             block_offsets.push(i);
         }
         MatLayout {
@@ -570,15 +593,18 @@ pub struct MatChart<'a, L: 'a, X1: 'a, X2: 'a, U1: 'a, U2: 'a> {
 }
 
 impl<'a, L, X1, X2, U1, U2> Clone for MatChart<'a, L, X1, X2, U1, U2> {
-    fn clone(&self) -> Self { *self }
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 impl<'a, L, X1, X2, U1, U2> Copy for MatChart<'a, L, X1, X2, U1, U2> {}
 
 impl<'a, L, X1, X2, U1, U2> MatChart<'a, L, X1, X2, U1, U2>
-    where L: Hash + Eq,
-          U1: Hash + Eq,
-          U2: Hash + Eq,
+where
+    L: Hash + Eq,
+    U1: Hash + Eq,
+    U2: Hash + Eq,
 {
     pub fn offset(self, l: &L, u1: &U1, u2: &U2) -> usize {
         let il = self.left.encode_chan(&l).expect("invalid channel") as u32;
@@ -607,7 +633,8 @@ pub struct ChanState<L = u32, U = u32> {
     pub u: U,
 }
 
-impl<L, U> fmt::Display for ChanState<L, U> where
+impl<L, U> fmt::Display for ChanState<L, U>
+where
     L: fmt::Display,
     U: fmt::Display,
 {
@@ -659,7 +686,8 @@ pub struct PartState<X, P> {
     pub p: P,
 }
 
-impl<X, P> fmt::Display for PartState<X, P> where
+impl<X, P> fmt::Display for PartState<X, P>
+where
     X: fmt::Display,
     P: fmt::Display,
 {
@@ -793,8 +821,8 @@ pub mod occ {
     pub const ALL1: [Occ; 2] = [Occ::I, Occ::A];
     pub const ALL2: [[Occ; 2]; 4] = [II, AI, IA, AA];
 
-    pub use super::Occ::I;
     pub use super::Occ::A;
+    pub use super::Occ::I;
     pub const II: [Occ; 2] = [Occ::I, Occ::I];
     pub const AI: [Occ; 2] = [Occ::A, Occ::I];
     pub const IA: [Occ; 2] = [Occ::I, Occ::A];

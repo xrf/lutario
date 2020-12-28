@@ -1,11 +1,11 @@
 //! Minnesota interaction of nucleons
 
-use std::f64::consts::PI;
 use super::basis::occ;
 use super::half::Half;
 use super::j_scheme::{JAtlas, OpJ200};
 use super::op::Op;
 use super::plane_wave_basis::{HarmSpin, HarmSpinIso};
+use std::f64::consts::PI;
 
 /// A Gaussian potential:
 ///
@@ -46,9 +46,18 @@ pub struct Minnesota {
 impl Default for Minnesota {
     fn default() -> Self {
         Self {
-            r: Gaussian { v0: 200.0, kappa: 1.487 },
-            t: Gaussian { v0: 178.0, kappa: 0.639 },
-            s: Gaussian { v0: 91.85, kappa: 0.465 },
+            r: Gaussian {
+                v0: 200.0,
+                kappa: 1.487,
+            },
+            t: Gaussian {
+                v0: 178.0,
+                kappa: 0.639,
+            },
+            s: Gaussian {
+                v0: 91.85,
+                kappa: 0.465,
+            },
         }
     }
 }
@@ -74,8 +83,7 @@ impl MinnesotaBox {
         l2: HarmSpinIso,
         l3: HarmSpinIso,
         l4: HarmSpinIso,
-    ) -> f64
-    {
+    ) -> f64 {
         assert_eq!(l1 + l2, l3 + l4);
 
         // m² = (ns1 - ns3)²
@@ -116,14 +124,7 @@ impl MinnesotaBox {
         a * v
     }
 
-    pub fn neutron_elem(
-        &self,
-        l1: HarmSpin,
-        l2: HarmSpin,
-        l3: HarmSpin,
-        l4: HarmSpin,
-    ) -> f64
-    {
+    pub fn neutron_elem(&self, l1: HarmSpin, l2: HarmSpin, l3: HarmSpin, l4: HarmSpin) -> f64 {
         self.nucleon_prod_elem(
             l1.and_iso(Half(-1)),
             l2.and_iso(Half(-1)),
@@ -137,11 +138,7 @@ impl MinnesotaBox {
         )
     }
 
-    pub fn make_op_neutron(
-        &self,
-        atlas: &JAtlas<HarmSpin, ()>,
-    ) -> OpJ200<f64>
-    {
+    pub fn make_op_neutron(&self, atlas: &JAtlas<HarmSpin, ()>) -> OpJ200<f64> {
         let scheme = atlas.scheme();
         let mut h2 = Op::new(scheme.clone());
         for pq in scheme.states_20(&occ::ALL2) {
