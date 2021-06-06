@@ -2,7 +2,7 @@
 
 # `lutario`
 
-[![Build status](https://travis-ci.org/xrf/lutario.svg)](https://travis-ci.org/xrf/lutario)
+[![Build status](https://github.com/xrf/lutario/actions/workflows/build.yml/badge.svg)](https://github.com/xrf/lutario/actions/workflows/build.yml)
 
 **Quick links**: [Documentation for `master` branch](https://xrf.github.io/lutario)
 
